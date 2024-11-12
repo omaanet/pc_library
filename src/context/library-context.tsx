@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // src/context/library-context.tsx
 'use client';
 

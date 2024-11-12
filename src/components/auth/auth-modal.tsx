@@ -1,9 +1,10 @@
+/* eslint-disable no-console */
 // src/components/auth/auth-modal.tsx
 'use client';
 
 import * as React from 'react';
 import { useAuth } from '@/context/auth-context';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,9 +76,23 @@ export function AuthModal({
         }
     };
 
+    let dialogTitle: string, dialogDescription: string;
+    if (activeTab === 'login') {
+        dialogTitle = "Login to Digital Library";
+        dialogDescription = "Enter your email and password to access your account";
+    } else {
+        dialogTitle = "Create an Account";
+        dialogDescription = "Register to access the full Digital Library experience";
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>{dialogTitle}</DialogTitle>
+                    <DialogDescription>{dialogDescription}</DialogDescription>
+                </DialogHeader>
+
                 <Tabs value={activeTab} onValueChange={(value: unknown) => setActiveTab(value as 'login' | 'register')}>
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="login">Login</TabsTrigger>
