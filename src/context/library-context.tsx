@@ -45,7 +45,13 @@ function libraryReducer(state: LibraryState, action: LibraryAction): LibraryStat
         case 'SET_SELECTED_BOOK':
             return { ...state, selectedBook: action.payload };
         case 'SET_PAGINATION':
-            return { ...state, pagination: action.payload };
+            return {
+                ...state,
+                pagination: {
+                    ...state.pagination,
+                    ...action.payload
+                }
+            };
         default:
             return state;
     }
@@ -58,46 +64,62 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
 
     const fetchBooks = useCallback(async (page: number = 1) => {
         dispatch({ type: 'SET_LOADING', payload: true });
+        dispatch({ type: 'SET_ERROR', payload: null });
+
         try {
-            const params = new URLSearchParams();
+            // Construct URL parameters
+            const params = new URLSearchParams({
+                page: page.toString(),
+                perPage: state.pagination.perPage.toString(),
+                sortBy: state.sort.by,
+                sortOrder: state.sort.order,
+            });
 
-            // Add pagination params
-            params.append('page', page.toString());
-            params.append('perPage', state.pagination.perPage.toString());
-
-            // Add sort params
-            params.append('sortBy', state.sort.by);
-            params.append('sortOrder', state.sort.order);
-
-            // Add filter params if they exist
+            // Add filter parameters if they exist
             if (state.filters.search) {
                 params.append('search', state.filters.search);
             }
             if (state.filters.hasAudio !== undefined) {
                 params.append('hasAudio', state.filters.hasAudio.toString());
             }
-            if (state.filters.minAudioLength !== undefined) {
-                params.append('minAudioLength', state.filters.minAudioLength.toString());
-            }
-            if (state.filters.maxAudioLength !== undefined) {
-                params.append('maxAudioLength', state.filters.maxAudioLength.toString());
-            }
 
-            const response = await fetch(`/api/books?${params.toString()}`);
-            if (!response.ok) throw new Error('Failed to fetch books');
+            // Log request for debugging
+            console.log('Fetching books with params:', params.toString());
+
+            // Make the request
+            const response = await fetch(`/api/books?${params}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
             const data = await response.json();
+
+            // Validate response data
+            if (!data || !Array.isArray(data.books)) {
+                throw new Error('Invalid response format');
+            }
+
+            // Update state with fetched data
             dispatch({ type: 'SET_BOOKS', payload: data.books });
-            dispatch({
-                type: 'SET_PAGINATION',
-                payload: {
-                    page: data.page,
-                    perPage: data.perPage,
-                    total: data.total,
-                },
-            });
+
+            // Update pagination if provided
+            if (data.pagination) {
+                dispatch({
+                    type: 'SET_PAGINATION',
+                    payload: {
+                        page: data.pagination.page,
+                        perPage: data.pagination.perPage,
+                        total: data.pagination.total,
+                    },
+                });
+            }
         } catch (error) {
-            dispatch({ type: 'SET_ERROR', payload: error as Error });
+            console.error('Error fetching books:', error);
+            dispatch({
+                type: 'SET_ERROR',
+                payload: error instanceof Error ? error : new Error('Failed to fetch books')
+            });
         } finally {
             dispatch({ type: 'SET_LOADING', payload: false });
         }
@@ -112,20 +134,25 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             type: 'SET_FILTERS',
             payload: { ...state.filters, ...filters },
         });
-    }, [state.filters]);
+        // Reset to first page when filters change
+        fetchBooks(1).catch(console.error);
+    }, [state.filters, fetchBooks]);
 
     const updateSort = useCallback((sort: Partial<LibrarySort>) => {
         dispatch({
             type: 'SET_SORT',
             payload: { ...state.sort, ...sort },
         });
-    }, [state.sort]);
+        // Reset to first page when sort changes
+        fetchBooks(1).catch(console.error);
+    }, [state.sort, fetchBooks]);
 
     const setViewMode = useCallback((mode: ViewMode) => {
         dispatch({ type: 'SET_VIEW_MODE', payload: mode });
     }, []);
 
-    const value: LibraryContextType = {
+    // Memoize context value to prevent unnecessary rerenders
+    const value = React.useMemo<LibraryContextType>(() => ({
         state,
         dispatch,
         fetchBooks,
@@ -133,7 +160,14 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         updateFilters,
         updateSort,
         setViewMode,
-    };
+    }), [
+        state,
+        fetchBooks,
+        selectBook,
+        updateFilters,
+        updateSort,
+        setViewMode
+    ]);
 
     return (
         <LibraryContext.Provider value={value}>

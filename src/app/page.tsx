@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { RootNav } from '@/components/layout/root-nav';
-import { BookCollection } from '@/components/books/book-collection';
+import { BookCollectionWrapper } from '@/components/books/book-collection-wrapper';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ export default function HomePage() {
                 onAuthClick={() => setIsAuthModalOpen(true)}
             />
 
-            <main className="flex-1">
+            <main className="flex-1 mx-auto">
                 {/* Hero Section */}
                 <section className="relative overflow-hidden py-24 sm:py-32">
                     <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]" />
@@ -94,7 +94,7 @@ export default function HomePage() {
                 {/* Collection Section */}
                 <section id="collection" className="py-12 sm:py-16">
                     <div className="container">
-                        <BookCollection />
+                        <BookCollectionWrapper />
                     </div>
                 </section>
             </main>

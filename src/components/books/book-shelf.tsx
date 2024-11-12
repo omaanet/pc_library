@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/books/book-shelf.tsx
 'use client';
 
 import * as React from 'react';
+import { useAuth } from '@/context/auth-context';
 import type { Book } from '@/types';
 import { BookGridCard } from './book-grid-card';
 import { BookListCard } from './book-list-card';
+import { BookDialog } from './book-dialog';
 import { ViewSwitcher } from '@/components/shared/view-switcher';
 
 interface BookShelfProps {
@@ -13,9 +16,24 @@ interface BookShelfProps {
     className?: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
     const [view, setView] = React.useState<'grid' | 'list'>('grid');
+    const [selectedBook, setSelectedBook] = React.useState<Book | null>(null);
+    const { state: { isAuthenticated } } = useAuth();
+
+    // Handle auth modal state
+    const [showAuthModal, setShowAuthModal] = React.useState(false);
+
+    const handleBookSelect = (book: Book) => {
+        setSelectedBook(book);
+        onSelectBook(book);
+    };
+
+    const handleBookAction = () => {
+        if (!isAuthenticated) {
+            setShowAuthModal(true);
+        }
+    };
 
     return (
         <div className="space-y-4">
@@ -32,21 +50,30 @@ export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
                         <BookGridCard
                             key={book.id}
                             book={book}
-                            onSelect={onSelectBook}
+                            onSelect={handleBookSelect}
                         />
                     ))}
                 </div>
             ) : (
-                <div className="divide-y">
+                <div className="divide-y rounded-lg border bg-card">
                     {books.map((book) => (
                         <BookListCard
                             key={book.id}
                             book={book}
-                            onSelect={onSelectBook}
+                            onSelect={handleBookSelect}
                         />
                     ))}
                 </div>
             )}
+
+            {/* Book Dialog */}
+            <BookDialog
+                book={selectedBook}
+                open={!!selectedBook}
+                onOpenChange={(open) => !open && setSelectedBook(null)}
+                isAuthenticated={isAuthenticated}
+                onLoginClick={handleBookAction}
+            />
         </div>
     );
 }

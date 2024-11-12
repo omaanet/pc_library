@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/books/book-collection.tsx
 'use client';
 
@@ -7,7 +6,7 @@ import { useLibrary } from '@/context/library-context';
 import { useAuth } from '@/context/auth-context';
 import { BookGridCard } from './book-grid-card';
 import { BookListCard } from './book-list-card';
-import { BookDetailsDialog } from './book-details-dialog';
+import { BookDialog } from './book-dialog';
 import { ViewSwitcher } from '@/components/shared/view-switcher';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,16 +21,15 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { BookGridSkeleton, BookListSkeleton } from '@/components/ui/loading-placeholder';
-import type { SortBy, SortOrder } from '@/types/context';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const SORT_OPTIONS = {
-    'title-asc': { by: 'title' as const, order: 'asc' as const, label: 'Title (A-Z)' },
-    'title-desc': { by: 'title' as const, order: 'desc' as const, label: 'Title (Z-A)' },
-    'date-desc': { by: 'date' as const, order: 'desc' as const, label: 'Newest First' },
-    'date-asc': { by: 'date' as const, order: 'asc' as const, label: 'Oldest First' },
+    'title-asc': { label: 'Title (A-Z)' },
+    'title-desc': { label: 'Title (Z-A)' },
+    'date-desc': { label: 'Newest First' },
+    'date-asc': { label: 'Oldest First' },
 } as const;
-
-type SortKey = keyof typeof SORT_OPTIONS;
 
 export function BookCollection() {
     const {
@@ -57,12 +55,22 @@ export function BookCollection() {
     } = useAuth();
 
     const [searchDebounce, setSearchDebounce] = React.useState<NodeJS.Timeout>();
+    const [isOperationLoading, setIsOperationLoading] = React.useState(false);
 
+    // Initialize books on mount
     React.useEffect(() => {
-        fetchBooks();
+        const loadBooks = async () => {
+            try {
+                await fetchBooks();
+            } catch (error) {
+                console.error('Failed to load books:', error);
+            }
+        };
+        loadBooks();
     }, [fetchBooks]);
 
-    const handleSearch = (value: string) => {
+    // Debounced search handler
+    const handleSearch = React.useCallback((value: string) => {
         if (searchDebounce) {
             clearTimeout(searchDebounce);
         }
@@ -71,27 +79,54 @@ export function BookCollection() {
                 updateFilters({ search: value });
             }, 300)
         );
-    };
+    }, [searchDebounce, updateFilters]);
 
-    const handleSortChange = (value: string) => {
-        const option = SORT_OPTIONS[value as SortKey];
-        if (option) {
-            updateSort({ by: option.by, order: option.order });
-        }
-    };
+    const handleSortChange = React.useCallback((value: string) => {
+        const [by, order] = value.split('-') as ['title' | 'date', 'asc' | 'desc'];
+        updateSort({ by, order });
+    }, [updateSort]);
 
-    const handleAudioFilterChange = (checked: boolean) => {
+    const handleAudioFilterChange = React.useCallback((checked: boolean) => {
         updateFilters({ hasAudio: checked });
-    };
+    }, [updateFilters]);
 
+    // Handle auth requirement for book actions
+    const handleBookAction = React.useCallback(async () => {
+        if (!isAuthenticated) {
+            setIsOperationLoading(true);
+            try {
+                // Your auth action here (e.g., opening auth modal)
+                await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (error) {
+                console.error('Auth action failed:', error);
+            } finally {
+                setIsOperationLoading(false);
+            }
+        }
+    }, [isAuthenticated]);
+
+    // Error state
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center p-8 text-center">
-                <p className="text-destructive mb-4">Error loading books: {error.message}</p>
-                <Button onClick={() => fetchBooks()}>Try Again</Button>
-            </div>
+            <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                    Failed to load books. Please try again later.
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fetchBooks()}
+                        className="mt-2"
+                    >
+                        Retry
+                    </Button>
+                </AlertDescription>
+            </Alert>
         );
     }
+
+    const currentSortKey = `${sort.by}-${sort.order}`;
 
     return (
         <div className="space-y-6">
@@ -103,7 +138,7 @@ export function BookCollection() {
                 <div className="flex items-center gap-4">
                     <ViewSwitcher view={viewMode} onViewChange={setViewMode} />
                     <Select
-                        value={`${sort.by}-${sort.order}`}
+                        value={currentSortKey}
                         onValueChange={handleSortChange}
                     >
                         <SelectTrigger className="w-[180px]">
@@ -140,74 +175,89 @@ export function BookCollection() {
                 </div>
             </div>
 
+            {/* Loading indicator */}
+            {isOperationLoading && (
+                <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg flex items-center space-x-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Processing...</span>
+                </div>
+            )}
+
             {/* Books Grid/List */}
             {isLoading ? (
                 viewMode === 'grid' ? (
-                    <BookGridSkeleton count={pagination.perPage} />
+                    <BookGridSkeleton count={pagination?.perPage || 8} />
                 ) : (
-                    <BookListSkeleton count={pagination.perPage} />
+                    <BookListSkeleton count={pagination?.perPage || 8} />
                 )
             ) : (
                 <div className="space-y-6">
-                    {viewMode === 'grid' ? (
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                            {books.map((book) => (
-                                <BookGridCard
-                                    key={book.id}
-                                    book={book}
-                                    onSelect={selectBook}
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="divide-y rounded-lg border bg-card">
-                            {books.map((book) => (
-                                <BookListCard
-                                    key={book.id}
-                                    book={book}
-                                    onSelect={selectBook}
-                                />
-                            ))}
-                        </div>
-                    )}
+                    {books && books.length > 0 ? (
+                        <>
+                            {viewMode === 'grid' ? (
+                                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                                    {books.map((book) => (
+                                        <BookGridCard
+                                            key={book.id}
+                                            book={book}
+                                            onSelect={selectBook}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="divide-y rounded-lg border bg-card">
+                                    {books.map((book) => (
+                                        <BookListCard
+                                            key={book.id}
+                                            book={book}
+                                            onSelect={selectBook}
+                                        />
+                                    ))}
+                                </div>
+                            )}
 
-                    {/* Pagination */}
-                    {pagination.total > pagination.perPage && (
-                        <div className="flex justify-center gap-2">
-                            <Button
-                                variant="outline"
-                                disabled={pagination.page === 1 || isLoading}
-                                onClick={() => fetchBooks(pagination.page - 1)}
-                            >
-                                Previous
-                            </Button>
-                            <span className="flex items-center px-4 text-sm text-muted-foreground">
-                                Page {pagination.page} of{' '}
-                                {Math.ceil(pagination.total / pagination.perPage)}
-                            </span>
-                            <Button
-                                variant="outline"
-                                disabled={
-                                    pagination.page >=
-                                    Math.ceil(
-                                        pagination.total / pagination.perPage
-                                    ) || isLoading
-                                }
-                                onClick={() => fetchBooks(pagination.page + 1)}
-                            >
-                                Next
-                            </Button>
+                            {/* Pagination */}
+                            {pagination && pagination.total > pagination.perPage && (
+                                <div className="flex justify-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        disabled={pagination.page === 1 || isLoading}
+                                        onClick={() => fetchBooks(pagination.page - 1)}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <span className="flex items-center px-4 text-sm text-muted-foreground">
+                                        Page {pagination.page} of{' '}
+                                        {Math.ceil(pagination.total / pagination.perPage)}
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        disabled={
+                                            pagination.page >=
+                                            Math.ceil(pagination.total / pagination.perPage) || isLoading
+                                        }
+                                        onClick={() => fetchBooks(pagination.page + 1)}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                            No books found. Try adjusting your search or filters.
                         </div>
                     )}
                 </div>
             )}
 
-            {/* Book Details Dialog */}
-            <BookDetailsDialog
+            {/* Book Dialog */}
+            <BookDialog
                 book={selectedBook}
                 open={!!selectedBook}
                 onOpenChange={(open) => !open && selectBook(null)}
                 isAuthenticated={isAuthenticated}
+                onLoginClick={handleBookAction}
             />
         </div>
     );

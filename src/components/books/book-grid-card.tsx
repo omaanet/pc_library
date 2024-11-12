@@ -16,6 +16,25 @@ interface BookGridCardProps {
 }
 
 export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
+    // Memoize the image to prevent unnecessary re-renders
+    const coverImage = React.useMemo(() => (
+        <div className="relative aspect-[3/4] overflow-hidden">
+            <Image
+                src={book.coverImage}
+                alt={`Cover of ${book.title}`}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
+                loading="lazy"
+            />
+            {book.hasAudio && (
+                <div className="absolute top-2 right-2 rounded-full bg-background/80 p-1.5 backdrop-blur-sm">
+                    <Headphones className="h-4 w-4" />
+                </div>
+            )}
+        </div>
+    ), [book.coverImage, book.title, book.hasAudio]);
+
     return (
         <Card
             className={cn(
@@ -24,22 +43,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
             )}
         >
             <CardContent className="p-0">
-                {/* Cover Image Container */}
-                <div className="relative aspect-[3/4] overflow-hidden">
-                    <Image
-                        src={book.coverImage}
-                        alt={`Cover of ${book.title}`}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
-                        priority={false}
-                    />
-                    {book.hasAudio && (
-                        <div className="absolute top-2 right-2 rounded-full bg-background/80 p-1.5 backdrop-blur-sm">
-                            <Headphones className="h-4 w-4" />
-                        </div>
-                    )}
-                </div>
+                {coverImage}
 
                 {/* Book Info */}
                 <div className="space-y-2 p-4">
