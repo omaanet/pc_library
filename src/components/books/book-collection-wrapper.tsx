@@ -1,4 +1,3 @@
-// src/components/books/book-collection-wrapper.tsx
 'use client';
 
 import * as React from 'react';

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// src/components/layout/header.tsx
 'use client';
 
 import * as React from 'react';
@@ -41,8 +39,9 @@ export function Header({ onOpenAuth, className }: HeaderProps) {
             "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
             className
         )}>
-            <div className="container flex h-16 items-center justify-between">
+            <div className="container w-full flex h-16 items-center justify-between">
                 {/* Logo and Brand */}
+                
                 <Link href="/" className="flex items-center space-x-2">
                     <Library className="h-6 w-6" />
                     <span className="font-bold">Digital Library</span>

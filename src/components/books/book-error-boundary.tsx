@@ -1,4 +1,3 @@
-// src/components/books/book-error-boundary.tsx
 'use client';
 
 import * as React from 'react';

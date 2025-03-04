@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// src/components/books/book-shelf.tsx
 'use client';
 
 import * as React from 'react';

@@ -1,18 +1,13 @@
 // src/types/images.ts
+export interface ImageSize {
+    width: number;
+    height: number;
+}
 
 export interface BookCoverSizes {
-    grid: {
-        width: number;
-        height: number;
-    };
-    list: {
-        width: number;
-        height: number;
-    };
-    detail: {
-        width: number;
-        height: number;
-    };
+    grid: ImageSize;
+    list: ImageSize;
+    detail: ImageSize;
 }
 
 export const DEFAULT_COVER_SIZES: BookCoverSizes = {
@@ -28,18 +23,13 @@ export const DEFAULT_COVER_SIZES: BookCoverSizes = {
         width: 400,
         height: 600
     }
-};
+} as const;
 
-export function getImageSizeProps(size: keyof BookCoverSizes) {
-    const dimensions = DEFAULT_COVER_SIZES[size];
-    return {
-        width: dimensions.width,
-        height: dimensions.height,
-        sizes: getSizeString(size)
-    };
-}
-
-function getSizeString(size: keyof BookCoverSizes): string {
+/**
+ * Returns the appropriate sizes attribute for responsive images
+ * based on the view type.
+ */
+export function getImageSizeString(size: keyof BookCoverSizes): string {
     switch (size) {
         case 'grid':
             return '(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw';
@@ -47,7 +37,5 @@ function getSizeString(size: keyof BookCoverSizes): string {
             return '96px';
         case 'detail':
             return '(min-width: 768px) 33vw, 100vw';
-        default:
-            return '100vw';
     }
 }

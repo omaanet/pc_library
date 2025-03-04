@@ -1,4 +1,3 @@
-// src/components/books/book-collection.tsx
 'use client';
 
 import * as React from 'react';
@@ -8,7 +7,6 @@ import { BookGridCard } from './book-grid-card';
 import { BookListCard } from './book-list-card';
 import { BookDialog } from './book-dialog';
 import { ViewSwitcher } from '@/components/shared/view-switcher';
-import { Button } from '@/components/ui/button';
 import {
     Select,
     SelectContent,
@@ -19,10 +17,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
-import { BookGridSkeleton, BookListSkeleton } from '@/components/ui/loading-placeholder';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { Loader2, AlertCircle, BookOpen } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { BookGridSkeleton, BookListSkeleton } from '@/components/ui/loading-placeholder';
+import { DEFAULT_COVER_SIZES } from '@/types/images';
+import type { LibrarySort } from '@/types/context';
 
 const SORT_OPTIONS = {
     'title-asc': { label: 'Title (A-Z)' },
@@ -30,6 +31,9 @@ const SORT_OPTIONS = {
     'date-desc': { label: 'Newest First' },
     'date-asc': { label: 'Oldest First' },
 } as const;
+
+// Number of books to preload images for
+const PRELOAD_COUNT = 4;
 
 export function BookCollection() {
     const {
@@ -50,12 +54,16 @@ export function BookCollection() {
         setViewMode,
     } = useLibrary();
 
-    const {
-        state: { isAuthenticated },
-    } = useAuth();
+    const { state: { isAuthenticated } } = useAuth();
+    const { toast } = useToast();
 
+    // Local loading states
+    const [isSearching, setIsSearching] = React.useState(false);
     const [searchDebounce, setSearchDebounce] = React.useState<NodeJS.Timeout>();
-    const [isOperationLoading, setIsOperationLoading] = React.useState(false);
+    const [isLoadingMore, setIsLoadingMore] = React.useState(false);
+
+    // Track loaded images
+    const [loadedImages, setLoadedImages] = React.useState<Set<string>>(new Set());
 
     // Initialize books on mount
     React.useEffect(() => {
@@ -63,47 +71,77 @@ export function BookCollection() {
             try {
                 await fetchBooks();
             } catch (error) {
-                console.error('Failed to load books:', error);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Failed to load books. Please try again.",
+                });
             }
         };
         loadBooks();
-    }, [fetchBooks]);
+    }, [fetchBooks, toast]);
+
+    // Preload images for visible books
+    React.useEffect(() => {
+        if (!books || books.length === 0) return;
+
+        const preloadImages = books.slice(0, PRELOAD_COUNT).map(book => {
+            if (loadedImages.has(book.coverImage)) return Promise.resolve();
+
+            return new Promise<void>((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    setLoadedImages(prev => new Set([...prev, book.coverImage]));
+                    resolve();
+                };
+                img.onerror = () => resolve(); // Don't block on error
+                img.src = book.coverImage;
+            });
+        });
+
+        Promise.all(preloadImages).catch(console.error);
+    }, [books, loadedImages]);
 
     // Debounced search handler
     const handleSearch = React.useCallback((value: string) => {
+        setIsSearching(true);
         if (searchDebounce) {
             clearTimeout(searchDebounce);
         }
+
         setSearchDebounce(
-            setTimeout(() => {
-                updateFilters({ search: value });
+            setTimeout(async () => {
+                try {
+                    await updateFilters({ search: value });
+                } finally {
+                    setIsSearching(false);
+                }
             }, 300)
         );
     }, [searchDebounce, updateFilters]);
 
+    // Sort handler
     const handleSortChange = React.useCallback((value: string) => {
-        const [by, order] = value.split('-') as ['title' | 'date', 'asc' | 'desc'];
+        const [by, order] = value.split('-') as [LibrarySort['by'], LibrarySort['order']];
         updateSort({ by, order });
     }, [updateSort]);
 
+    // Audio filter handler
     const handleAudioFilterChange = React.useCallback((checked: boolean) => {
         updateFilters({ hasAudio: checked });
     }, [updateFilters]);
 
-    // Handle auth requirement for book actions
-    const handleBookAction = React.useCallback(async () => {
-        if (!isAuthenticated) {
-            setIsOperationLoading(true);
-            try {
-                // Your auth action here (e.g., opening auth modal)
-                await new Promise(resolve => setTimeout(resolve, 500));
-            } catch (error) {
-                console.error('Auth action failed:', error);
-            } finally {
-                setIsOperationLoading(false);
-            }
+    // Load more handler
+    const handleLoadMore = React.useCallback(async () => {
+        if (isLoadingMore || !pagination) return;
+
+        setIsLoadingMore(true);
+        try {
+            await fetchBooks(pagination.page + 1);
+        } finally {
+            setIsLoadingMore(false);
         }
-    }, [isAuthenticated]);
+    }, [isLoadingMore, pagination, fetchBooks]);
 
     // Error state
     if (error) {
@@ -111,13 +149,13 @@ export function BookCollection() {
             <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
-                <AlertDescription>
-                    Failed to load books. Please try again later.
+                <AlertDescription className="flex flex-col gap-2">
+                    <p>Failed to load books. Please try again later.</p>
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => fetchBooks()}
-                        className="mt-2"
+                        className="w-fit"
                     >
                         Retry
                     </Button>
@@ -126,20 +164,25 @@ export function BookCollection() {
         );
     }
 
+    const showLoadingState = isLoading && !isLoadingMore;
     const currentSortKey = `${sort.by}-${sort.order}`;
 
     return (
         <div className="space-y-6">
             {/* Controls Section */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-2xl font-semibold tracking-tight">
-                    Library Collection
-                </h2>
+                <div className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    <h2 className="text-2xl font-semibold tracking-tight">
+                        Library Collection
+                    </h2>
+                </div>
                 <div className="flex items-center gap-4">
                     <ViewSwitcher view={viewMode} onViewChange={setViewMode} />
                     <Select
                         value={currentSortKey}
                         onValueChange={handleSortChange}
+                        disabled={showLoadingState}
                     >
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Sort by..." />
@@ -163,6 +206,7 @@ export function BookCollection() {
                         onChange={(e) => handleSearch(e.target.value)}
                         defaultValue={filters.search}
                         className="max-w-xs"
+                        disabled={showLoadingState}
                     />
                 </div>
                 <div className="flex items-center gap-2">
@@ -170,21 +214,22 @@ export function BookCollection() {
                         id="audioFilter"
                         checked={filters.hasAudio}
                         onCheckedChange={handleAudioFilterChange}
+                        disabled={showLoadingState}
                     />
                     <Label htmlFor="audioFilter">Audio Available</Label>
                 </div>
             </div>
 
             {/* Loading indicator */}
-            {isOperationLoading && (
+            {isSearching && (
                 <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg flex items-center space-x-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Processing...</span>
+                    <span>Searching...</span>
                 </div>
             )}
 
             {/* Books Grid/List */}
-            {isLoading ? (
+            {showLoadingState ? (
                 viewMode === 'grid' ? (
                     <BookGridSkeleton count={pagination?.perPage || 8} />
                 ) : (
@@ -216,29 +261,22 @@ export function BookCollection() {
                                 </div>
                             )}
 
-                            {/* Pagination */}
-                            {pagination && pagination.total > pagination.perPage && (
-                                <div className="flex justify-center gap-2">
+                            {/* Load More */}
+                            {pagination && pagination.total > books.length && (
+                                <div className="flex justify-center pt-4">
                                     <Button
                                         variant="outline"
-                                        disabled={pagination.page === 1 || isLoading}
-                                        onClick={() => fetchBooks(pagination.page - 1)}
+                                        onClick={handleLoadMore}
+                                        disabled={isLoadingMore}
                                     >
-                                        Previous
-                                    </Button>
-                                    <span className="flex items-center px-4 text-sm text-muted-foreground">
-                                        Page {pagination.page} of{' '}
-                                        {Math.ceil(pagination.total / pagination.perPage)}
-                                    </span>
-                                    <Button
-                                        variant="outline"
-                                        disabled={
-                                            pagination.page >=
-                                            Math.ceil(pagination.total / pagination.perPage) || isLoading
-                                        }
-                                        onClick={() => fetchBooks(pagination.page + 1)}
-                                    >
-                                        Next
+                                        {isLoadingMore ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Loading...
+                                            </>
+                                        ) : (
+                                            'Load More'
+                                        )}
                                     </Button>
                                 </div>
                             )}
@@ -257,7 +295,6 @@ export function BookCollection() {
                 open={!!selectedBook}
                 onOpenChange={(open) => !open && selectBook(null)}
                 isAuthenticated={isAuthenticated}
-                onLoginClick={handleBookAction}
             />
         </div>
     );

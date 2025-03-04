@@ -1,20 +1,23 @@
-// src/components/books/book-dialog.tsx
 'use client';
 
 import * as React from 'react';
 import Image from 'next/image';
-import { Headphones } from 'lucide-react';
+import { Headphones, X } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogDescription,
+    DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { formatDate, formatAudioLength } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+import { formatDate, formatAudioLength, cn } from '@/lib/utils';
+import { DEFAULT_COVER_SIZES } from '@/types/images';
+import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 import type { Book } from '@/types';
 
 interface BookDialogProps {
@@ -32,23 +35,77 @@ export function BookDialog({
     isAuthenticated = false,
     onLoginClick,
 }: BookDialogProps) {
+    const [imageLoaded, setImageLoaded] = React.useState(false);
+
+    // Reset image loaded state when dialog opens/closes or book changes
+    React.useEffect(() => {
+        setImageLoaded(false);
+    }, [book, open]);
+
     // Memoize cover image to prevent unnecessary re-renders
     const coverImage = React.useMemo(() => {
         if (!book?.coverImage) return null;
 
+        const { width, height } = DEFAULT_COVER_SIZES.detail;
+        const aspectRatio = width / height;
+        const isPlaceholder = book.coverImage === IMAGE_CONFIG.placeholder.token;
+        const imageUrl = getCoverImageUrl(
+            book.coverImage,
+            'detail',
+            { bookId: isPlaceholder ? book.id : undefined }
+        );
+
         return (
-            <div className="relative w-full md:w-1/3 aspect-[3/4] overflow-hidden rounded-lg shrink-0">
-                <Image
-                    src={book.coverImage}
-                    alt={`Cover of ${book.title}`}
-                    fill
-                    className="object-cover"
-                    sizes="(min-width: 768px) 33vw, 100vw"
-                    priority
-                />
+            <div className="relative w-full md:w-1/3 shrink-0">
+                <div
+                    className="relative w-full overflow-hidden rounded-lg"
+                    style={{
+                        maxWidth: width,
+                        aspectRatio: `${aspectRatio}`,
+                    }}
+                >
+                    {/* Background blur effect while loading */}
+                    {!imageLoaded && book.coverImage !== IMAGE_CONFIG.placeholder.token && (
+                        <Image
+                            src={getCoverImageUrl(
+                                book.coverImage,
+                                'grid',
+                                { bookId: isPlaceholder ? book.id : undefined }
+                            )}
+                            alt=""
+                            fill
+                            className="absolute inset-0 object-cover blur-lg scale-110"
+                            priority={false}
+                            quality={20}
+                        />
+                    )}
+
+                    {/* Main image container */}
+                    <div className="relative w-full h-full">
+                        <Image
+                            src={imageUrl}
+                            alt={`Cover of ${book.title}`}
+                            fill
+                            className={cn(
+                                "object-cover transition-all duration-300",
+                                imageLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
+                            )}
+                            sizes="(min-width: 768px) 33vw, 100vw"
+                            priority={true}
+                            quality={90}
+                            onLoad={() => setImageLoaded(true)}
+                            onError={() => setImageLoaded(true)}
+                        />
+
+                        {/* Loading skeleton */}
+                        {!imageLoaded && (
+                            <Skeleton className="absolute inset-0" />
+                        )}
+                    </div>
+                </div>
             </div>
         );
-    }, [book]);
+    }, [book, imageLoaded]);
 
     // Memoize audio section to prevent unnecessary re-renders
     const audioSection = React.useMemo(() => {
@@ -64,7 +121,9 @@ export function BookDialog({
                             Listen Now
                         </Button>
                         <span className="text-sm text-muted-foreground">
-                            {book.audioLength ? formatAudioLength(book.audioLength) : 'Duration not available'} total length
+                            {book.audioLength ?
+                                formatAudioLength(book.audioLength) :
+                                'Duration not available'} total length
                         </span>
                     </div>
                 ) : (
@@ -158,10 +217,23 @@ export function BookDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl flex flex-col gap-0 p-0 max-h-[90vh]">
+            <DialogContent
+                className="flex flex-col gap-0"
+                style={{
+                    width: 'min(calc(100vw - 2rem), 1200px)',
+                    maxWidth: '100%',
+                    maxHeight: 'min(calc(100vh - 2rem), 90vh)',
+                    margin: '1rem auto'
+                }}>
+                {/* Close button */}
+                <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                </DialogClose>
+
                 {book ? (
                     <>
-                        <DialogHeader className="flex-none px-6 pt-6 pb-4">
+                        <DialogHeader className="flex-none p-4 sm:p-6 sm:pb-4">
                             <div className="space-y-1">
                                 <DialogTitle className="text-2xl">
                                     {book.title}
@@ -180,8 +252,8 @@ export function BookDialog({
 
                         <div className="flex-1 overflow-hidden">
                             <ScrollArea className="h-full">
-                                <div className="px-6 pb-6">
-                                    <div className="flex flex-col md:flex-row gap-6">
+                                <div className="p-4 sm:p-6">
+                                    <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
                                         {coverImage}
                                         {bookDetails}
                                     </div>
@@ -191,17 +263,21 @@ export function BookDialog({
                     </>
                 ) : (
                     <div className="p-6">
-                        <DialogTitle className="text-2xl mb-2">
-                            Loading...
-                        </DialogTitle>
-                        <DialogDescription>
-                            Please wait while we load the book details.
-                        </DialogDescription>
+                        <div className="flex flex-col gap-4">
+                            <Skeleton className="h-8 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <div className="flex flex-col md:flex-row gap-6">
+                                <Skeleton className="w-full md:w-1/3 aspect-[3/4]" />
+                                <div className="flex-1 space-y-4">
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-5/6" />
+                                    <Skeleton className="h-4 w-4/5" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </DialogContent>
         </Dialog>
     );
 }
-
-export default BookDialog;

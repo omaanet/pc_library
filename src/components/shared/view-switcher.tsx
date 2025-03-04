@@ -1,4 +1,3 @@
-// src/components/shared/view-switcher.tsx
 'use client';
 
 import * as React from 'react';

@@ -1,4 +1,3 @@
-// src/app/settings/layout.tsx
 import * as React from 'react';
 import { SettingsNav } from '@/components/settings/settings-nav';
 

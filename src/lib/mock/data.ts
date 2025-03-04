@@ -1,7 +1,37 @@
 // src/lib/mock/data.ts
-import type { Book, User, UserPreferences, UserStats } from '@/types';
+import type { Book, User, UserPreferences } from '@/types';
 
-// Mock User Preferences
+const PLACEHOLDER_TOKEN = '@placeholder';
+
+// Generate a list of mock books
+const mockBooks: Book[] = Array.from({ length: 50 }, (_, index) => {
+    const id = `book-${String(index + 1).padStart(3, '0')}`;
+    const hasAudio = index % 3 === 0;
+    const audioLength = hasAudio ? Math.floor(Math.random() * 720) + 180 : undefined; // 3-15 hours
+    const rating = Math.random() > 0.3 ? (Math.floor(Math.random() * 4) + 2) : undefined;
+    const readingProgress = Math.random() > 0.7 ? Math.floor(Math.random() * 100) : undefined;
+
+    return {
+        id,
+        title: `The Book ${index + 1}`,
+        // In production this would be a real path like 'books/fantasy/book1.jpg'
+        coverImage: PLACEHOLDER_TOKEN,
+        publishingDate: new Date(2020 + Math.floor(index / 12), index % 12, 1).toISOString(),
+        summary: `This is a summary for book ${index + 1}. It provides a brief overview of what readers can expect.`,
+        hasAudio,
+        audioLength,
+        extract: Math.random() > 0.5
+            ? `This is a sample extract from book ${index + 1}. It gives readers a taste of the content.`
+            : undefined,
+        rating,
+        readingProgress,
+        status: readingProgress !== undefined
+            ? (readingProgress === 100 ? 'completed' : 'reading')
+            : undefined,
+    };
+});
+
+// Default user preferences
 export const defaultUserPreferences: UserPreferences = {
     theme: 'system',
     viewMode: 'grid',
@@ -22,136 +52,85 @@ export const defaultUserPreferences: UserPreferences = {
     },
 };
 
-// Mock User Stats
-export const mockUserStats: UserStats = {
-    totalBooksRead: 24,
-    totalReadingTime: 1250,
-    totalAudioTime: 840,
-    completedBooks: 18,
-    readingStreak: 5,
-    lastReadDate: new Date().toISOString(),
-};
-
-// Mock User
+// Mock user data
 export const mockUser: User = {
-    id: 'user_1',
-    email: 'demo@example.com',
-    fullName: 'Demo User',
+    id: 'user-001',
+    email: 'user@example.com',
+    fullName: 'John Doe',
     isActivated: true,
     preferences: defaultUserPreferences,
-    stats: mockUserStats,
+    stats: {
+        totalBooksRead: 12,
+        totalReadingTime: 4320, // 72 hours
+        totalAudioTime: 2160, // 36 hours
+        completedBooks: 8,
+        readingStreak: 5,
+        lastReadDate: new Date().toISOString(),
+    },
 };
 
-// Mock Books
-export const mockBooks: Book[] = [
-    {
-        id: 'book_1',
-        title: 'The Art of Programming',
-        coverImage: '/api/placeholder/240/360',
-        publishingDate: '2024-01-15',
-        summary: 'A comprehensive guide to modern programming practices and patterns.',
-        hasAudio: true,
-        audioLength: 720,
-        extract: 'In the world of programming, clarity and simplicity often trump clever complexity...',
-        rating: 4.5,
-        readingProgress: 35,
-    },
-    {
-        id: 'book_2',
-        title: 'Digital Age Design',
-        coverImage: '/api/placeholder/240/360',
-        publishingDate: '2024-02-01',
-        summary: 'Exploring the principles of design in the modern digital landscape.',
-        hasAudio: true,
-        audioLength: 540,
-        rating: 4.8,
-    },
-    {
-        id: 'book_3',
-        title: 'Future of Technology',
-        coverImage: '/api/placeholder/240/360',
-        publishingDate: '2024-02-15',
-        summary: 'A deep dive into emerging technologies and their impact on society.',
-        hasAudio: false,
-        extract: 'Technology continues to reshape our world at an unprecedented pace...',
-        rating: 4.2,
-        readingProgress: 75,
-    },
-    {
-        id: 'book_4',
-        title: 'Web Development Mastery',
-        coverImage: '/api/placeholder/240/360',
-        publishingDate: '2024-03-01',
-        summary: 'Master modern web development with practical examples and best practices.',
-        hasAudio: true,
-        audioLength: 960,
-        rating: 4.6,
-    },
-    {
-        id: 'book_5',
-        title: 'AI and Machine Learning',
-        coverImage: '/api/placeholder/240/360',
-        publishingDate: '2024-03-15',
-        summary: 'Understanding artificial intelligence and its applications in today\'s world.',
-        hasAudio: true,
-        audioLength: 840,
-        extract: 'The field of artificial intelligence has evolved dramatically...',
-        rating: 4.9,
-        readingProgress: 15,
-    },
-];
-
-// Mock API Response Generator
-export function generateMockApiResponse<T>(
-    data: T,
-    delay: number = 800
-): Promise<T> {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(data);
-        }, delay);
-    });
+// Function to get paginated books with optional filters
+interface BookFilters {
+    search?: string;
+    hasAudio?: boolean;
 }
 
-// Paginated Books Response Generator
 export function getPaginatedBooks(
     page: number = 1,
     perPage: number = 20,
-    filters?: {
-        search?: string;
-        hasAudio?: boolean;
-    }
+    filters: BookFilters = {}
 ) {
     let filteredBooks = [...mockBooks];
 
     // Apply filters
-    if (filters?.search) {
+    if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        filteredBooks = filteredBooks.filter(
-            book =>
-                book.title.toLowerCase().includes(searchLower) ||
-                book.summary.toLowerCase().includes(searchLower)
+        filteredBooks = filteredBooks.filter(book =>
+            book.title.toLowerCase().includes(searchLower) ||
+            book.summary.toLowerCase().includes(searchLower)
         );
     }
 
-    if (filters?.hasAudio !== undefined) {
-        filteredBooks = filteredBooks.filter(book => book.hasAudio === filters.hasAudio);
+    if (filters.hasAudio !== undefined) {
+        filteredBooks = filteredBooks.filter(book =>
+            book.hasAudio === filters.hasAudio
+        );
     }
 
     // Calculate pagination
-    const total = filteredBooks.length;
-    const totalPages = Math.ceil(total / perPage);
     const start = (page - 1) * perPage;
     const end = start + perPage;
-    const books = filteredBooks.slice(start, end);
+    const paginatedBooks = filteredBooks.slice(start, end);
 
     return {
-        books,
+        books: paginatedBooks,
         pagination: {
-            total,
-            totalPages,
+            total: filteredBooks.length,
             page,
             perPage,
+            totalPages: Math.ceil(filteredBooks.length / perPage),
         },
     };
 }
+
+// Function to get book by ID
+export function getBookById(id: string): Book | undefined {
+    return mockBooks.find(book => book.id === id);
+}
+
+// Function to get recommended books
+export function getRecommendedBooks(limit: number = 5): Book[] {
+    return mockBooks
+        .filter(book => book.rating && book.rating >= 4)
+        .slice(0, limit);
+}
+
+// Function to get popular books
+export function getPopularBooks(limit: number = 5): Book[] {
+    return mockBooks
+        .filter(book => book.hasAudio)
+        .slice(0, limit);
+}
+
+// Export for use in components
+export { mockBooks };

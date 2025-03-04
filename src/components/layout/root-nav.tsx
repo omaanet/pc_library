@@ -1,4 +1,3 @@
-// src/components/layout/root-nav.tsx
 'use client';
 
 import * as React from 'react';
@@ -31,8 +30,8 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container flex h-16 items-center justify-between">
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-center">
+            <div className="container flex h-16 items-center justify-between mx-auto">
                 {/* Logo and Brand */}
                 <Link href="/" className="flex items-center space-x-2">
                     <Library className="h-6 w-6" />
