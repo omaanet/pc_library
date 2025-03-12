@@ -9,8 +9,8 @@ export interface Book {
     extract?: string;
     rating?: number;
     isPreview?: boolean;
-    createdAt: Date
-    updatedAt: Date
+    createdAt?: Date;
+    updatedAt?: Date;
 
     // Application-specific fields
     readingProgress?: number;
@@ -23,6 +23,6 @@ export interface AudioBook {
     media_id: string | null;
     audio_length: number | null;
     publishing_date: string | null;
-    created_at: string;
-    updated_at: string;
+    created_at?: string;
+    updated_at?: string;
 }

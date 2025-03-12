@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { RootNav } from '@/components/layout/root-nav';
 import { BookCollectionWrapper } from '@/components/books/book-collection-wrapper';
+import { BookCollection } from '@/components/books/book-collection';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
@@ -54,16 +55,16 @@ export default function HomePage() {
                             </div> */}
                         </div>
 
-                        {/* Feature Cards */}
+                        {/* Previews Cards */}
                         <div className="grid grid-cols-1 gap-6 pt-8">
                             <div className="rounded-xl border bg-card p-6">
                                 <Book className="h-12 w-12 mx-auto mb-4" />
                                 <h3 className="text-xl font-semibold mb-2 text-center">Anteprima</h3>
 
                                 {/* Previews Collection Section */}
-                                <section id="previews-collection" className="py-12 sm:py-16">
+                                <section id="previews-collection" className="bg-red-500">
                                     <div className="container">
-                                        <BookCollectionWrapper displayPreviews={1} />
+                                        <BookCollection displayPreviews={1} />
                                     </div>
                                 </section>
 

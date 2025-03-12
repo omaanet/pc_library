@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookForm } from '@/components/temp/books/book-form';
@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function AddBookPage() {
-    const router = useRouter();
+    // const router = useRouter();
     const [activeTab, setActiveTab] = useState('manage');
     const [editingBook, setEditingBook] = useState<Book | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,6 +37,7 @@ export default function AddBookPage() {
 
     // Handle form submission
     const handleSubmit = async (values: z.infer<any>) => {
+        console.log('handleSubmit - Form values:', values);
         setIsSubmitting(true);
 
         try {
@@ -47,13 +48,21 @@ export default function AddBookPage() {
             };
 
             if (editingBook) {
+                const bookId = editingBook?.id || '0';
+                console.log(`Updating book with ID: ${bookId}`, formattedValues);
                 // Update existing book
-                await updateBook(editingBook.id, formattedValues);
+                await updateBook(bookId, formattedValues);
+                console.log('Book updated successfully');
             } else {
+                console.log('Creating new book', formattedValues);
                 // Create new book
                 await createBook(formattedValues);
+                console.log('Book created successfully');
             }
 
+            // Refresh the book list
+            await fetchBooks();
+            
             // Reset form and switch to manage tab
             setEditingBook(undefined);
             setActiveTab('manage');

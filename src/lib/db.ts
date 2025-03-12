@@ -22,7 +22,7 @@ export function getDb(): Database.Database {
  */
 export function getAllBooks(displayPreviews: number): Book[] {
     const db = getDb();
-    
+
     let query = `
         SELECT 
             id, 
@@ -39,7 +39,7 @@ export function getAllBooks(displayPreviews: number): Book[] {
             updated_at AS updatedAt
         FROM books
     `;
-    
+
     // Apply filtering based on displayPreviews parameter
     if (displayPreviews === 0) {
         query += ` WHERE is_preview IS NULL OR is_preview != 1`;
@@ -47,7 +47,7 @@ export function getAllBooks(displayPreviews: number): Book[] {
         query += ` WHERE is_preview = 1`;
     }
     // If displayPreviews is -1, no filter is applied (get all books)
-    
+
     query += `;`;
 
     const books = db.prepare(query).all() as Book[];
@@ -124,8 +124,9 @@ export function createBook(book: Omit<Book, 'id'>): Book {
             has_audio, 
             audio_length,
             extract,
-            rating
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            rating,
+            is_preview
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
         id,
         book.title,
@@ -135,7 +136,8 @@ export function createBook(book: Omit<Book, 'id'>): Book {
         book.hasAudio ? 1 : 0,
         book.audioLength || null,
         book.extract || null,
-        book.rating || null
+        book.rating || null,
+        book.isPreview ? 1 : null
     );
 
     return {
@@ -192,6 +194,11 @@ export function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): boolean
     if (book.rating !== undefined) {
         updates.push('rating = ?');
         values.push(book.rating || null);
+    }
+
+    if (book.isPreview !== undefined) {
+        updates.push('is_preview = ?');
+        values.push(book.isPreview ? 1 : null);
     }
 
     // Add updated_at timestamp

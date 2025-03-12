@@ -43,6 +43,7 @@ const bookFormSchema = z.object({
     audioLength: z.number().min(1).optional(),
     extract: z.string().optional(),
     rating: z.number().min(1).max(5).nullable().optional(),
+    isPreview: z.boolean().default(false),
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
@@ -67,11 +68,13 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         audioLength: book?.audioLength,
         extract: book?.extract || '',
         rating: book?.rating,
+        isPreview: book?.isPreview || false,
     };
 
     const form = useForm<BookFormValues>({
         resolver: zodResolver(bookFormSchema),
         defaultValues,
+        mode: "onBlur",
     });
 
     // Watch hasAudio to show/hide audioLength field
@@ -80,9 +83,28 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         setShowAudioLength(hasAudio);
     }, [hasAudio]);
 
+    // Submit handler that properly logs and calls the parent's onSubmit function
+    const handleSubmit = async (data: BookFormValues) => {
+        console.log("Form submitted with values:", data);
+        try {
+            await onSubmit(data);
+        } catch (error) {
+            console.error("Error submitting form:", error);
+        }
+    };
+
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form
+                className="space-y-6"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = form.getValues();
+                    console.log("Form submitted manually with values:", formData);
+                    handleSubmit(formData);
+                }}
+                noValidate
+            >
                 <FormField
                     control={form.control}
                     name="title"
@@ -277,6 +299,27 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     )}
                 />
 
+                <FormField
+                    control={form.control}
+                    name="isPreview"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base">Preview Book</FormLabel>
+                                <FormDescription>
+                                    Is this book a preview version?
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
                 <div className="flex justify-end space-x-4">
                     <Button
                         type="button"
@@ -286,7 +329,18 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     >
                         Cancel
                     </Button>
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() => {
+                            const formData = form.getValues();
+                            console.log("Button clicked, submitting with values:", formData);
+                            if (Object.keys(form.formState.errors).length > 0) {
+                                console.log("Form validation errors:", form.formState.errors);
+                            }
+                            handleSubmit(formData);
+                        }}
+                    >
                         {isSubmitting ? 'Saving...' : book ? 'Update Book' : 'Add Book'}
                     </Button>
                 </div>

@@ -9,7 +9,8 @@ import {
     ChevronUp,
     ChevronDown,
     Search,
-    RefreshCw
+    RefreshCw,
+    Eye
 } from 'lucide-react';
 import { formatDate, formatAudioLength } from '@/lib/utils';
 import { getCoverImageUrl } from '@/lib/image-utils';
@@ -43,7 +44,7 @@ interface BookTableProps {
     isLoading: boolean;
 }
 
-type SortField = 'title' | 'publishingDate' | 'hasAudio';
+type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview';
 type SortDirection = 'asc' | 'desc';
 
 export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: BookTableProps) {
@@ -98,6 +99,10 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
             return sortDirection === 'asc'
                 ? (a.hasAudio ? 1 : 0) - (b.hasAudio ? 1 : 0)
                 : (b.hasAudio ? 1 : 0) - (a.hasAudio ? 1 : 0);
+        } else if (sortField === 'isPreview') {
+            return sortDirection === 'asc'
+                ? (a.isPreview ? 1 : 0) - (b.isPreview ? 1 : 0)
+                : (b.isPreview ? 1 : 0) - (a.isPreview ? 1 : 0);
         }
         return 0;
     });
@@ -185,13 +190,22 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
                                     Audio {getSortIcon('hasAudio')}
                                 </Button>
                             </TableHead>
+                            <TableHead>
+                                <Button
+                                    variant="ghost"
+                                    className="flex items-center gap-1 p-0 font-medium"
+                                    onClick={() => handleSort('isPreview')}
+                                >
+                                    Preview {getSortIcon('isPreview')}
+                                </Button>
+                            </TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredBooks.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center">
+                                <TableCell colSpan={5} className="h-24 text-center">
                                     {isLoading ? 'Loading books...' : 'No books found.'}
                                 </TableCell>
                             </TableRow>
@@ -205,6 +219,14 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
                                             <div className="flex items-center gap-1">
                                                 <Headphones className="h-4 w-4" />
                                                 {book.audioLength ? formatAudioLength(book.audioLength) : 'Yes'}
+                                            </div>
+                                        ) : 'No'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {book.isPreview ? (
+                                            <div className="flex items-center gap-1">
+                                                <Eye className="h-4 w-4" />
+                                                <span>Preview</span>
                                             </div>
                                         ) : 'No'}
                                     </TableCell>

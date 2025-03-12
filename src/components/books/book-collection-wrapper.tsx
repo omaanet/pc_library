@@ -7,10 +7,10 @@ import { Suspense } from 'react';
 import { BookGridSkeleton } from '@/components/ui/loading-placeholder';
 
 interface BookCollectionWrapperProps {
-    displayPreviews?: number; // -1: all, 0: non-preview only, 1: preview only
+    displayPreviews: number; // -1: all, 0: non-preview only, 1: preview only
 }
 
-export function BookCollectionWrapper({ displayPreviews = 0 }: BookCollectionWrapperProps) {
+export function BookCollectionWrapper({ displayPreviews }: BookCollectionWrapperProps) {
     return (
         <BookErrorBoundary>
             <Suspense fallback={<BookGridSkeleton count={8} />}>

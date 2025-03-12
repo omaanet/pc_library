@@ -37,15 +37,23 @@ const SORT_OPTIONS = {
 const PRELOAD_COUNT = 4;
 
 interface BookCollectionProps {
-    displayPreviews?: number; // -1: all, 0: non-preview only, 1: preview only
+    displayPreviews: number; // -1: all, 0: non-preview only, 1: preview only
 }
 
-export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
+export function BookCollection({ displayPreviews }: BookCollectionProps) {
+    // Use a local state for books to avoid sharing between multiple instances
+    const [localBooks, setLocalBooks] = React.useState<any[]>([]);
+    const [localIsLoading, setLocalIsLoading] = React.useState(false);
+    const [localError, setLocalError] = React.useState<Error | null>(null);
+    const [localPagination, setLocalPagination] = React.useState({
+        page: 1,
+        perPage: 12,
+        total: 0,
+        totalPages: 0
+    });
+
     const {
         state: {
-            books,
-            isLoading,
-            error,
             viewMode,
             selectedBook,
             filters,
@@ -74,10 +82,11 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
     // Initialize books on mount and when displayPreviews changes
     React.useEffect(() => {
         let isMounted = true;
-        
+
         const loadBooks = async () => {
-            dispatch({ type: 'SET_LOADING', payload: true });
-            
+            setLocalIsLoading(true);
+
+            console.log('Loading books with displayPreviews:', displayPreviews);
             try {
                 // Build query params with existing filters plus displayPreviews
                 const params = new URLSearchParams({
@@ -87,7 +96,7 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
                     sortOrder: sort.order,
                     displayPreviews: displayPreviews.toString()
                 });
-                
+
                 // Add other filters
                 if (filters.search) {
                     params.append('search', filters.search);
@@ -95,25 +104,23 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
                 if (filters.hasAudio !== undefined) {
                     params.append('hasAudio', filters.hasAudio.toString());
                 }
-                
+
                 // Fetch books directly from API
                 const response = await fetch(`/api/books?${params}`);
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
-                
-                // Only update state if component is still mounted
+                console.log('Fetched books for displayPreviews', displayPreviews, ':', data);
+
+                // Only update local state if component is still mounted
                 if (isMounted) {
-                    dispatch({ type: 'SET_BOOKS', payload: data.books });
-                    
+                    setLocalBooks(data.books);
+
                     if (data.pagination) {
-                        dispatch({
-                            type: 'SET_PAGINATION',
-                            payload: data.pagination
-                        });
+                        setLocalPagination(data.pagination);
                     }
                 }
             } catch (error) {
@@ -123,28 +130,29 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
                         title: "Error",
                         description: "Failed to load books. Please try again."
                     });
-                    dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error : new Error('Failed to fetch books') });
+                    setLocalError(error instanceof Error ? error : new Error('Failed to fetch books'));
                 }
             } finally {
                 if (isMounted) {
-                    dispatch({ type: 'SET_LOADING', payload: false });
+                    setLocalIsLoading(false);
                 }
             }
+            console.log('Finished loading books for displayPreviews:', displayPreviews);
         };
-        
+
         loadBooks();
-        
+
         // Cleanup function to prevent updates if component unmounts
         return () => {
             isMounted = false;
         };
-    }, [displayPreviews, dispatch, filters, pagination.perPage, sort.by, sort.order, toast]);
+    }, [displayPreviews, filters, pagination.perPage, sort.by, sort.order, toast]);
 
     // Preload images for visible books
     React.useEffect(() => {
-        if (!books || books.length === 0) return;
+        if (!localBooks || localBooks.length === 0) return;
 
-        const preloadImages = books.slice(0, PRELOAD_COUNT).map(book => {
+        const preloadImages = localBooks.slice(0, PRELOAD_COUNT).map(book => {
             if (loadedImages.has(book.coverImage)) return Promise.resolve();
 
             return new Promise<void>((resolve) => {
@@ -167,7 +175,7 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
         });
 
         Promise.all(preloadImages).catch(console.error);
-    }, [books, loadedImages]);
+    }, [localBooks, loadedImages]);
 
     // Debounced search handler
     const handleSearch = React.useCallback((value: string) => {
@@ -200,18 +208,55 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
 
     // Load more handler
     const handleLoadMore = React.useCallback(async () => {
-        if (isLoadingMore || !pagination) return;
+        if (localIsLoading || isLoadingMore || localPagination.page >= localPagination.totalPages) return;
 
         setIsLoadingMore(true);
         try {
-            await fetchBooks(pagination.page + 1);
+            // Build query params with existing filters plus displayPreviews
+            const params = new URLSearchParams({
+                page: (localPagination.page + 1).toString(),
+                perPage: pagination.perPage.toString(),
+                sortBy: sort.by,
+                sortOrder: sort.order,
+                displayPreviews: displayPreviews.toString()
+            });
+
+            // Add other filters
+            if (filters.search) {
+                params.append('search', filters.search);
+            }
+            if (filters.hasAudio !== undefined) {
+                params.append('hasAudio', filters.hasAudio.toString());
+            }
+
+            // Fetch books directly from API
+            const response = await fetch(`/api/books?${params}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Append new books to existing ones
+            setLocalBooks(prev => [...prev, ...data.books]);
+
+            if (data.pagination) {
+                setLocalPagination(data.pagination);
+            }
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to load more books. Please try again."
+            });
         } finally {
             setIsLoadingMore(false);
         }
-    }, [isLoadingMore, pagination, fetchBooks]);
+    }, [localIsLoading, isLoadingMore, localPagination, pagination.perPage, sort.by, sort.order, filters, displayPreviews, toast]);
 
     // Error state
-    if (error) {
+    if (localError) {
         return (
             <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
@@ -221,7 +266,41 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => fetchBooks()}
+                        onClick={() => {
+                            setLocalError(null);
+                            setLocalIsLoading(true);
+                            // Trigger a reload
+                            const loadBooks = async () => {
+                                try {
+                                    const params = new URLSearchParams({
+                                        page: '1',
+                                        perPage: pagination.perPage.toString(),
+                                        sortBy: sort.by,
+                                        sortOrder: sort.order,
+                                        displayPreviews: displayPreviews.toString()
+                                    });
+
+                                    if (filters.search) {
+                                        params.append('search', filters.search);
+                                    }
+                                    if (filters.hasAudio !== undefined) {
+                                        params.append('hasAudio', filters.hasAudio.toString());
+                                    }
+
+                                    const response = await fetch(`/api/books?${params}`);
+                                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                                    const data = await response.json();
+                                    setLocalBooks(data.books);
+                                    if (data.pagination) setLocalPagination(data.pagination);
+                                } catch (error) {
+                                    setLocalError(error instanceof Error ? error : new Error('Failed to fetch books'));
+                                } finally {
+                                    setLocalIsLoading(false);
+                                }
+                            };
+                            loadBooks();
+                        }}
                         className="w-fit"
                     >
                         Retry
@@ -231,7 +310,7 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
         );
     }
 
-    const showLoadingState = isLoading && !isLoadingMore;
+    const showLoadingState = localIsLoading && !isLoadingMore;
     const currentSortKey = `${sort.by}-${sort.order}`;
 
     return (
@@ -298,17 +377,17 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
             {/* Books Grid/List */}
             {showLoadingState ? (
                 viewMode === 'grid' ? (
-                    <BookGridSkeleton count={pagination?.perPage || 8} />
+                    <BookGridSkeleton count={localPagination?.perPage || 8} />
                 ) : (
-                    <BookListSkeleton count={pagination?.perPage || 8} />
+                    <BookListSkeleton count={localPagination?.perPage || 8} />
                 )
             ) : (
                 <div className="space-y-6">
-                    {books && books.length > 0 ? (
+                    {localBooks && localBooks.length > 0 ? (
                         <>
                             {viewMode === 'grid' ? (
                                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                                    {books.map((book) => (
+                                    {localBooks.map((book) => (
                                         <BookGridCard
                                             key={book.id}
                                             book={book}
@@ -318,7 +397,7 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
                                 </div>
                             ) : (
                                 <div className="divide-y rounded-lg border bg-card">
-                                    {books.map((book) => (
+                                    {localBooks.map((book) => (
                                         <BookListCard
                                             key={book.id}
                                             book={book}
@@ -329,7 +408,7 @@ export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
                             )}
 
                             {/* Load More */}
-                            {pagination && pagination.total > books.length && (
+                            {localPagination && localPagination.total > localBooks.length && (
                                 <div className="flex justify-center pt-4">
                                     <Button
                                         variant="outline"
