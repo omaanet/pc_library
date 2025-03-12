@@ -36,7 +36,11 @@ const SORT_OPTIONS = {
 // Number of books to preload images for
 const PRELOAD_COUNT = 4;
 
-export function BookCollection() {
+interface BookCollectionProps {
+    displayPreviews?: number; // -1: all, 0: non-preview only, 1: preview only
+}
+
+export function BookCollection({ displayPreviews = 0 }: BookCollectionProps) {
     const {
         state: {
             books,
@@ -53,6 +57,7 @@ export function BookCollection() {
         updateFilters,
         updateSort,
         setViewMode,
+        dispatch,
     } = useLibrary();
 
     const { state: { isAuthenticated } } = useAuth();
@@ -66,21 +71,74 @@ export function BookCollection() {
     // Track loaded images
     const [loadedImages, setLoadedImages] = React.useState<Set<string>>(new Set());
 
-    // Initialize books on mount
+    // Initialize books on mount and when displayPreviews changes
     React.useEffect(() => {
+        let isMounted = true;
+        
         const loadBooks = async () => {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            
             try {
-                await fetchBooks();
-            } catch (error) {
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Failed to load books. Please try again.",
+                // Build query params with existing filters plus displayPreviews
+                const params = new URLSearchParams({
+                    page: '1',
+                    perPage: pagination.perPage.toString(),
+                    sortBy: sort.by,
+                    sortOrder: sort.order,
+                    displayPreviews: displayPreviews.toString()
                 });
+                
+                // Add other filters
+                if (filters.search) {
+                    params.append('search', filters.search);
+                }
+                if (filters.hasAudio !== undefined) {
+                    params.append('hasAudio', filters.hasAudio.toString());
+                }
+                
+                // Fetch books directly from API
+                const response = await fetch(`/api/books?${params}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Only update state if component is still mounted
+                if (isMounted) {
+                    dispatch({ type: 'SET_BOOKS', payload: data.books });
+                    
+                    if (data.pagination) {
+                        dispatch({
+                            type: 'SET_PAGINATION',
+                            payload: data.pagination
+                        });
+                    }
+                }
+            } catch (error) {
+                if (isMounted) {
+                    toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "Failed to load books. Please try again."
+                    });
+                    dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error : new Error('Failed to fetch books') });
+                }
+            } finally {
+                if (isMounted) {
+                    dispatch({ type: 'SET_LOADING', payload: false });
+                }
             }
         };
+        
         loadBooks();
-    }, [fetchBooks, toast]);
+        
+        // Cleanup function to prevent updates if component unmounts
+        return () => {
+            isMounted = false;
+        };
+    }, [displayPreviews, dispatch, filters, pagination.perPage, sort.by, sort.order, toast]);
 
     // Preload images for visible books
     React.useEffect(() => {

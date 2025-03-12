@@ -7,9 +7,6 @@ export async function GET(request: Request) {
     try {
         const url = new URL(request.url);
 
-        // Get all books from the database
-        const allBooks = getAllBooks();
-
         // Parse parameters with defaults
         const page = parseInt(url.searchParams.get('page') ?? '1');
         const perPage = parseInt(url.searchParams.get('perPage') ?? '20');
@@ -18,6 +15,14 @@ export async function GET(request: Request) {
             url.searchParams.get('hasAudio') === 'false' ? false : undefined;
         const sortBy = url.searchParams.get('sortBy') || 'title';
         const sortOrder = url.searchParams.get('sortOrder') || 'asc';
+
+        // Parse displayPreviews parameter (-1: all, 0: non-preview only, 1: preview only)
+        const displayPreviewsParam = url.searchParams.get('displayPreviews');
+        const displayPreviews = displayPreviewsParam ? 
+            parseInt(displayPreviewsParam) : 0; // Default to non-preview books (0)
+
+        // Get all books from the database with preview filtering
+        const allBooks = getAllBooks(displayPreviews);
 
         // Filter books
         let filteredBooks = [...allBooks];

@@ -9,6 +9,9 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+*.7z
+*.zip
+*.bak
 
 # testing
 /coverage
@@ -41,3 +44,6 @@ next-env.d.ts
 public/covers/*
 
 _docs
+
+db/_*.sql
+_covers_

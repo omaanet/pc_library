@@ -1,12 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookForm } from '@/components/temp/books/book-form';
 import { BookTable } from '@/components/temp/books/book-table';
+import { AudioTrackForm } from '@/components/temp/books/audio-track-form';
 import { useBooks } from '@/hooks/temp/use-books';
 import { Book } from '@/types';
 import { z } from 'zod';
@@ -18,6 +19,7 @@ export default function AddBookPage() {
     const [activeTab, setActiveTab] = useState('manage');
     const [editingBook, setEditingBook] = useState<Book | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showAudioTracks, setShowAudioTracks] = useState(false);
 
     const {
         books,
@@ -27,6 +29,11 @@ export default function AddBookPage() {
         deleteBook,
         fetchBooks
     } = useBooks();
+
+    // Check if we should show audio tracks tab
+    useEffect(() => {
+        setShowAudioTracks(editingBook?.hasAudio || false);
+    }, [editingBook]);
 
     // Handle form submission
     const handleSubmit = async (values: z.infer<any>) => {
@@ -66,7 +73,7 @@ export default function AddBookPage() {
     // Handle cancel button click
     const handleCancel = () => {
         setEditingBook(undefined);
-        if (activeTab === 'add') {
+        if (activeTab === 'add' || activeTab === 'audio-tracks') {
             setActiveTab('manage');
         }
     };
@@ -98,6 +105,9 @@ export default function AddBookPage() {
                 <TabsList>
                     <TabsTrigger value="manage">Manage Books</TabsTrigger>
                     <TabsTrigger value="add">{editingBook ? 'Edit Book' : 'Add Book'}</TabsTrigger>
+                    {showAudioTracks && editingBook && (
+                        <TabsTrigger value="audio-tracks">Audio Tracks</TabsTrigger>
+                    )}
                 </TabsList>
 
                 <TabsContent value="manage" className="space-y-4">
@@ -140,6 +150,25 @@ export default function AddBookPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                {showAudioTracks && editingBook && (
+                    <TabsContent value="audio-tracks" className="space-y-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Audio Tracks for "{editingBook.title}"</CardTitle>
+                                <CardDescription>
+                                    Manage audio tracks for this book.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <AudioTrackForm
+                                    bookId={editingBook.id}
+                                    onCancel={handleCancel}
+                                />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                )}
             </Tabs>
         </div>
     );

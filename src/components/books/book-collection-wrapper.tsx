@@ -6,11 +6,15 @@ import { BookErrorBoundary } from './book-error-boundary';
 import { Suspense } from 'react';
 import { BookGridSkeleton } from '@/components/ui/loading-placeholder';
 
-export function BookCollectionWrapper() {
+interface BookCollectionWrapperProps {
+    displayPreviews?: number; // -1: all, 0: non-preview only, 1: preview only
+}
+
+export function BookCollectionWrapper({ displayPreviews = 0 }: BookCollectionWrapperProps) {
     return (
         <BookErrorBoundary>
             <Suspense fallback={<BookGridSkeleton count={8} />}>
-                <BookCollection />
+                <BookCollection displayPreviews={displayPreviews} />
             </Suspense>
         </BookErrorBoundary>
     );

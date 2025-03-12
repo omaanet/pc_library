@@ -11,6 +11,7 @@ export interface LibraryFilters {
     hasAudio?: boolean;
     minAudioLength?: number;
     maxAudioLength?: number;
+    displayPreviews?: number; // -1: all, 0: non-preview only, 1: preview only
 }
 
 export interface LibrarySort {

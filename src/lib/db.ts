@@ -20,9 +20,10 @@ export function getDb(): Database.Database {
 /**
  * Get all books from the database
  */
-export function getAllBooks(): Book[] {
+export function getAllBooks(displayPreviews: number): Book[] {
     const db = getDb();
-    const books = db.prepare(`
+    
+    let query = `
         SELECT 
             id, 
             title, 
@@ -33,10 +34,23 @@ export function getAllBooks(): Book[] {
             audio_length as audioLength,
             extract,
             rating,
+            is_preview as isPreview,
             created_at AS createdAt,
             updated_at AS updatedAt
-        FROM books;
-    `).all() as Book[];
+        FROM books
+    `;
+    
+    // Apply filtering based on displayPreviews parameter
+    if (displayPreviews === 0) {
+        query += ` WHERE is_preview IS NULL OR is_preview != 1`;
+    } else if (displayPreviews === 1) {
+        query += ` WHERE is_preview = 1`;
+    }
+    // If displayPreviews is -1, no filter is applied (get all books)
+    
+    query += `;`;
+
+    const books = db.prepare(query).all() as Book[];
 
     return books.map((book) => ({
         id: book.id,
@@ -48,6 +62,7 @@ export function getAllBooks(): Book[] {
         audioLength: book.audioLength,
         extract: book.extract,
         rating: book.rating,
+        isPreview: Boolean(book.isPreview),
         createdAt: book.createdAt,
         updatedAt: book.updatedAt,
     } as Book));

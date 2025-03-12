@@ -60,9 +60,12 @@ export default function HomePage() {
                                 <Book className="h-12 w-12 mx-auto mb-4" />
                                 <h3 className="text-xl font-semibold mb-2 text-center">Anteprima</h3>
 
-                                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
- book
-                                </div>
+                                {/* Previews Collection Section */}
+                                <section id="previews-collection" className="py-12 sm:py-16">
+                                    <div className="container">
+                                        <BookCollectionWrapper displayPreviews={1} />
+                                    </div>
+                                </section>
 
                             </div>
                         </div>
@@ -108,7 +111,7 @@ export default function HomePage() {
                 {/* Collection Section */}
                 <section id="collection" className="py-12 sm:py-16">
                     <div className="container">
-                        <BookCollectionWrapper />
+                        <BookCollectionWrapper displayPreviews={0} />
                     </div>
                 </section>
             </main>

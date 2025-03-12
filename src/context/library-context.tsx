@@ -63,7 +63,7 @@ const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 export function LibraryProvider({ children }: { children: React.ReactNode }) {
     const [state, dispatch] = useReducer(libraryReducer, initialState);
 
-    const fetchBooks = useCallback(async (page: number = 1) => {
+    const fetchBooks = useCallback(async (page: number = 1, displayPreviewsParam?: number) => {
         dispatch({ type: 'SET_LOADING', payload: true });
         dispatch({ type: 'SET_ERROR', payload: null });
 
@@ -82,6 +82,13 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             }
             if (state.filters.hasAudio !== undefined) {
                 params.append('hasAudio', state.filters.hasAudio.toString());
+            }
+            
+            // Add displayPreviews parameter if provided directly (not from filters)
+            if (displayPreviewsParam !== undefined) {
+                params.append('displayPreviews', displayPreviewsParam.toString());
+            } else if (state.filters.displayPreviews !== undefined) {
+                params.append('displayPreviews', state.filters.displayPreviews.toString());
             }
 
             // Log request for debugging
