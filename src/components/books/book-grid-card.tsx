@@ -37,8 +37,9 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
     // Memoize the cover image component to prevent unnecessary re-renders
     const coverImage = React.useMemo(() => (
         <div
-            className="relative overflow-hidden"
-            style={{ aspectRatio: `${width}/${height}` }}
+            className="relative w-full h-auto flex justify-center items-center cursor-pointer"
+            style={{ minHeight: height }}
+            onClick={() => onSelect(book)}
         >
             {/* Loading skeleton */}
             {!imageLoaded && (
@@ -52,8 +53,8 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                 width={width}
                 height={height}
                 className={cn(
-                    "object-cover transition-all duration-300",
-                    imageLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0",
+                    "max-w-full max-h-full object-contain transition-scale duration-300",
+                    imageLoaded ? "opacity-100" : "opacity-0",
                     "group-hover:scale-105"
                 )}
                 sizes={getImageSizeString('grid')}
@@ -74,7 +75,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                 </div>
             )}
         </div>
-    ), [imageUrl, book.title, book.hasAudio, imageLoaded, width, height]);
+    ), [imageUrl, book.title, book.hasAudio, imageLoaded, width, height, onSelect, book]);
 
     // Memoize book metadata to prevent unnecessary re-renders
     const bookMetadata = React.useMemo(() => (
@@ -114,7 +115,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                         className="w-full"
                         onClick={() => onSelect(book)}
                     >
-                        View Details
+                        Vedi Dettagli
                     </Button>
                 </div>
             </CardContent>

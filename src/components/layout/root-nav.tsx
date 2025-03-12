@@ -47,7 +47,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             pathname === "/books" && "text-primary"
                         )}
                     >
-                        Books
+                        Libri
                     </Link>
                     <Link
                         href="/audiobooks"
@@ -56,7 +56,17 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             pathname === "/audiobooks" && "text-primary"
                         )}
                     >
-                        Audiobooks
+                        Audiolibri
+                    </Link>
+                    <Link
+                        href="/add-book"
+                        target="add-book"
+                        className={cn(
+                            "text-sm font-medium transition-colors hover:text-primary",
+                            pathname === "/add-book" && "text-primary"
+                        )}
+                    >
+                        Add Book
                     </Link>
                     {isAuthenticated && (
                         <Link
@@ -89,7 +99,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                                     <Link href="/settings">Settings</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                    <Link href="/my-books">My Books</Link>
+                                    <Link href="/my-books">La mia libreria</Link>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -139,6 +149,16 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             onClick={() => setIsMobileMenuOpen(false)}
                         >
                             Audiobooks
+                        </Link>
+                        <Link
+                            href="/add-book"
+                            className={cn(
+                                "text-sm font-medium transition-colors hover:text-primary",
+                                pathname === "/add-book" && "text-primary"
+                            )}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                            Add Book
                         </Link>
                         {isAuthenticated && (
                             <Link

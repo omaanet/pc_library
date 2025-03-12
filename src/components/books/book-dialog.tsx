@@ -58,37 +58,27 @@ export function BookDialog({
         return (
             <div className="relative w-full md:w-1/3 shrink-0">
                 <div
-                    className="relative w-full overflow-hidden rounded-lg"
+                    className="relative w-full rounded-lg bg-muted/30"
                     style={{
                         maxWidth: width,
-                        aspectRatio: `${aspectRatio}`,
+                        height: height,
                     }}
                 >
-                    {/* Background blur effect while loading */}
-                    {!imageLoaded && book.coverImage !== IMAGE_CONFIG.placeholder.token && (
-                        <Image
-                            src={getCoverImageUrl(
-                                book.coverImage,
-                                'grid',
-                                { bookId: isPlaceholder ? book.id : undefined }
-                            )}
-                            alt=""
-                            fill
-                            className="absolute inset-0 object-cover blur-lg scale-110"
-                            priority={false}
-                            quality={20}
-                        />
+                    {/* Loading skeleton - shown only during loading */}
+                    {!imageLoaded && (
+                        <Skeleton className="absolute inset-0 rounded-lg" />
                     )}
 
                     {/* Main image container */}
-                    <div className="relative w-full h-full">
+                    <div className="relative w-full h-full flex items-center justify-center">
                         <Image
                             src={imageUrl}
                             alt={`Cover of ${book.title}`}
-                            fill
+                            width={width}
+                            height={height}
                             className={cn(
-                                "object-cover transition-all duration-300",
-                                imageLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
+                                "max-w-full max-h-full object-contain transition-opacity duration-400",
+                                imageLoaded ? "opacity-100" : "opacity-0"
                             )}
                             sizes="(min-width: 768px) 33vw, 100vw"
                             priority={true}
@@ -97,9 +87,15 @@ export function BookDialog({
                             onError={() => setImageLoaded(true)}
                         />
 
-                        {/* Loading skeleton */}
-                        {!imageLoaded && (
-                            <Skeleton className="absolute inset-0" />
+                        {/* Audio badge */}
+                        {book.hasAudio && (
+                            <div className={cn(
+                                "absolute top-2 right-2 rounded-full bg-background/80 p-1.5",
+                                "backdrop-blur-sm transition-opacity duration-200",
+                                imageLoaded ? "opacity-100" : "opacity-0"
+                            )}>
+                                <Headphones className="h-4 w-4" />
+                            </div>
                         )}
                     </div>
                 </div>
@@ -113,27 +109,27 @@ export function BookDialog({
 
         return (
             <div>
-                <h3 className="text-lg font-semibold mb-2">Audio Version</h3>
+                <h3 className="text-lg font-semibold mb-2">Versione Audio</h3>
                 {isAuthenticated ? (
                     <div className="flex items-center gap-4">
                         <Button>
                             <Headphones className="h-4 w-4 mr-2" />
-                            Listen Now
+                            Ascolta ora
                         </Button>
                         <span className="text-sm text-muted-foreground">
                             {book.audioLength ?
                                 formatAudioLength(book.audioLength) :
-                                'Duration not available'} total length
+                                'Durata non disponibile'} durata totale
                         </span>
                     </div>
                 ) : (
                     <div className="space-y-4">
                         <p className="text-muted-foreground">
-                            Sign in to listen to the audio version.
+                            Registrati per ascoltare la versione audio.
                         </p>
                         {onLoginClick && (
                             <Button onClick={onLoginClick}>
-                                Sign in to Listen
+                                Registrati per ascoltare.
                             </Button>
                         )}
                     </div>
@@ -150,7 +146,7 @@ export function BookDialog({
             <div className="flex-1 space-y-6">
                 {/* Summary */}
                 <div>
-                    <h3 className="text-lg font-semibold mb-2">Summary</h3>
+                    <h3 className="text-lg font-semibold mb-2">Sommario</h3>
                     <p className="text-muted-foreground">
                         {book.summary}
                     </p>
@@ -162,7 +158,7 @@ export function BookDialog({
                 {book.extract && (
                     <>
                         <div>
-                            <h3 className="text-lg font-semibold mb-2">Extract</h3>
+                            <h3 className="text-lg font-semibold mb-2">Estratto</h3>
                             {isAuthenticated ? (
                                 <div className="prose prose-sm dark:prose-invert">
                                     <p>{book.extract}</p>
@@ -170,11 +166,11 @@ export function BookDialog({
                             ) : (
                                 <div className="space-y-4">
                                     <p className="text-muted-foreground">
-                                        Sign in to read the book extract and access full content.
+                                            Accedi per leggere l'estratto del libro e accedere al contenuto completo.
                                     </p>
                                     {onLoginClick && (
                                         <Button onClick={onLoginClick}>
-                                            Sign in to Read More
+                                                Accedi per leggere di più.
                                         </Button>
                                     )}
                                 </div>
@@ -239,7 +235,7 @@ export function BookDialog({
                                     {book.title}
                                 </DialogTitle>
                                 <DialogDescription className="flex items-center gap-4">
-                                    <span>Published {formatDate(book.publishingDate)}</span>
+                                    <span>Pubblicato {formatDate(book.publishingDate)}</span>
                                     {book.hasAudio && book.audioLength && (
                                         <span className="inline-flex items-center gap-1">
                                             <Headphones className="h-4 w-4" />

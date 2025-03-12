@@ -35,7 +35,11 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
 
     // Memoize the cover image component to prevent unnecessary re-renders
     const coverImage = React.useMemo(() => (
-        <div className="relative flex-shrink-0" style={{ width, height }}>
+        <div 
+            className="relative flex-shrink-0 flex justify-center items-center bg-muted/30 rounded-sm cursor-pointer" 
+            style={{ width, height }}
+            onClick={() => onSelect(book)}
+        >
             {/* Loading skeleton */}
             {!imageLoaded && (
                 <Skeleton className="absolute inset-0 rounded-sm" />
@@ -48,10 +52,11 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                 width={width}
                 height={height}
                 className={cn(
-                    "rounded-sm object-cover transition-opacity duration-200",
+                    "max-w-full max-h-full rounded-sm object-contain transition-opacity duration-200",
                     imageLoaded ? "opacity-100" : "opacity-0"
                 )}
                 sizes={getImageSizeString('list')}
+                quality={75}
                 loading="lazy"
                 onLoad={() => setImageLoaded(true)}
                 onError={() => setImageLoaded(true)}
@@ -68,7 +73,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                 </div>
             )}
         </div>
-    ), [imageUrl, book.title, book.hasAudio, imageLoaded, width, height]);
+    ), [imageUrl, book.title, book.hasAudio, imageLoaded, width, height, onSelect, book]);
 
     // Memoize metadata to prevent unnecessary re-renders
     const metadata = React.useMemo(() => (
@@ -98,7 +103,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                     size="sm"
                     onClick={() => onSelect(book)}
                 >
-                    View Details
+                    Vedi Dettagli
                 </Button>
             </div>
             <p className="text-sm text-muted-foreground line-clamp-2">
@@ -110,12 +115,12 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                 <div className="flex gap-4 mt-1 text-sm">
                     {book.rating && (
                         <span className="text-muted-foreground">
-                            Rating: {book.rating}/5
+                            Valutazione: {book.rating}/5
                         </span>
                     )}
                     {book.readingProgress && (
                         <span className="text-muted-foreground">
-                            Progress: {book.readingProgress}%
+                            Avanzamento: {book.readingProgress}%
                         </span>
                     )}
                 </div>

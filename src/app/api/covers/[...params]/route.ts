@@ -33,48 +33,59 @@ function isValidDimensions(width: unknown, height: unknown): width is number {
         Number(width) <= 2000 && Number(height) <= 2000;
 }
 
-/**
- * Generates a placeholder book cover using Sharp
- */
+// Helper 1: Generate gradient definition
+function createGradientSVG(hue: number): string {
+    return `
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:hsl(${hue},70%,85%);stop-opacity:1" />
+        <stop offset="100%" style="stop-color:hsl(${hue},70%,75%);stop-opacity:1" />
+    </linearGradient>`;
+}
+
+// Helper 2: Generate pattern definition
+function createPatternSVG(): string {
+    return `
+    <pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+        <rect width="20" height="20" fill="url(#grad)"/>
+        <path d="M0 20L20 0M-1 1L1 -1M19 21L21 19" stroke="white" stroke-width="0.5" opacity="0.2"/>
+    </pattern>`;
+}
+
+// Helper 3: Generate text element
+function createTextSVG(width: number, height: number, fontSize: number): string {
+    return `
+    <text x="50%" y="50%" font-family="system-ui, sans-serif" 
+          font-size="${fontSize}px" fill="white" text-anchor="middle" 
+          dominant-baseline="middle">
+        ${width}×${height}
+    </text>`;
+}
+
+// Main function
 async function generatePlaceholder({
     width,
     height,
     bookId,
     quality = 80
 }: PlaceholderOptions): Promise<Buffer> {
-    // Create a deterministic pastel color based on bookId and dimensions
     const hue = bookId ?
         Math.abs(bookId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360) :
         Math.floor(Math.random() * 360);
 
-    // Adjust font size based on dimensions
     const fontSize = Math.min(width, height) * (width > 300 ? 0.08 : 0.1);
 
-    // Generate SVG for the placeholder
     const svg = `
-        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:hsl(${hue},70%,85%);stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:hsl(${hue},70%,75%);stop-opacity:1" />
-                </linearGradient>
-                <pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                    <rect width="20" height="20" fill="url(#grad)"/>
-                    <path d="M0 20L20 0M-1 1L1 -1M19 21L21 19" 
-                          stroke="white" stroke-width="0.5" opacity="0.2"/>
-                </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#pattern)"/>
-            <rect width="90%" height="90%" x="5%" y="5%" 
-                  fill="url(#grad)" stroke="white" stroke-width="1" stroke-opacity="0.3"/>
-            <text x="50%" y="50%" font-family="system-ui, sans-serif" 
-                  font-size="${fontSize}px" fill="white" text-anchor="middle" 
-                  dominant-baseline="middle">
-                ${width}×${height}
-            </text>
-        </svg>`;
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            ${createGradientSVG(hue)}
+            ${createPatternSVG()}
+        </defs>
+        <rect width="100%" height="100%" fill="url(#pattern)"/>
+        <rect width="90%" height="90%" x="5%" y="5%" 
+              fill="url(#grad)" stroke="white" stroke-width="1" stroke-opacity="0.3"/>
+        ${createTextSVG(width, height, fontSize)}
+    </svg>`;
 
-    // Convert SVG to PNG/WebP with optimizations
     return sharp(Buffer.from(svg))
         .png({ quality })
         .toBuffer();
@@ -96,9 +107,11 @@ async function processImage(
         // Only resize if the target dimensions are smaller than the original
         if (metadata.width && metadata.height &&
             (width < metadata.width || height < metadata.height)) {
-            image.resize(width, height, {
-                fit: 'cover',
-                position: 'attention'
+            image.resize({
+                width,
+                height,
+                fit: 'contain',
+                background: { r: 255, g: 255, b: 255, alpha: 0 }
             });
         }
 
@@ -152,7 +165,7 @@ export async function GET(
             });
         }
 
-        // Handle real image files
+        // Handle real image files 
         const filePath = path.join(COVERS_DIR, ...imagePath);
 
         // Security check: Ensure the resolved path is within COVERS_DIR

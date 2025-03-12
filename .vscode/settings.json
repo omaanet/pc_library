@@ -13,6 +13,5 @@
         },
         "node_modules": true,
         ".next": true
-    },
-    "explorerExclude.backup": {}
+    }
 }

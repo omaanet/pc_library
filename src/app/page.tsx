@@ -23,8 +23,9 @@ export default function HomePage() {
             />
 
             <main className="flex-1 mx-auto">
+
                 {/* Hero Section */}
-                <section className="relative overflow-hidden py-24 sm:py-32">
+                <section className="relative overflow-hidden py-24 sm:pt-24 sm:pb-12">
                     <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]" />
                     <div className="container space-y-8">
                         <div className="space-y-6 text-center">
@@ -32,9 +33,9 @@ export default function HomePage() {
                                 Your Digital Library
                             </h1>
                             <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-                                Discover a world of books and audiobooks. Read or listen anywhere, anytime.
+                                Scopri un mondo di libri e audiolibri. Leggi o ascolta ovunque, in ogni momento.
                             </p>
-                            <div className="flex justify-center gap-4">
+                            {/* <div className="flex justify-center gap-4">
                                 {!isAuthenticated && (
                                     <Button
                                         size="lg"
@@ -50,11 +51,23 @@ export default function HomePage() {
                                 >
                                     Browse Collection
                                 </Button>
-                            </div>
+                            </div> */}
                         </div>
 
                         {/* Feature Cards */}
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-6 pt-8">
+                            <div className="rounded-xl border bg-card p-6">
+                                <Book className="h-12 w-12 mx-auto mb-4" />
+                                <h3 className="text-xl font-semibold mb-2 text-center">Anteprima</h3>
+
+                                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+ book
+                                </div>
+
+                            </div>
+                        </div>
+
+                        {/* <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                             <div className="rounded-xl border bg-card p-6">
                                 <Book className="h-12 w-12 mb-4" />
                                 <h3 className="text-xl font-semibold mb-2">Digital Books</h3>
@@ -87,7 +100,8 @@ export default function HomePage() {
                                     Your reading progress and preferences are safely stored and synced.
                                 </p>
                             </div>
-                        </div>
+                        </div> */}
+
                     </div>
                 </section>
 

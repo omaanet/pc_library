@@ -61,18 +61,22 @@ export function getCoverImageUrl(
     viewType: keyof typeof DEFAULT_COVER_SIZES,
     options: CoverImageOptions = {}
 ): string {
-    const { width, height } = DEFAULT_COVER_SIZES[viewType];
+    // Default dimensions if viewType is not provided
+    const { width = 300, height = 400 } = DEFAULT_COVER_SIZES[viewType] || {};
+
     const normalizedPath = normalizeImagePath(imagePath);
 
-    // Construct the base URL with dimensions
-    const baseUrl = `${IMAGE_CONFIG.baseUrl}/${width}/${height}/${normalizedPath}`;
-
-    // Add query parameters for placeholder if needed
-    if (normalizedPath === IMAGE_CONFIG.placeholder.token && options.bookId) {
-        return `${baseUrl}?bookId=${encodeURIComponent(options.bookId)}`;
+    // Handle placeholder requests without dimensions
+    if (normalizedPath === IMAGE_CONFIG.placeholder.token) {
+        const queryParams = new URLSearchParams();
+        if (options.bookId) {
+            queryParams.set('bookId', options.bookId);
+        }
+        return `${IMAGE_CONFIG.baseUrl}/${width}/${height}/${normalizedPath}?${queryParams.toString()}`;
     }
 
-    return baseUrl;
+    // Regular image path
+    return `${IMAGE_CONFIG.baseUrl}/${width}/${height}/${normalizedPath}`;
 }
 
 /**

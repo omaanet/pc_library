@@ -24,6 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BookGridSkeleton, BookListSkeleton } from '@/components/ui/loading-placeholder';
 import { DEFAULT_COVER_SIZES } from '@/types/images';
 import type { LibrarySort } from '@/types/context';
+import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 
 const SORT_OPTIONS = {
     'title-asc': { label: 'Title (A-Z)' },
@@ -95,7 +96,15 @@ export function BookCollection() {
                     resolve();
                 };
                 img.onerror = () => resolve(); // Don't block on error
-                img.src = book.coverImage;
+
+                // Use getCoverImageUrl to properly handle placeholder images
+                const isPlaceholder = book.coverImage === IMAGE_CONFIG.placeholder.token;
+                const imageUrl = getCoverImageUrl(
+                    book.coverImage,
+                    'grid', // Use grid size for preloading
+                    { bookId: isPlaceholder ? book.id : undefined }
+                );
+                img.src = imageUrl;
             });
         });
 
@@ -174,7 +183,7 @@ export function BookCollection() {
                 <div className="flex items-center gap-2">
                     <BookOpen className="h-5 w-5" />
                     <h2 className="text-2xl font-semibold tracking-tight">
-                        Library Collection
+                        Biblioteca
                     </h2>
                 </div>
                 <div className="flex items-center gap-4">
@@ -185,7 +194,7 @@ export function BookCollection() {
                         disabled={showLoadingState}
                     >
                         <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Sort by..." />
+                            <SelectValue placeholder="Ordina..." />
                         </SelectTrigger>
                         <SelectContent>
                             {Object.entries(SORT_OPTIONS).map(([key, { label }]) => (
@@ -202,7 +211,7 @@ export function BookCollection() {
             <div className="flex flex-wrap gap-4 rounded-lg border bg-card p-4">
                 <div className="flex-1">
                     <Input
-                        placeholder="Search books..."
+                        placeholder="Cerca libri..."
                         onChange={(e) => handleSearch(e.target.value)}
                         defaultValue={filters.search}
                         className="max-w-xs"
@@ -216,7 +225,7 @@ export function BookCollection() {
                         onCheckedChange={handleAudioFilterChange}
                         disabled={showLoadingState}
                     />
-                    <Label htmlFor="audioFilter">Audio Available</Label>
+                    <Label htmlFor="audioFilter">Audio Disponibile</Label>
                 </div>
             </div>
 
