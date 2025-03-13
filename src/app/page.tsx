@@ -6,15 +6,42 @@ import * as React from 'react';
 import { RootNav } from '@/components/layout/root-nav';
 import { BookCollectionWrapper } from '@/components/books/book-collection-wrapper';
 import { BookCollection } from '@/components/books/book-collection';
+import { BookListCard } from '@/components/books/book-list-card';
+import { BookCover } from '@/components/books/book-cover';
 import { AuthModal } from '@/components/auth/auth-modal';
+import { Book } from '@/types';
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
-import { Book, Headphones } from 'lucide-react';
+import { Book as BookIcon, Headphones } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function HomePage() {
     const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
     const { state: { isAuthenticated, user } } = useAuth();
+    const [books, setBooks] = React.useState<Book[]>([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        async function fetchPreviewBooks() {
+            try {
+                setLoading(true);
+                const response = await fetch('/api/books?displayPreviews=1');
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch preview books: ${response.status}`);
+                }
+
+                const data = await response.json();
+                setBooks(data.books);
+            } catch (error) {
+                console.error('Error loading preview books:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchPreviewBooks();
+    }, []);
 
     return (
         <>
@@ -58,13 +85,30 @@ export default function HomePage() {
                         {/* Previews Cards */}
                         <div className="grid grid-cols-1 gap-6 pt-8">
                             <div className="rounded-xl border bg-card p-6">
-                                <Book className="h-12 w-12 mx-auto mb-4" />
-                                <h3 className="text-xl font-semibold mb-2 text-center">Anteprima</h3>
+                                <div className="flex flex-row items-center justify-center mb-4">
+                                    <BookIcon className="h-12 w-12 mx-2 mb-4" />
+                                    <div className="text-xl font-semibold mx-2 mb-2 text-center">In Anteprima</div>
+                                </div>
 
                                 {/* Previews Collection Section */}
-                                <section id="previews-collection" className="bg-red-500">
-                                    <div className="container">
-                                        <BookCollection displayPreviews={1} />
+                                <section id="previews-collection">
+                                    <div className="container-fluid text-center flex flex-wrap gap-4 justify-center items-center">
+                                        {loading ? (
+                                            <div className="py-4 text-muted-foreground">
+                                                Loading preview books...
+                                            </div>
+                                        ) : books.length === 0 ? (
+                                            <div className="py-4 text-muted-foreground">
+                                                No preview books available at the moment.
+                                            </div>
+                                        ) : (
+                                            books.map((book) => (
+                                                <>
+                                                    <BookCover key={book.id} book={book} orientation="portrait" />
+                                                    <BookCover key={book.id} book={book} orientation="portrait" />
+                                                </>
+                                            ))
+                                        )}
                                     </div>
                                 </section>
 

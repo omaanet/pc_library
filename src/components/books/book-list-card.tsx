@@ -35,8 +35,8 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
 
     // Memoize the cover image component to prevent unnecessary re-renders
     const coverImage = React.useMemo(() => (
-        <div 
-            className="relative flex-shrink-0 flex justify-center items-center bg-muted/30 rounded-sm cursor-pointer" 
+        <div
+            className="relative flex-shrink-0 flex justify-center items-center bg-muted/30 rounded-sm cursor-pointer"
             style={{ width, height }}
             onClick={() => onSelect(book)}
         >
