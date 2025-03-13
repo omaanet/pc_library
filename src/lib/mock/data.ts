@@ -44,12 +44,20 @@ export const defaultUserPreferences: UserPreferences = {
         reduceAnimations: false,
         highContrast: false,
         largeText: false,
+        reducedMotion: false,
     },
     reading: {
         fontSize: 'medium',
         lineSpacing: 'normal',
         fontFamily: 'inter',
     },
+    language: '',
+    fontSize: 0,
+    notifications: {
+        email: false,
+        push: false,
+        SMS: false
+    }
 };
 
 // Mock user data
@@ -67,6 +75,8 @@ export const mockUser: User = {
         readingStreak: 5,
         lastReadDate: new Date().toISOString(),
     },
+    name: '',
+    createdAt: new Date()
 };
 
 // Function to get paginated books with optional filters

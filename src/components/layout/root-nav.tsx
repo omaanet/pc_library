@@ -59,6 +59,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                         Audiolibri
                     </Link>
                     <Link
+                        hidden={!isAuthenticated}
                         href="/add-book"
                         target="add-book"
                         className={cn(

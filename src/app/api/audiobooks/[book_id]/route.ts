@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import audiobooksService from '@/lib/services/audiobooks-service';
 
 export async function GET(
-    request: NextRequest,
-    { params }: { params: { book_id: string } }
+    req: NextRequest,
+    { params }: { params: Promise<{ book_id: string }> }
 ) {
     try {
-        const bookId = params.book_id;
+        const bookId = (await params).book_id;
         const audiobook = audiobooksService.getByBookId(bookId);
 
         if (!audiobook) {
@@ -24,12 +24,12 @@ export async function GET(
 }
 
 export async function POST(
-    request: NextRequest,
-    { params }: { params: { book_id: string } }
+    req: NextRequest,
+    { params }: { params: Promise<{ book_id: string }> }
 ) {
     try {
-        const bookId = params.book_id;
-        const body = await request.json();
+        const bookId = (await params).book_id;
+        const body = await req.json();
 
         const audiobook = audiobooksService.save({
             book_id: bookId,

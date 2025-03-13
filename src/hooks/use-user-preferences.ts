@@ -20,25 +20,35 @@ export function useUserPreferences(): UseUserPreferencesResult {
     const { setTheme } = useTheme();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
-    const [preferences, setPreferences] = useState<UserPreferences>({
+    const defaultPreferences: UserPreferences = {
         theme: 'system',
         viewMode: 'grid',
+        language: 'en',
+        fontSize: 16,
+        notifications: {
+            email: false,
+            push: false,
+            SMS: false
+        },
         emailNotifications: {
-            newReleases: true,
-            readingReminders: true,
-            recommendations: true,
+            newReleases: false,
+            readingReminders: false,
+            recommendations: false
         },
         accessibility: {
             reduceAnimations: false,
             highContrast: false,
             largeText: false,
+            reducedMotion: false
         },
         reading: {
             fontSize: 'medium',
-            lineSpacing: 'normal',
-            fontFamily: 'inter',
-        }
-    });
+            lineHeight: 'normal',
+            fontFamily: 'default'
+        },
+        lastUpdated: new Date()
+    };
+    const [preferences, setPreferences] = useState(defaultPreferences);
 
     // Initialize preferences from user data
     useEffect(() => {

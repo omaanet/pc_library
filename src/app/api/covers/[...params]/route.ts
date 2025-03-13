@@ -104,6 +104,19 @@ async function processImage(
         const image = sharp(filePath);
         const metadata = await image.metadata();
 
+        // Handle animations if present
+        const isAnimated = metadata.pages && metadata.pages > 1;
+        if (isAnimated) {
+            // Just optimize without resizing animated content
+            return image
+                .webp({
+                    quality,
+                    effort: 6, // Higher compression effort
+                    smartSubsample: true // Better chroma subsampling
+                })
+                .toBuffer();
+        }
+
         // Only resize if the target dimensions are smaller than the original
         if (metadata.width && metadata.height &&
             (width < metadata.width || height < metadata.height)) {
@@ -111,17 +124,44 @@ async function processImage(
                 width,
                 height,
                 fit: 'contain',
-                background: { r: 255, g: 255, b: 255, alpha: 0 }
+                background: { r: 255, g: 255, b: 255, alpha: 0 },
+                kernel: 'lanczos3', // High-quality resampling
+                withoutEnlargement: true, // Prevent upscaling beyond original size
+                fastShrinkOnLoad: true // Optimize initial scaling operations
+            });
+
+            // Apply a subtle sharpening effect after resize to enhance details
+            image.sharpen({
+                sigma: 0.5, // Radius of the Gaussian mask
+                m1: 0.2,    // Flat areas sharpening
+                m2: 0.3,    // Edge sharpening
+                x1: 2,      // Threshold for flat areas
+                y2: 10,     // Threshold for edge areas
+                y3: 20      // Maximum sharpening
             });
         }
 
-        // Convert to WebP for better compression
+        // Convert to WebP with enhanced options
         return image
-            .webp({ quality })
+            .webp({
+                quality,
+                alphaQuality: 100,        // Preserve alpha channel quality
+                lossless: quality >= 95,  // Use lossless for very high quality requests
+                nearLossless: quality >= 90 && quality < 95, // Near lossless for high quality
+                smartSubsample: true,     // Better chroma subsampling
+                effort: 6,                // Higher compression effort (0-6)
+                loop: 0,                  // Default loop setting
+                delay: 100,               // Default delay between frames if animated
+                force: false              // Don't force WebP if unsuitable
+            })
+            .withMetadata({
+                orientation: metadata.orientation, // Preserve orientation
+                density: metadata.density          // Preserve density information
+            })
             .toBuffer();
     } catch (error) {
         console.error('Error processing image:', error);
-        throw new Error('Failed to process image');
+        throw new Error(`Failed to process image: ${error instanceof Error ? error.message : 'unknown error'}`);
     }
 }
 
@@ -129,7 +169,7 @@ async function processImage(
  * Route handler for cover images
  */
 export async function GET(
-    request: NextRequest,
+    req: NextRequest,
     { params }: { params: Promise<PathParams> }
 ) {
     try {
@@ -150,7 +190,7 @@ export async function GET(
 
         // Handle placeholder requests
         if (imagePath[0] === '@placeholder') {
-            const { searchParams } = new URL(request.url);
+            const { searchParams } = new URL(req.url);
             const buffer = await generatePlaceholder({
                 ...dimensions,
                 bookId: searchParams.get('bookId') ?? undefined,
@@ -193,7 +233,7 @@ export async function GET(
             filePath,
             dimensions.width,
             dimensions.height,
-            Number(request.nextUrl.searchParams.get('q')) || 80
+            Number(req.nextUrl.searchParams.get('q')) || 80
         );
 
         return new Response(buffer, {

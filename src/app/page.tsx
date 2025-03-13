@@ -85,9 +85,9 @@ export default function HomePage() {
                         {/* Previews Cards */}
                         <div className="grid grid-cols-1 gap-6 pt-8">
                             <div className="rounded-xl border bg-card p-6">
-                                <div className="flex flex-row items-center justify-center mb-4">
-                                    <BookIcon className="h-12 w-12 mx-2 mb-4" />
-                                    <div className="text-xl font-semibold mx-2 mb-2 text-center">In Anteprima</div>
+                                <div className="flex flex-row items-center justify-center mb-8">
+                                    <BookIcon className="h-10 w-10 mx-2" />
+                                    <div className="text-xl font-semibold mx-2 text-center">Libri In Anteprima</div>
                                 </div>
 
                                 {/* Previews Collection Section */}
@@ -95,18 +95,15 @@ export default function HomePage() {
                                     <div className="container-fluid text-center flex flex-wrap gap-4 justify-center items-center">
                                         {loading ? (
                                             <div className="py-4 text-muted-foreground">
-                                                Loading preview books...
+                                                Caricamento anteprima libri...
                                             </div>
                                         ) : books.length === 0 ? (
                                             <div className="py-4 text-muted-foreground">
-                                                No preview books available at the moment.
+                                                Al momento non sono disponibili anteprime dei libri.
                                             </div>
                                         ) : (
-                                            books.map((book) => (
-                                                <>
-                                                    <BookCover key={book.id} book={book} orientation="portrait" />
-                                                    <BookCover key={book.id} book={book} orientation="portrait" />
-                                                </>
+                                            books.map((book, index) => (
+                                                <BookCover key={`${book.id}-${index}`} book={book} orientation="portrait" />
                                             ))
                                         )}
                                     </div>
@@ -163,27 +160,9 @@ export default function HomePage() {
 
             {/* Footer */}
             <footer className="border-t py-6 md:py-0">
-                <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
+                <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row mx-auto">
                     <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                        Built with{' '}
-                        <a
-                            href="https://nextjs.org"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-medium underline underline-offset-4"
-                        >
-                            Next.js
-                        </a>
-                        . The source code is available on{' '}
-                        <a
-                            href="https://github.com/yourusername/digital-library"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-medium underline underline-offset-4"
-                        >
-                            GitHub
-                        </a>
-                        .
+                        &copy; {new Date().getFullYear()} OMAA.net - All rights reserved.
                     </p>
                 </div>
             </footer>

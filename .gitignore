@@ -12,6 +12,7 @@
 *.7z
 *.zip
 *.bak
+*.t_s
 
 # testing
 /coverage

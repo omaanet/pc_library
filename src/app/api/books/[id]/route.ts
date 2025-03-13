@@ -4,10 +4,10 @@ import { getBookById, updateBook, deleteBook } from '@/lib/db';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const id = params.id;
+        const id = (await params).id;
         const book = getBookById(id);
 
         if (!book) {
@@ -32,10 +32,10 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const id = params.id;
+        const id = (await params).id;
         const book = await request.json();
 
         const success = updateBook(id, book);
@@ -63,10 +63,10 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const id = params.id;
+        const id = (await params).id;
         const success = deleteBook(id);
 
         if (!success) {
