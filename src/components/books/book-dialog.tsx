@@ -85,6 +85,7 @@ export function BookDialog({
                             quality={90}
                             onLoad={() => setImageLoaded(true)}
                             onError={() => setImageLoaded(true)}
+                            unoptimized
                         />
 
                         {/* Audio badge */}

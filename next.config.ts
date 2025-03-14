@@ -1,23 +1,28 @@
-// next.config.ts
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     images: {
-        remotePatterns: [
+        unoptimized: true, // Disables Next.js image optimization
+        dangerouslyAllowSVG: true, // Enable if you use SVGs
+        contentDispositionType: 'inline', // Ensures images display instead of downloading
+        contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;", // Optional CSP security settings
+    },
+    async headers() {
+        return [
             {
-                protocol: 'https',
-                hostname: '**.vercel.app',
-                pathname: '/api/covers/**',
+                source: "/api/covers/:path*", // Match API paths serving images
+                headers: [
+                    {
+                        key: "Content-Security-Policy",
+                        value: "default-src 'self'; script-src 'none'; sandbox;",
+                    },
+                    {
+                        key: "Content-Disposition",
+                        value: "inline", // Ensures images display in browser
+                    },
+                ],
             },
-            {
-                protocol: 'http',
-                hostname: 'localhost',
-                pathname: '/api/covers/**',
-            },
-        ],
-        dangerouslyAllowSVG: true,
-        contentDispositionType: 'attachment',
-        contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+        ];
     },
 };
 

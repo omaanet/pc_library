@@ -62,6 +62,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                 loading="lazy"
                 onLoad={() => setImageLoaded(true)}
                 onError={() => setImageLoaded(true)} // Ensure we remove loading state even on error
+                unoptimized
             />
 
             {/* Audio badge */}

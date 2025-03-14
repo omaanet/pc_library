@@ -58,6 +58,7 @@ export function BookCover({ book, orientation, className }: BookCoverProps) {
                 loading="lazy"
                 onLoad={() => setImageLoaded(true)}
                 onError={() => setImageLoaded(true)}
+                unoptimized
             />
 
             {/* Audio badge */}

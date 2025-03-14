@@ -60,6 +60,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                 loading="lazy"
                 onLoad={() => setImageLoaded(true)}
                 onError={() => setImageLoaded(true)}
+                unoptimized
             />
 
             {/* Audio badge */}
