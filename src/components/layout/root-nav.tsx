@@ -49,27 +49,20 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                     >
                         Racconti
                     </Link>
-                    <Link
-                        href="/audiobooks"
-                        className={cn(
-                            "text-sm font-medium transition-colors hover:text-primary",
-                            pathname === "/audiobooks" && "text-primary"
-                        )}
-                    >
-                        Audioracconti
-                    </Link>
-                    <Link
-                        hidden={!isAuthenticated}
-                        href="/add-book"
-                        target="add-book"
-                        className={cn(
-                            "text-sm font-medium transition-colors hover:text-primary",
-                            pathname === "/add-book" && "text-primary"
-                        )}
-                    >
-                        Aggiungi Racconto
-                    </Link>
-                    {isAuthenticated && (
+
+                    {isAuthenticated && false && (
+                        <Link
+                            href="/audiobooks"
+                            className={cn(
+                                "text-sm font-medium transition-colors hover:text-primary",
+                                pathname === "/audiobooks" && "text-primary"
+                            )}
+                        >
+                            Audioracconti
+                        </Link>
+                    )}
+
+                    {isAuthenticated && false && (
                         <Link
                             href="/my-books"
                             className={cn(

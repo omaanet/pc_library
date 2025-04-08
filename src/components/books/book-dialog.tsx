@@ -57,13 +57,10 @@ export function BookDialog({
         );
 
         return (
-            <div className="relative w-full md:w-1/3 shrink-0">
+            <div className="relative w-2/3 md:w-1/3 shrink-0">
                 <div
                     className="relative w-full rounded-lg bg-muted/30"
-                    style={{
-                        maxWidth: width,
-                        height: height,
-                    }}
+                    
                 >
                     {/* Loading skeleton - shown only during loading */}
                     {!imageLoaded && (
@@ -146,10 +143,10 @@ export function BookDialog({
         if (!book) return null;
 
         return (
-            <div className="flex-1 space-y-6">
+            <div className="flex-1 space-y-4 sm:space-y-6">
                 {/* Summary */}
                 <div>
-                    <h3 className="text-lg font-semibold mb-2">Sommario</h3>
+                    <h3 className="text-center sm:text-start text-md sm:text-lg font-semibold mb-0 md:mb-2">Sommario</h3>
                     <p className="text-muted-foreground">
                         {book.summary}
                     </p>
@@ -261,7 +258,7 @@ export function BookDialog({
                         <div className="flex-1 overflow-hidden">
                             <ScrollArea className="h-full">
                                 <div className="p-4 sm:p-6">
-                                    <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
+                                    <div className="flex flex-col items-center md:items-start md:flex-row gap-4 sm:gap-6">
                                         {coverImage}
                                         {bookDetails}
                                     </div>
