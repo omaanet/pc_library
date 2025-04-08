@@ -38,7 +38,7 @@ const EPUBViewer = ({ bookId, book }: EPUBViewerProps) => {
             localStorage.setItem(`epub-location-${bookId}`, location);
         }
     }, [location, loaded, bookId]);
-    
+
     // Show error if any
     if (error) {
         return (
@@ -128,7 +128,6 @@ const EPUBViewer = ({ bookId, book }: EPUBViewerProps) => {
                             flow: 'paginated',
                             manager: 'continuous',
                             snap: true,
-                            openAs: 'epub',
                         }}
                         swipeable
                         loadingView={<div className="flex items-center justify-center h-full"></div>}
