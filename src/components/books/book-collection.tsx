@@ -47,7 +47,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     const [localError, setLocalError] = React.useState<Error | null>(null);
     const [localPagination, setLocalPagination] = React.useState({
         page: 1,
-        perPage: 12,
+        perPage: 10,
         total: 0,
         totalPages: 0
     });
@@ -72,12 +72,18 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     const { toast } = useToast();
 
     // Local loading states
-    const [isSearching, setIsSearching] = React.useState(false);
     const [searchDebounce, setSearchDebounce] = React.useState<NodeJS.Timeout>();
     const [isLoadingMore, setIsLoadingMore] = React.useState(false);
 
     // Track loaded images
     const [loadedImages, setLoadedImages] = React.useState<Set<string>>(new Set());
+
+    // Local search state to prevent unnecessary context updates
+    const [searchTerm, setSearchTerm] = React.useState<string>(filters.search || '');
+    const [lastSearched, setLastSearched] = React.useState<string>(filters.search || '');
+
+    // Reference to search input element
+    const searchInputRef = React.useRef<HTMLInputElement>(null);
 
     // Initialize books on mount and when displayPreviews changes
     React.useEffect(() => {
@@ -148,14 +154,22 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         };
     }, [displayPreviews, filters, pagination.perPage, sort.by, sort.order, toast]);
 
-    // Preload images for visible books
+    // Preload book cover images for visible books
     React.useEffect(() => {
         if (!localBooks || localBooks.length === 0) return;
 
-        const preloadImages = localBooks.slice(0, PRELOAD_COUNT).map(book => {
-            if (loadedImages.has(book.coverImage)) return Promise.resolve();
+        // Only preload a limited number of books
+        const booksToPreload = localBooks.slice(0, PRELOAD_COUNT);
 
-            return new Promise<void>((resolve) => {
+        // Skip already loaded images
+        const unloadedBooks = booksToPreload.filter(book => {
+            return !loadedImages.has(book.coverImage);
+        });
+
+        if (unloadedBooks.length === 0) return;
+
+        const preloadImages = unloadedBooks.map(book => {
+            return new Promise<void>(resolve => {
                 const img = new Image();
                 img.onload = () => {
                     setLoadedImages(prev => new Set([...prev, book.coverImage]));
@@ -177,23 +191,125 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         Promise.all(preloadImages).catch(console.error);
     }, [localBooks, loadedImages]);
 
-    // Debounced search handler
+    // Single focus management effect for search input
+    React.useEffect(() => {
+        // Focus on the input when searching state changes (both start and end)
+        if (searchInputRef.current) {
+            searchInputRef.current.focus();
+        }
+    }, [localIsLoading]);
+
+    // Validate search term (must be empty or at least 3 characters)
+    const isValidSearch = React.useCallback((value: string) => {
+        return value.length === 0 || value.length >= 3;
+    }, []);
+
+    // Perform the actual search with local state management to maintain focus
+    const performSearch = React.useCallback(async (value: string) => {
+        if (!isValidSearch(value)) {
+            return;
+        }
+
+        // Don't perform a search if the value is already the last searched term
+        if (value === lastSearched) {
+            return;
+        }
+
+        try {
+            // setIsSearching(true);
+            // Store the search term locally
+            // setSearchTerm(value);
+
+            // Update the last searched term
+            setLastSearched(value);
+
+            // Build query params for this specific search request
+            const params = new URLSearchParams({
+                page: '1',
+                perPage: pagination.perPage.toString(),
+                sortBy: sort.by,
+                sortOrder: sort.order,
+                displayPreviews: displayPreviews.toString(),
+                search: value
+            });
+
+            // Add other existing filters
+            if (filters.hasAudio !== undefined) {
+                params.append('hasAudio', filters.hasAudio.toString());
+            }
+
+            // Directly fetch books to avoid context refresh
+            // setLocalIsLoading(true);
+            const response = await fetch(`/api/books?${params}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Update local state first
+            setLocalBooks(data.books || []);
+            if (data.pagination) {
+                setLocalPagination({
+                    page: data.pagination.page,
+                    perPage: data.pagination.perPage,
+                    total: data.pagination.total,
+                    totalPages: data.pagination.totalPages || Math.ceil(data.pagination.total / data.pagination.perPage)
+                });
+            }
+
+            // Only update local filter state, don't trigger context changes
+            // This prevents unnecessary re-renders
+        } catch (error) {
+            console.error('Search error:', error);
+            setLocalError(error instanceof Error ? error : new Error('Search failed'));
+        } finally {
+
+        }
+    }, [displayPreviews, filters, pagination.perPage, sort.by, sort.order, lastSearched]);
+
+    // Debounced handler for onChange events
     const handleSearch = React.useCallback((value: string) => {
-        setIsSearching(true);
+        // Update the input value immediately for responsiveness
+        setSearchTerm(value);
+
+        // Don't proceed with API call if search term is invalid
+        if (!isValidSearch(value)) {
+            return;
+        }
+
+        // Clear previous timeout if it exists
         if (searchDebounce) {
             clearTimeout(searchDebounce);
         }
 
+        // Set new timeout for debounced search
         setSearchDebounce(
-            setTimeout(async () => {
-                try {
-                    await updateFilters({ search: value });
-                } finally {
-                    setIsSearching(false);
-                }
-            }, 300)
+            setTimeout(() => {
+                performSearch(value);
+            }, 600)
         );
-    }, [searchDebounce, updateFilters]);
+    }, [searchDebounce, isValidSearch, performSearch]);
+
+    // Handle blur event to immediately trigger search
+    const handleSearchBlur = React.useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+
+        // Don't proceed if search term is invalid
+        if (!isValidSearch(value)) {
+            return;
+        }
+
+        // Clear any pending debounce
+        if (searchDebounce) {
+            clearTimeout(searchDebounce);
+            setSearchDebounce(undefined);
+        }
+
+        // Execute search immediately
+        performSearch(value);
+    }, [searchDebounce, isValidSearch, performSearch]);
 
     // Sort handler
     const handleSortChange = React.useCallback((value: string) => {
@@ -323,7 +439,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                         Biblioteca
                     </h2>
                 </div>
-                <div className="flex items-center gap-4">
+                {/* <div className="flex items-center gap-4">
                     <ViewSwitcher view={viewMode} onViewChange={setViewMode} />
                     <Select
                         value={currentSortKey}
@@ -341,17 +457,19 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                             ))}
                         </SelectContent>
                     </Select>
-                </div>
+                </div> */}
             </div>
 
             {/* Filters Section */}
             <div className="flex flex-wrap gap-4 rounded-lg border bg-card p-4">
                 <div className="flex-1">
                     <Input
-                        placeholder="Cerca libri..."
+                        ref={searchInputRef}
+                        placeholder="Cerca racconti..."
                         onChange={(e) => handleSearch(e.target.value)}
-                        defaultValue={filters.search}
-                        className="max-w-xs"
+                        onBlur={handleSearchBlur}
+                        value={searchTerm}
+                        className="max-w-lg"
                         disabled={showLoadingState}
                     />
                 </div>
@@ -365,14 +483,6 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                     <Label htmlFor="audioFilter">Audio Disponibile</Label>
                 </div>
             </div>
-
-            {/* Loading indicator */}
-            {isSearching && (
-                <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg flex items-center space-x-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Searching...</span>
-                </div>
-            )}
 
             {/* Books Grid/List */}
             {showLoadingState ? (
@@ -418,10 +528,10 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                                         {isLoadingMore ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Loading...
+                                                Caricamento...
                                             </>
                                         ) : (
-                                            'Load More'
+                                            'Carica altro'
                                         )}
                                     </Button>
                                 </div>

@@ -1,7 +1,29 @@
 // src/lib/db.ts
 import Database from 'better-sqlite3';
 import path from 'path';
-import { Book } from '@/types';
+import { AudioBook, Book } from '@/types';
+
+// Define types for the enhanced book query options
+export interface BookQueryOptions {
+    search?: string;
+    hasAudio?: boolean;
+    sortBy?: Array<[string, 'ASC' | 'DESC']> | string;
+    sortOrder?: 'asc' | 'desc'; // Only used if sortBy is a string
+    page?: number;
+    perPage?: number;
+    displayPreviews?: number; // -1: all, 0: non-preview only, 1: preview only
+}
+
+// Define the pagination result type
+export interface PaginatedResult<T> {
+    data: T[];
+    pagination: {
+        total: number;
+        page: number;
+        perPage: number;
+        totalPages: number;
+    };
+}
 
 // Database singleton
 let db: Database.Database | null = null;
@@ -19,6 +41,7 @@ export function getDb(): Database.Database {
 
 /**
  * Get all books from the database
+ * @deprecated Use getAllBooksOptimized instead for better performance with filtering
  */
 export function getAllBooks(displayPreviews: number): Book[] {
     const db = getDb();
@@ -69,6 +92,184 @@ export function getAllBooks(displayPreviews: number): Book[] {
 }
 
 /**
+ * Get books from the database with optimized filtering, search, sorting, and pagination
+ * directly using SQL queries instead of JavaScript operations.
+ */
+export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedResult<Book> {
+    const db = getDb();
+    const {
+        search,
+        hasAudio,
+        sortBy = '', // Default to recent books
+        sortOrder = 'desc', // Default to descending order (newest/highest first)
+        page = 1,
+        perPage = 10,
+        displayPreviews = 0 // Default to non-preview books (0)
+    } = options;
+
+    // Start building the query parts
+    const whereConditions: string[] = [];
+    const queryParams: any[] = [];
+
+    // Handle preview filtering
+    if (displayPreviews === 0) {
+        whereConditions.push('(is_preview IS NULL OR is_preview != 1)');
+    } else if (displayPreviews === 1) {
+        whereConditions.push('is_preview = 1');
+    }
+
+    // Handle search (using index on title + full text search on summary)
+    if (search) {
+        const searchParam = `%${search.toLowerCase()}%`;
+        whereConditions.push('(LOWER(title) LIKE ? OR LOWER(summary) LIKE ?)');
+        queryParams.push(searchParam, searchParam);
+    }
+
+    // Handle audio filter (using index on has_audio)
+    if (hasAudio !== undefined) {
+        whereConditions.push('has_audio = ?');
+        queryParams.push(hasAudio ? 1 : 0);
+    }
+
+    // Construct WHERE clause if conditions exist
+    const whereClause = whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(' AND ')}`
+        : '';
+
+    // Generate ORDER BY clause
+    // let orderByClause: string;
+
+    // Handle array of sorting criteria
+    // if (Array.isArray(sortBy)) {
+    //     // Build compound sorting from array of [column, direction] pairs
+    //     // Handle potential SQL injection by validating column names against DB schema
+    //     const validColumns = [
+    //         'id', 'title', 'cover_image', 'publishing_date', 'summary',
+    //         'has_audio', 'audio_length', 'extract', 'rating', 'is_preview',
+    //         'created_at', 'updated_at', "order"
+    //     ];
+
+    //     const sortClauses = sortBy.map(([column, direction]) => {
+    //         // Validate column name is safe
+    //         if (!validColumns.includes(column)) {
+    //             // Default to title if invalid column
+    //             // column = 'title';
+    //             return;
+    //         }
+
+    //         // Validate direction is safe
+    //         const safeDirection = direction === 'ASC' ? 'ASC' : 'DESC';
+
+    //         // Handle NULLS LAST for ratings
+    //         const nullsClause = column === 'rating' ? ' NULLS LAST' : '';
+
+    //         return `${column} ${safeDirection}${nullsClause}`;
+    //     });
+
+    //     orderByClause = sortClauses.join(', ');
+    // } else {
+    //     // Handle string-based sortBy for backward compatibility
+    //     const direction = sortOrder === 'asc' ? 'ASC' : 'DESC';
+
+    //     // Special sort modes
+    //     if (sortBy === 'recent') {
+    //         orderByClause = `publishing_date ${direction}`;
+    //     } else if (sortBy === 'top_rated') {
+    //         orderByClause = `rating ${direction} NULLS LAST, title ASC`;
+    //     } else {
+    //         // Convert from JavaScript property names to DB column names
+    //         let column: string;
+    //         switch (sortBy) {
+    //             case 'coverImage': column = 'cover_image'; break;
+    //             case 'publishingDate': column = 'publishing_date'; break;
+    //             case 'hasAudio': column = 'has_audio'; break;
+    //             case 'audioLength': column = 'audio_length'; break;
+    //             case 'isPreview': column = 'is_preview'; break;
+    //             case 'createdAt': column = 'created_at'; break;
+    //             case 'updatedAt': column = 'updated_at'; break;
+    //             default: column = sortBy as string || 'title';
+    //         }
+
+    //         orderByClause = `${column} ${direction}`;
+    //     }
+    // }
+
+    const orderByClause = `[has_audio] DESC, [order] ASC`;
+
+    // First query: Get total count for pagination info
+    const countQuery = `
+        SELECT COUNT(*) as total
+        FROM books
+        ${whereClause}
+    `;
+
+    const { total } = db.prepare(countQuery).get(...queryParams) as { total: number };
+
+    // Determine if pagination should be applied
+    const shouldPaginate = perPage > 0;
+
+    // Build data query
+    let dataQuery = `
+        SELECT 
+            id, 
+            title, 
+            cover_image as coverImage, 
+            publishing_date as publishingDate, 
+            summary, 
+            has_audio as hasAudio, 
+            audio_length as audioLength,
+            extract,
+            rating,
+            is_preview as isPreview,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+        FROM books
+        ${whereClause}
+        ORDER BY ${orderByClause}
+    `;
+
+    // Only add pagination if perPage > 0
+    let allParams = [...queryParams];
+
+    if (shouldPaginate) {
+        // Calculate pagination values
+        const offset = (page - 1) * perPage;
+        dataQuery += ` LIMIT ? OFFSET ?`;
+        allParams = [...queryParams, perPage, offset];
+    }
+
+    // Execute the data query with parameters
+    const books = db.prepare(dataQuery).all(...allParams) as Book[];
+
+    // Process boolean values and return the result
+    const processedBooks = books.map((book) => ({
+        id: book.id,
+        title: book.title,
+        coverImage: book.coverImage,
+        publishingDate: book.publishingDate,
+        summary: book.summary,
+        hasAudio: Boolean(book.hasAudio),
+        audioLength: book.audioLength,
+        extract: book.extract,
+        rating: book.rating,
+        isPreview: Boolean(book.isPreview),
+        createdAt: book.createdAt,
+        updatedAt: book.updatedAt,
+    } as Book));
+
+    // Return the result (paginated or not)
+    return {
+        data: processedBooks,
+        pagination: {
+            total,
+            page: shouldPaginate ? page : 1,
+            perPage: shouldPaginate ? perPage : total,
+            totalPages: shouldPaginate ? Math.ceil(total / perPage) : 1,
+        }
+    };
+}
+
+/**
  * Get a book by ID
  */
 export function getBookById(id: string): Book | undefined {
@@ -105,6 +306,28 @@ export function getBookById(id: string): Book | undefined {
         createdAt: book.createdAt,
         updatedAt: book.updatedAt,
     } as Book;
+}
+
+/**
+ * Get a book by ID
+ */
+export function getAudioBookById(id: string): AudioBook | undefined {
+
+    const db = getDb();
+    const audiobook = db.prepare(`
+        SELECT 
+            id,
+            book_id,
+            media_id,
+            audio_length,
+            publishing_date
+        FROM audiobooks 
+        WHERE book_id = ?;
+    `).get(id) as AudioBook;
+
+    // if (!audiobook) return undefined;
+
+    return audiobook;
 }
 
 /**

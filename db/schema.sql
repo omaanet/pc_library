@@ -49,20 +49,21 @@ CREATE TABLE "bookmarks" (
 );
 
 CREATE TABLE "books" (
-	[id] TEXT UNIQUE,
-	[title] TEXT NOT NULL,
-	[cover_image] TEXT NOT NULL,
-	[publishing_date] TEXT NOT NULL,
-	[summary] TEXT NOT NULL,
-	[has_audio] BOOLEAN NOT NULL DEFAULT 0,
-	[audio_length] INTEGER,
-	[extract] TEXT,
-	[rating] INTEGER,
+	[id]	TEXT UNIQUE,
+	[title]	TEXT NOT NULL,
+	[cover_image]	TEXT NOT NULL,
+	[publishing_date]	TEXT NOT NULL,
+	[summary]	TEXT,
+	[has_audio]	BOOLEAN NOT NULL DEFAULT 0,
+	[audio_length]	INTEGER,
+	[extract]	TEXT,
+	[rating]	INTEGER,
 	[is_preview]	INTEGER,
-	[created_at] TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	[updated_at] TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	[order]	INTEGER,
+	[created_at]	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	[updated_at]	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY([id])
-);
+)
 
 CREATE TABLE "notes" (
 	[id] INTEGER NOT NULL UNIQUE,

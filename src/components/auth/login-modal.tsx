@@ -48,9 +48,9 @@ export function LoginModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Login to Digital Library</DialogTitle>
+                    <DialogTitle>Accedi a Racconti in Voce e Caratteri</DialogTitle>
                     <DialogDescription>
-                        Enter your email and password to access your account
+                        Inserisci la tua email e password per accedere al tuo account
                     </DialogDescription>
                 </DialogHeader>
 
@@ -86,12 +86,12 @@ export function LoginModal({
                             className="w-full"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Signing in...' : 'Sign in'}
+                            {isLoading ? 'Accesso in corso...' : 'Accedi'}
                         </Button>
 
                         <div className="text-center text-sm">
                             <span className="text-muted-foreground">
-                                Don&apos;t have an account?{' '}
+                                Non hai un account?{' '}
                             </span>
                             <Button
                                 type="button"
@@ -100,7 +100,7 @@ export function LoginModal({
                                 onClick={onSwitchToRegister}
                                 disabled={isLoading}
                             >
-                                Register here
+                                Registrati qui
                             </Button>
                         </div>
                     </div>

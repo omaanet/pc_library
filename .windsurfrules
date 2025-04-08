@@ -1,8 +1,9 @@
-Use Next.js 15 with TypeScript, Tailwind CSS, and Shadcn UI
+Use Next.js 15, React 19, TypeScript, Tailwind CSS, and Shadcn UI
 Database: SQLite stored in `db\books.db3`
 Preferred database library: `better-sqlite3` (not `sqlite3`)
 Database schema located in `db\schema.sql`
 Type definitions located in `src/types`
+For complete details about the project, its components, API routes, database structure, and more, see the `tech_stack.md` file.
 Ensure compatibility with React Fast Refresh
 Always verify imports and exports to avoid unnecessary dependencies
 Avoid deeply nested blocks, prefer shallow nesting
@@ -10,5 +11,9 @@ Avoid duplication of existing code
 Never overwrite `.env` file without explicit confirmation
 
 Only touch code relevant to the task, avoid unrelated areas
-If unsure about something or you need more information, STOP and ask the user
+Follow the separation of concerns principle and keep the two projects distinct.
+When creating or modifying the code, always find and implement the simplest solution: do not overcomplicate the code or the logic.
+Be sure to check for existing and potentially reusable classes, utilities, or components before developing new frameworks or writing new code.
 If a large change is necessary, STOP, inform the user, and ask for confirmation
+
+When in doubt, when you are not sure about something or you need more details or information, stop and ask user for clarification: if needed propose different options.

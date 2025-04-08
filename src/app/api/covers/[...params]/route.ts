@@ -104,6 +104,11 @@ async function processImage(
         const image = sharp(filePath);
         const metadata = await image.metadata();
 
+        // Ensure an alpha channel exists before any processing
+        // If it doesn't have alpha, add a fully transparent one.
+        // Also call ensureAlpha if it *does* have alpha, to ensure consistency.
+        image.ensureAlpha();
+
         // Handle animations if present
         const isAnimated = metadata.pages && metadata.pages > 1;
         if (isAnimated) {
@@ -112,7 +117,8 @@ async function processImage(
                 .webp({
                     quality,
                     effort: 6, // Higher compression effort
-                    smartSubsample: true // Better chroma subsampling
+                    smartSubsample: true, // Better chroma subsampling
+                    force: true // Force WebP output
                 })
                 .toBuffer();
         }
@@ -124,7 +130,8 @@ async function processImage(
                 width,
                 height,
                 fit: 'contain',
-                background: { r: 255, g: 255, b: 255, alpha: 0 },
+                // Use black transparent background {r:0,g:0,b:0,alpha:0}
+                background: { r: 255, g: 255, b: 0, alpha: 0 },
                 kernel: 'lanczos3', // High-quality resampling
                 withoutEnlargement: true, // Prevent upscaling beyond original size
                 fastShrinkOnLoad: true // Optimize initial scaling operations
@@ -139,6 +146,9 @@ async function processImage(
                 y2: 10,     // Threshold for edge areas
                 y3: 20      // Maximum sharpening
             });
+
+            // Ensure alpha again after resize/sharpen
+            image.ensureAlpha();
         }
 
         // Convert to WebP with enhanced options
@@ -152,7 +162,7 @@ async function processImage(
                 effort: 6,                // Higher compression effort (0-6)
                 loop: 0,                  // Default loop setting
                 delay: 100,               // Default delay between frames if animated
-                force: false              // Don't force WebP if unsuitable
+                force: true              // Force WebP output
             })
             .withMetadata({
                 orientation: metadata.orientation, // Preserve orientation

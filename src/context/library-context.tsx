@@ -19,12 +19,12 @@ const initialState: LibraryState = {
     isLoading: false,
     error: null,
     filters: {},
-    sort: { by: 'title', order: 'asc' },
+    sort: { by: 'hasAudio', order: 'desc' },
     viewMode: 'grid',
     selectedBook: null,
     pagination: {
         page: 1,
-        perPage: 20,
+        perPage: -1,
         total: 0,
     },
 };
@@ -83,7 +83,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             if (state.filters.hasAudio !== undefined) {
                 params.append('hasAudio', state.filters.hasAudio.toString());
             }
-            
+
             // Add displayPreviews parameter if provided directly (not from filters)
             if (displayPreviewsParam !== undefined) {
                 params.append('displayPreviews', displayPreviewsParam.toString());

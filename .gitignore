@@ -48,3 +48,6 @@ _docs
 
 db/_*.sql
 _covers_
+*.t_sx
+*.ts_x
+

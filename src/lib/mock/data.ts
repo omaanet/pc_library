@@ -85,43 +85,43 @@ interface BookFilters {
     hasAudio?: boolean;
 }
 
-export function getPaginatedBooks(
-    page: number = 1,
-    perPage: number = 20,
-    filters: BookFilters = {}
-) {
-    let filteredBooks = [...mockBooks];
+// export function getPaginatedBooks(
+//     page: number = 1,
+//     perPage: number = 10,
+//     filters: BookFilters = {}
+// ) {
+//     let filteredBooks = [...mockBooks];
 
-    // Apply filters
-    if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        filteredBooks = filteredBooks.filter(book =>
-            book.title.toLowerCase().includes(searchLower) ||
-            book.summary.toLowerCase().includes(searchLower)
-        );
-    }
+//     // Apply filters
+//     if (filters.search) {
+//         const searchLower = filters.search.toLowerCase();
+//         filteredBooks = filteredBooks.filter(book =>
+//             book.title.toLowerCase().includes(searchLower) ||
+//             book.summary.toLowerCase().includes(searchLower)
+//         );
+//     }
 
-    if (filters.hasAudio !== undefined) {
-        filteredBooks = filteredBooks.filter(book =>
-            book.hasAudio === filters.hasAudio
-        );
-    }
+//     if (filters.hasAudio !== undefined) {
+//         filteredBooks = filteredBooks.filter(book =>
+//             book.hasAudio === filters.hasAudio
+//         );
+//     }
 
-    // Calculate pagination
-    const start = (page - 1) * perPage;
-    const end = start + perPage;
-    const paginatedBooks = filteredBooks.slice(start, end);
+//     // Calculate pagination
+//     const start = (page - 1) * perPage;
+//     const end = start + perPage;
+//     const paginatedBooks = filteredBooks.slice(start, end);
 
-    return {
-        books: paginatedBooks,
-        pagination: {
-            total: filteredBooks.length,
-            page,
-            perPage,
-            totalPages: Math.ceil(filteredBooks.length / perPage),
-        },
-    };
-}
+//     return {
+//         books: paginatedBooks,
+//         pagination: {
+//             total: filteredBooks.length,
+//             page,
+//             perPage,
+//             totalPages: Math.ceil(filteredBooks.length / perPage),
+//         },
+//     };
+// }
 
 // Function to get book by ID
 export function getBookById(id: string): Book | undefined {

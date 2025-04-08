@@ -78,11 +78,11 @@ export function AuthModal({
 
     let dialogTitle: string, dialogDescription: string;
     if (activeTab === 'login') {
-        dialogTitle = "Login to Digital Library";
-        dialogDescription = "Enter your email and password to access your account";
+        dialogTitle = "Accedi a Racconti in Voce e Caratteri";
+        dialogDescription = "Inserisci la tua email e password per accedere al tuo account";
     } else {
-        dialogTitle = "Create an Account";
-        dialogDescription = "Register to access the full Digital Library experience";
+        dialogTitle = "Crea un Account";
+        dialogDescription = "Registrati per accedere all'esperienza completa";
     }
 
     return (
@@ -95,8 +95,8 @@ export function AuthModal({
 
                 <Tabs value={activeTab} onValueChange={(value: unknown) => setActiveTab(value as 'login' | 'register')}>
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="login">Login</TabsTrigger>
-                        <TabsTrigger value="register">Register</TabsTrigger>
+                        <TabsTrigger value="login">Accedi</TabsTrigger>
+                        <TabsTrigger value="register">Registrati</TabsTrigger>
                     </TabsList>
 
                     {/* Error Alert */}
@@ -135,7 +135,7 @@ export function AuthModal({
                             </div>
                             <Button type="submit" className="w-full" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Sign In
+                                Accedi
                             </Button>
                         </form>
                     </TabsContent>
@@ -155,7 +155,7 @@ export function AuthModal({
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="register-name">Full Name</Label>
+                                <Label htmlFor="register-name">Nome completo</Label>
                                 <Input
                                     id="register-name"
                                     type="text"
@@ -167,7 +167,7 @@ export function AuthModal({
                             </div>
                             <Button type="submit" className="w-full" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Register
+                                Registrati
                             </Button>
                         </form>
                     </TabsContent>

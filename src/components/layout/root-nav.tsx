@@ -35,7 +35,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                 {/* Logo and Brand */}
                 <Link href="/" className="flex items-center space-x-2">
                     <Library className="h-6 w-6" />
-                    <span className="font-bold">Digital Library</span>
+                    <span className="font-bold">Racconti in Voce e Caratteri</span>
                 </Link>
 
                 {/* Desktop Navigation */}
@@ -47,7 +47,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             pathname === "/books" && "text-primary"
                         )}
                     >
-                        Libri
+                        Racconti
                     </Link>
                     <Link
                         href="/audiobooks"
@@ -56,7 +56,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             pathname === "/audiobooks" && "text-primary"
                         )}
                     >
-                        Audiolibri
+                        Audioracconti
                     </Link>
                     <Link
                         hidden={!isAuthenticated}
@@ -67,7 +67,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             pathname === "/add-book" && "text-primary"
                         )}
                     >
-                        Add Book
+                        Aggiungi Racconto
                     </Link>
                     {isAuthenticated && (
                         <Link
@@ -77,7 +77,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                                 pathname === "/my-books" && "text-primary"
                             )}
                         >
-                            My Library
+                            La mia libreria
                         </Link>
                     )}
                 </nav>
@@ -92,12 +92,12 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
                                     <UserCircle className="h-5 w-5" />
-                                    <span className="sr-only">User menu</span>
+                                    <span className="sr-only">Menu utente</span>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
-                                    <Link href="/settings">Settings</Link>
+                                    <Link href="/settings">Impostazioni</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
                                     <Link href="/my-books">La mia libreria</Link>
@@ -110,7 +110,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             size="sm"
                             onClick={onAuthClick}
                         >
-                            Sign In
+                            Accedi
                         </Button>
                     )}
 
@@ -139,7 +139,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             )}
                             onClick={() => setIsMobileMenuOpen(false)}
                         >
-                            Books
+                            Racconti
                         </Link>
                         <Link
                             href="/audiobooks"
@@ -149,7 +149,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             )}
                             onClick={() => setIsMobileMenuOpen(false)}
                         >
-                            Audiobooks
+                            Audioracconti
                         </Link>
                         <Link
                             href="/add-book"
@@ -159,7 +159,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                             )}
                             onClick={() => setIsMobileMenuOpen(false)}
                         >
-                            Add Book
+                            Aggiungi Racconto
                         </Link>
                         {isAuthenticated && (
                             <Link
@@ -170,7 +170,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                                 )}
                                 onClick={() => setIsMobileMenuOpen(false)}
                             >
-                                My Library
+                                La mia libreria
                             </Link>
                         )}
                     </nav>

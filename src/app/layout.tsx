@@ -12,12 +12,12 @@ const inter = Inter({
 
 export const metadata: Metadata = {
     title: {
-        default: 'Digital Library',
-        template: '%s | Digital Library',
+        default: 'Racconti in Voce e Caratteri',
+        template: '%s | Racconti in Voce e Caratteri',
     },
-    description: 'A modern digital library for books and audiobooks',
-    keywords: ['library', 'books', 'audiobooks', 'reading', 'digital'],
-    authors: [{ name: 'Digital Library Team' }],
+    description: 'Sito web dedicato alla lettura a scopo benefico',
+    keywords: ['racconti', 'audioracconti'],
+    authors: [{ name: 'Piero Carbonetti' }],
 };
 
 export const viewport: Viewport = {

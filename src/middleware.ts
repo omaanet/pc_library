@@ -12,8 +12,22 @@ const securityHeaders = {
 };
 
 export async function middleware(request: NextRequest) {
+    const { pathname } = request.nextUrl;
+
+    // Only apply middleware to EPUB files
+    // if (pathname.endsWith('.epub')) {
+    //     // Clone the response and add proper headers
+    //     const response = NextResponse.next();
+
+    //     // Set the content type for EPUB files
+    //     response.headers.set('Content-Type', 'application/epub+zip');
+    //     response.headers.set('Cache-Control', 'public, max-age=3600');
+
+    //     return response;
+    // }
+
     // Only intercept cover image requests
-    if (!request.nextUrl.pathname.startsWith(COVERS_PATH)) {
+    if (!pathname.startsWith(COVERS_PATH)) {
         return NextResponse.next();
     }
 
@@ -61,5 +75,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: '/api/covers/:path*',
+    matcher: [
+        '/api/covers/:path*',
+        // '/epub/:path*'
+    ],
 };

@@ -48,15 +48,15 @@ export function RegisterModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Create an Account</DialogTitle>
+                    <DialogTitle>Crea un Account</DialogTitle>
                     <DialogDescription>
-                        Register to access the full Digital Library experience
+                        Registrati per accedere all'esperienza completa
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="fullName">Full Name</Label>
+                        <Label htmlFor="fullName">Nome completo</Label>
                         <Input
                             id="fullName"
                             placeholder="John Doe"
@@ -86,12 +86,12 @@ export function RegisterModal({
                             className="w-full"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Registering...' : 'Register'}
+                            {isLoading ? 'Registrazione in corso...' : 'Registrati'}
                         </Button>
 
                         <div className="text-center text-sm">
                             <span className="text-muted-foreground">
-                                Already have an account?{' '}
+                                Hai già un account?{' '}
                             </span>
                             <Button
                                 type="button"
@@ -100,7 +100,7 @@ export function RegisterModal({
                                 onClick={onSwitchToLogin}
                                 disabled={isLoading}
                             >
-                                Sign in here
+                                Accedi
                             </Button>
                         </div>
                     </div>

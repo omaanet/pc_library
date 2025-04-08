@@ -70,7 +70,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                     "backdrop-blur-sm transition-opacity duration-200",
                     imageLoaded ? "opacity-100" : "opacity-0"
                 )}>
-                    <Headphones className="h-3 w-3" />
+                    <Headphones className="h-5 w-5" />
                 </div>
             )}
         </div>

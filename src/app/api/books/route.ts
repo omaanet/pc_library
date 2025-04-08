@@ -1,7 +1,7 @@
 // src/app/api/books/route.ts
 import { NextResponse } from 'next/server';
-import { getAllBooks, createBook } from '@/lib/db';
-import type { Book } from '@/types';
+import { getAllBooksOptimized, createBook, BookQueryOptions } from '@/lib/db';
+// import type { Book } from '@/types';
 
 export async function GET(request: Request) {
     try {
@@ -9,78 +9,84 @@ export async function GET(request: Request) {
 
         // Parse parameters with defaults
         const page = parseInt(url.searchParams.get('page') ?? '1');
-        const perPage = parseInt(url.searchParams.get('perPage') ?? '20');
+        const perPage = parseInt(url.searchParams.get('perPage') ?? '-1');
         const search = url.searchParams.get('search') || undefined;
         const hasAudio = url.searchParams.get('hasAudio') === 'true' ? true :
             url.searchParams.get('hasAudio') === 'false' ? false : undefined;
-        const sortBy = url.searchParams.get('sortBy') || 'title';
-        const sortOrder = url.searchParams.get('sortOrder') || 'asc';
 
         // Parse displayPreviews parameter (-1: all, 0: non-preview only, 1: preview only)
         const displayPreviewsParam = url.searchParams.get('displayPreviews');
-        const displayPreviews = displayPreviewsParam ? 
+        const displayPreviews = displayPreviewsParam ?
             parseInt(displayPreviewsParam) : 0; // Default to non-preview books (0)
 
-        // Get all books from the database with preview filtering
-        const allBooks = getAllBooks(displayPreviews);
+        // console.log('perPage:', perPage);
+        // return NextResponse.json({
+        //     books: [],
+        //     pagination: []
+        // });
 
-        // Filter books
-        let filteredBooks = [...allBooks];
+        // Parse sorting parameters
+        const sortBy: [string, 'ASC' | 'DESC'][] | string | undefined = undefined;
+        const sortByParam = url.searchParams.get('sortBy');
+        const sortOrder = (url.searchParams.get('sortOrder') || 'asc') as 'asc' | 'desc';
 
-        if (search) {
-            const searchLower = search.toLowerCase();
-            filteredBooks = filteredBooks.filter(book =>
-                book.title.toLowerCase().includes(searchLower) ||
-                book.summary.toLowerCase().includes(searchLower)
-            );
-        }
+        // Check if we have a compound sort request via ?sort parameter
+        const sortParam = url.searchParams.get('sort');
+        // if (sortParam) {
+        //     try {
+        //         // Parse JSON sort definition from URL parameter
+        //         // Expected format: [['has_audio','ASC'],['publishing_date','DESC']]
+        //         sortBy = JSON.parse(sortParam);
 
-        if (hasAudio !== undefined) {
-            filteredBooks = filteredBooks.filter(book => book.hasAudio === hasAudio);
-        }
+        //         // Validate the structure
+        //         if (!Array.isArray(sortBy) ||
+        //             !sortBy.every(item =>
+        //                 Array.isArray(item) &&
+        //                 item.length === 2 &&
+        //                 typeof item[0] === 'string' &&
+        //                 ['ASC', 'DESC'].includes(item[1].toUpperCase())
+        //             )
+        //         ) {
+        //             // If invalid, fallback to default
+        //             // sortBy = [['has_audio', 'ASC'], ['title', 'ASC']];
+        //             sortBy = [['has_audio', 'ASC']];
+        //         }
+        //     } catch (e) {
+        //         // If parse fails, use default sort
+        //         // sortBy = [['has_audio', 'ASC'], ['title', 'ASC']];
+        //         sortBy = [['has_audio', 'ASC']];
+        //     }
+        // } else if (sortByParam) {
+        //     // Legacy single-column sort
+        //     sortBy = sortByParam;
+        // } else {
+        //     // Default sort: hasAudio ASC, publishing_date DESC
+        //     // sortBy = [['has_audio', 'ASC'], ['publishing_date', 'DESC']];
+        //     sortBy = [['has_audio', 'ASC']];
+        // }
 
-        // Sort books
-        filteredBooks.sort((a: Book, b: Book) => {
-            const aValue = a[sortBy as keyof Book];
-            const bValue = b[sortBy as keyof Book];
+        // sortBy = [['has_audio', 'ASC'], ['order', 'ASC']];
 
-            if (typeof aValue === 'string' && typeof bValue === 'string') {
-                return sortOrder === 'asc'
-                    ? aValue.localeCompare(bValue)
-                    : bValue.localeCompare(aValue);
-            }
-
-            if (typeof aValue === 'number' && typeof bValue === 'number') {
-                return sortOrder === 'asc'
-                    ? aValue - bValue
-                    : bValue - aValue;
-            }
-
-            if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
-                return sortOrder === 'asc'
-                    ? (aValue ? 1 : 0) - (bValue ? 1 : 0)
-                    : (bValue ? 1 : 0) - (aValue ? 1 : 0);
-            }
-
-            return 0;
-        });
-
-        // Paginate
-        const start = (page - 1) * perPage;
-        const end = start + perPage;
-        const paginatedBooks = filteredBooks.slice(start, end);
-
-        const result = {
-            books: paginatedBooks,
-            pagination: {
-                total: filteredBooks.length,
-                page,
-                perPage,
-                totalPages: Math.ceil(filteredBooks.length / perPage),
-            }
+        // Prepare query options for the optimized function
+        const queryOptions: BookQueryOptions = {
+            search,
+            hasAudio,
+            sortBy: sortBy as [string, 'ASC' | 'DESC'][] | string | undefined,
+            sortOrder,
+            page,
+            perPage,
+            displayPreviews
         };
 
-        return NextResponse.json(result);
+        // Get books using the optimized function that handles filtering, sorting,
+        // and pagination directly in SQL
+        const result = getAllBooksOptimized(queryOptions);
+
+        // Return formatted response
+        return NextResponse.json({
+            books: result.data,
+            pagination: result.pagination
+        });
     } catch (error) {
         console.error('API Error fetching books:', error);
         return NextResponse.json(

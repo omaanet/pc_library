@@ -68,11 +68,11 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
             {/* Audio badge */}
             {book.hasAudio && (
                 <div className={cn(
-                    "absolute top-2 right-2 rounded-full bg-background/80 p-1.5",
+                    "absolute top-2 right-2 rounded-full bg-yellow-600/80 p-1.5",
                     "backdrop-blur-sm transition-opacity duration-200",
                     imageLoaded ? "opacity-100" : "opacity-0"
                 )}>
-                    <Headphones className="h-4 w-4" />
+                    <Headphones className="h-6 w-6" />
                 </div>
             )}
         </div>

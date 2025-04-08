@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { Headphones, X } from 'lucide-react';
+import Link from 'next/link';
+import { Headphones, X, BookOpen } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -32,7 +33,7 @@ export function BookDialog({
     book,
     open,
     onOpenChange,
-    isAuthenticated = false,
+    isAuthenticated = true,
     onLoginClick,
 }: BookDialogProps) {
     const [imageLoaded, setImageLoaded] = React.useState(false);
@@ -47,7 +48,7 @@ export function BookDialog({
         if (!book?.coverImage) return null;
 
         const { width, height } = DEFAULT_COVER_SIZES.detail;
-        const aspectRatio = width / height;
+        // const aspectRatio = width / height;
         const isPlaceholder = book.coverImage === IMAGE_CONFIG.placeholder.token;
         const imageUrl = getCoverImageUrl(
             book.coverImage,
@@ -78,6 +79,7 @@ export function BookDialog({
                             height={height}
                             className={cn(
                                 "max-w-full max-h-full object-contain transition-opacity duration-400",
+                                // `aspect-[${width}/${height}]`,
                                 imageLoaded ? "opacity-100" : "opacity-0"
                             )}
                             sizes="(min-width: 768px) 33vw, 100vw"
@@ -91,11 +93,11 @@ export function BookDialog({
                         {/* Audio badge */}
                         {book.hasAudio && (
                             <div className={cn(
-                                "absolute top-2 right-2 rounded-full bg-background/80 p-1.5",
+                                "absolute top-2 right-2 rounded-full bg-yellow-600/80 p-1.5",
                                 "backdrop-blur-sm transition-opacity duration-200",
                                 imageLoaded ? "opacity-100" : "opacity-0"
                             )}>
-                                <Headphones className="h-4 w-4" />
+                                <Headphones className="h-6 w-6" />
                             </div>
                         )}
                     </div>
@@ -117,11 +119,11 @@ export function BookDialog({
                             <Headphones className="h-4 w-4 mr-2" />
                             Ascolta ora
                         </Button>
-                        <span className="text-sm text-muted-foreground">
+                        {/* <span className="text-sm text-muted-foreground">
                             {book.audioLength ?
                                 formatAudioLength(book.audioLength) :
                                 'Durata non disponibile'} durata totale
-                        </span>
+                        </span> */}
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -167,11 +169,11 @@ export function BookDialog({
                             ) : (
                                 <div className="space-y-4">
                                     <p className="text-muted-foreground">
-                                            Accedi per leggere l'estratto del libro e accedere al contenuto completo.
+                                        Accedi per leggere l'estratto del libro e accedere al contenuto completo.
                                     </p>
                                     {onLoginClick && (
                                         <Button onClick={onLoginClick}>
-                                                Accedi per leggere di più.
+                                            Accedi per leggere di più.
                                         </Button>
                                     )}
                                 </div>
@@ -182,7 +184,16 @@ export function BookDialog({
                 )}
 
                 {/* Audio Version */}
-                {audioSection}
+                {/* {audioSection} */}
+
+                {isAuthenticated && (
+                    <Button asChild>
+                        <Link href={`/read-book/${book.id}`}>
+                            <BookOpen className="h-4 w-4 mr-2" />
+                            Leggi ora
+                        </Link>
+                    </Button>
+                )}
 
                 {/* Additional Book Info */}
                 {(book.rating || book.readingProgress) && (
