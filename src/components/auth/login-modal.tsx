@@ -1,12 +1,15 @@
-/* eslint-disable no-console */
 // src/components/auth/login-modal.tsx
 'use client';
 
 import * as React from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/context/auth-context';
+import { AlertCircle } from 'lucide-react';
 
 interface LoginModalProps {
     open: boolean;
@@ -24,21 +27,48 @@ export function LoginModal({
     const [isLoading, setIsLoading] = React.useState(false);
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
+    const [error, setError] = React.useState<string | null>(null);
+
+    const { login } = useAuth();
+    const { toast } = useToast();
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        setError(null);
 
         try {
-            // Here you would implement your login logic
-            console.log('Login attempt with:', { email, password });
+            // Use the login function from auth context
+            await login({ email, password });
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Show success toast
+            toast({
+                title: 'Login Successful',
+                description: 'You have successfully logged in to your account.',
+                variant: 'default',
+            });
 
-            onSuccess();
+            // Check if there's a redirect URL in the search params
+            const redirectUrl = searchParams?.get('redirect');
+            if (redirectUrl) {
+                // Navigate to the redirect URL if provided
+                router.push(decodeURIComponent(redirectUrl));
+            } else {
+                // Otherwise close the modal and call the success handler
+                onSuccess();
+            }
         } catch (error) {
-            console.error('Login error:', error);
+            // Set the error message
+            setError(error instanceof Error ? error.message : 'Login failed. Please check your credentials.');
+
+            // Show error toast
+            toast({
+                title: 'Login Failed',
+                description: error instanceof Error ? error.message : 'Login failed. Please check your credentials.',
+                variant: 'destructive',
+            });
         } finally {
             setIsLoading(false);
         }
@@ -55,6 +85,12 @@ export function LoginModal({
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                    {error && (
+                        <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md flex items-center space-x-2">
+                            <AlertCircle className="h-4 w-4" />
+                            <span>{error}</span>
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
                         <Input

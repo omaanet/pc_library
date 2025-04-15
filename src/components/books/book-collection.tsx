@@ -25,6 +25,8 @@ import { BookGridSkeleton, BookListSkeleton } from '@/components/ui/loading-plac
 import { DEFAULT_COVER_SIZES } from '@/types/images';
 import type { LibrarySort } from '@/types/context';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
+import { AuthModal } from '@/components/auth/auth-modal';
+import type { BookResponse } from '@/types';
 
 const SORT_OPTIONS = {
     'title-asc': { label: 'Title (A-Z)' },
@@ -70,6 +72,9 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
 
     const { state: { isAuthenticated } } = useAuth();
     const { toast } = useToast();
+
+    // Add state for the auth modal
+    const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
 
     // Local loading states
     const [searchDebounce, setSearchDebounce] = React.useState<NodeJS.Timeout>();
@@ -118,7 +123,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const data = await response.json();
+                const data: BookResponse = await response.json();
                 console.log('Fetched books for displayPreviews', displayPreviews, ':', data);
 
                 // Only update local state if component is still mounted
@@ -246,7 +251,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const data = await response.json();
+            const data: BookResponse = await response.json();
 
             // Update local state first
             setLocalBooks(data.books || []);
@@ -352,7 +357,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const data = await response.json();
+            const data: BookResponse = await response.json();
 
             // Append new books to existing ones
             setLocalBooks(prev => [...prev, ...data.books]);
@@ -406,7 +411,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                                     const response = await fetch(`/api/books?${params}`);
                                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-                                    const data = await response.json();
+                                    const data: BookResponse = await response.json();
                                     setLocalBooks(data.books);
                                     if (data.pagination) setLocalPagination(data.pagination);
                                 } catch (error) {
@@ -551,6 +556,16 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                 open={!!selectedBook}
                 onOpenChange={(open) => !open && selectBook(null)}
                 isAuthenticated={isAuthenticated}
+                onLoginClick={() => {
+                    console.log('BookCollection: Setting auth modal open');
+                    setIsAuthModalOpen(true);
+                }}
+            />
+
+            {/* Auth Modal */}
+            <AuthModal
+                open={isAuthModalOpen}
+                onOpenChange={setIsAuthModalOpen}
             />
         </div>
     );

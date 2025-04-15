@@ -24,6 +24,10 @@ export function AuthModal({
     onOpenChange,
     defaultTab = 'login'
 }: AuthModalProps) {
+    // Log whenever open state changes
+    // React.useEffect(() => {
+    //     console.log('[AuthModal] open prop changed:', open);
+    // }, [open]);
     const { login, register, state: { isLoading, error } } = useAuth();
     const [activeTab, setActiveTab] = React.useState<'login' | 'register'>(defaultTab);
     const [formError, setFormError] = React.useState<string | null>(null);
@@ -85,9 +89,18 @@ export function AuthModal({
         dialogDescription = "Registrati per accedere all'esperienza completa";
     }
 
+    // Log render and props
+    // console.log('[AuthModal] Rendering with props:', { open, defaultTab });
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+        <Dialog
+            open={open}
+            onOpenChange={(newOpen) => {
+                // console.log('[AuthModal] Dialog onOpenChange called with:', newOpen);
+                onOpenChange(newOpen);
+            }}
+        >
+            <DialogContent className="auth-modal-container sm:max-w-[425px] px-6 pb-4">
                 <DialogHeader>
                     <DialogTitle>{dialogTitle}</DialogTitle>
                     <DialogDescription>{dialogDescription}</DialogDescription>
@@ -110,7 +123,7 @@ export function AuthModal({
 
                     {/* Login Tab */}
                     <TabsContent value="login">
-                        <form onSubmit={handleLogin} className="space-y-4">
+                        <form onSubmit={handleLogin} className="space-y-4 mt-4">
                             <div className="space-y-2">
                                 <Label htmlFor="login-email">Email</Label>
                                 <Input

@@ -28,22 +28,22 @@ export interface AudioBook {
 }
 
 export interface UserPreferences {
-    emailNotifications: any;
-    reading: any;
-    theme: 'light' | 'dark' | 'system';
-    language: string;
-    fontSize: number;
-    viewMode: 'list' | 'grid' | 'detailed';
-    notifications: {
+    emailNotifications?: any;
+    reading?: any;
+    theme?: 'light' | 'dark' | 'system';
+    language?: string;
+    fontSize?: number;
+    viewMode?: 'list' | 'grid' | 'detailed';
+    notifications?: {
         email: boolean;
         push: boolean;
         SMS: boolean;
     };
-    accessibility: {
-        largeText: boolean | undefined;
-        reduceAnimations: boolean | undefined;
-        highContrast: boolean;
-        reducedMotion: boolean;
+    accessibility?: {
+        largeText?: boolean;
+        reduceAnimations?: boolean;
+        highContrast?: boolean;
+        reducedMotion?: boolean;
     };
     lastUpdated?: Date;
 }
@@ -58,13 +58,27 @@ export interface UserStats {
 }
 
 export interface User {
-    id: string;
-    name: string;
-    fullName: string;
+    id: number;
     email: string;
-    preferences: UserPreferences;
-    isActivated: boolean;
-    stats: UserStats;
-    createdAt: Date;
-    updatedAt?: Date;
+    fullName: string; // maps to full_name in DB
+    isActivated: boolean; // maps to is_activated in DB
+    name: string; // Derived from fullName
+    // The following fields are optional as they might not be present in all contexts
+    verification_token?: string;
+    password_hash?: string;
+    preferences?: UserPreferences; // Joined from user_preferences table
+    stats?: UserStats; // Joined from user_stats table
+    createdAt?: Date; // maps to created_at in DB
+    updatedAt?: Date; // maps to updated_at in DB
+}
+
+export interface BookResponse {
+    books: Book[];
+    pagination?: {
+        total: number;
+        page: number;
+        perPage: number;
+        hasMore: boolean;
+        totalPages: number;
+    };
 }

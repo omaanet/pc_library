@@ -1,0 +1,34 @@
+{
+    "output": {
+        "style": "markdown",
+        "filePath": "custom-output.md",
+        "compress": true,
+        "removeComments": true,
+        "removeEmptyLines": true,
+        "showLineNumbers": false,
+        "fileSummary": true,
+        "directoryStructure": true,
+        "topFilesLength": 10
+    },
+    "ignore": {
+        "useGitignore": true,
+        "useDefaultPatterns": true,
+        "customPatterns": [
+            "**/bin/**",
+            "**/obj/**",
+            "**/*.log",
+            "**/*.user",
+            "**/*.suo",
+            "**/node_modules/**",
+            "**/packages/**",
+            ".vscode/**",
+            "assets/**",
+            "*.test.ts",
+            "**/*.md",
+            "db/_*.sql"
+        ]
+    },
+    "tokenCount": {
+        "encoding": "cl100k_base"
+    }
+}

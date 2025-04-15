@@ -57,17 +57,13 @@ export default function HomePage() {
 
                 {/* Hero Section */}
                 <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">
-                    <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]" />
+                    {/* <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]" /> */}
                     <div className="container space-y-2">
                         <div className="space-y-6 text-center">
-                            <h1 className="text-3xl font-medium tracking-tight sm:text-5xl">
+                            <h1 className="text-3xl font-medium tracking-tight sm:text-5xl" style={{ color: 'hsl(200, 90%, 45%)' }}>
                                 Racconti in Voce e Caratteri<br />Espressioni di Scrittura Creativa
                             </h1>
-                            <p className="mx-auto max-w-5xl text-lg text-muted-foreground">
-                                Sito web dedicato alla lettura a scopo benefico
-                            </p>
-                            <p className="mx-auto max-w-5xl text-lg text-muted-foreground">
-                                Da Suor Turchese al Segreto dell’ottico, Piero Carbonetti presenta: Racconti in Voce e Caratteri.<br />
+                            <p className="mx-auto max-w-5xl text-lg text-muted-foreground" style={{ color: 'hsl(205, 84%, 27%)' }}>
                                 Una variegata raccolta narrativa di fantasia. Novelle in libera lettura a scopo benefico.
                             </p>
                         </div>

@@ -7,6 +7,10 @@ import { BookGridCard } from './book-grid-card';
 import { BookListCard } from './book-list-card';
 import { BookDialog } from './book-dialog';
 import { ViewSwitcher } from '@/components/shared/view-switcher';
+import { AuthModal } from '@/components/auth/auth-modal';
+import { Button } from '@/components/ui/button';
+
+// Direct approach without context
 
 interface BookShelfProps {
     books: Book[];
@@ -21,6 +25,11 @@ export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
 
     // Handle auth modal state
     const [showAuthModal, setShowAuthModal] = React.useState(false);
+    
+    // Log state changes for debugging
+    React.useEffect(() => {
+        console.log('[BookShelf] showAuthModal state changed:', showAuthModal);
+    }, [showAuthModal]);
 
     const handleBookSelect = (book: Book) => {
         setSelectedBook(book);
@@ -28,10 +37,13 @@ export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
     };
 
     const handleBookAction = () => {
-        if (!isAuthenticated) {
-            setShowAuthModal(true);
-        }
+        console.log('[BookShelf] handleBookAction called');
+        console.log('[BookShelf] Current modal state:', showAuthModal);
+        setShowAuthModal(true);
+        console.log('[BookShelf] Set modal state to true');
     };
+    
+
 
     return (
         <div className="space-y-4">
@@ -39,7 +51,19 @@ export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
                 <h2 className="text-2xl font-semibold tracking-tight">
                     Library Collection
                 </h2>
-                <ViewSwitcher view={view} onViewChange={setView} />
+                <div className="flex items-center gap-2">
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                            console.log('[BookShelf] Test button clicked, current state:', showAuthModal);
+                            setShowAuthModal(true);
+                        }}
+                    >
+                        Test Auth Modal
+                    </Button>
+                    <ViewSwitcher view={view} onViewChange={setView} />
+                </div>
             </div>
 
             {view === 'grid' ? (
@@ -71,6 +95,13 @@ export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
                 onOpenChange={(open) => !open && setSelectedBook(null)}
                 isAuthenticated={isAuthenticated}
                 onLoginClick={handleBookAction}
+            />
+            
+            {/* Auth Modal */}
+            <AuthModal
+                open={showAuthModal}
+                onOpenChange={setShowAuthModal}
+                defaultTab="login"
             />
         </div>
     );

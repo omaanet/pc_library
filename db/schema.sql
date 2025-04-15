@@ -119,23 +119,20 @@ CREATE TABLE "user_stats" (
 );
 
 CREATE TABLE "users" (
-	[id] INTEGER NOT NULL UNIQUE,
-	[email] TEXT NOT NULL UNIQUE,
-	[full_name] TEXT NOT NULL,
-	[is_activated] BOOLEAN NOT NULL DEFAULT 0,
-	[created_at] TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	[updated_at] TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	[id]	INTEGER NOT NULL UNIQUE,
+	[email]	TEXT NOT NULL UNIQUE,
+	[full_name]	TEXT NOT NULL,
+	[is_activated]	BOOLEAN NOT NULL DEFAULT 0,
+	[verification_token]	TEXT,
+	[password_hash]	TEXT,
+	[created_at]	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	[updated_at]	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY([id] AUTOINCREMENT)
 );
 
 CREATE INDEX idx_audio_sessions_user ON audio_sessions(user_id);
-
 CREATE INDEX idx_book_progress_status ON book_progress(status);
-
 CREATE INDEX idx_book_progress_user ON book_progress(user_id);
-
 CREATE INDEX idx_books_has_audio ON books(has_audio);
-
 CREATE INDEX idx_books_title ON books(title);
-
 CREATE INDEX idx_reading_sessions_user ON reading_sessions(user_id);

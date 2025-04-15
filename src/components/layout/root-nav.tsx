@@ -11,7 +11,9 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from '@/context/auth-context';
 import {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     Book,
@@ -20,12 +22,14 @@ import {
     UserCircle,
 } from 'lucide-react';
 
-interface RootNavProps {
+export function RootNav({
+    onAuthClick,
+    isAuthenticated = false,
+}: {
+    onAuthClick: () => void;
     isAuthenticated?: boolean;
-    onAuthClick?: () => void;
-}
-
-export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
+}) {
+    const { logout, state } = useAuth();
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -35,12 +39,12 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                 {/* Logo and Brand */}
                 <Link href="/" className="flex items-center space-x-2">
                     <Library className="h-6 w-6" />
-                    <span className="font-bold">Racconti in Voce e Caratteri</span>
+                    {/* <span className="font-bold">Racconti in Voce e Caratteri</span> */}
                 </Link>
 
                 {/* Desktop Navigation */}
                 <nav className="hidden md:flex items-center space-x-6">
-                    <Link
+                    {/* <Link
                         href="/books"
                         className={cn(
                             "text-sm font-medium transition-colors hover:text-primary",
@@ -48,9 +52,9 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                         )}
                     >
                         Racconti
-                    </Link>
+                    </Link> */}
 
-                    {isAuthenticated && false && (
+                    {/* {isAuthenticated && false && (
                         <Link
                             href="/audiobooks"
                             className={cn(
@@ -60,7 +64,7 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                         >
                             Audioracconti
                         </Link>
-                    )}
+                    )} */}
 
                     {isAuthenticated && false && (
                         <Link
@@ -83,17 +87,21 @@ export function RootNav({ isAuthenticated, onAuthClick }: RootNavProps) {
                     {isAuthenticated ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-3">
                                     <UserCircle className="h-5 w-5" />
-                                    <span className="sr-only">Menu utente</span>
+                                    <span className="font-medium text-sm">{state.user?.name || 'Utente'}</span>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
                                     <Link href="/settings">Impostazioni</Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
+                                <DropdownMenuItem asChild disabled={true}>
                                     <Link href="/my-books">La mia libreria</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => logout()}>
+                                    Esci
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

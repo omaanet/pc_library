@@ -1,9 +1,9 @@
-Use Next.js 15, React 19, TypeScript, Tailwind CSS, and Shadcn UI
+For complete details about the project, its components, API routes, database structure, and more, see `Codebase Technical Documentation.md` and `tech_stack.md` file.
+
 Database: SQLite stored in `db\books.db3`
 Preferred database library: `better-sqlite3` (not `sqlite3`)
 Database schema located in `db\schema.sql`
 Type definitions located in `src/types`
-For complete details about the project, its components, API routes, database structure, and more, see the `tech_stack.md` file.
 Ensure compatibility with React Fast Refresh
 Always verify imports and exports to avoid unnecessary dependencies
 Avoid deeply nested blocks, prefer shallow nesting

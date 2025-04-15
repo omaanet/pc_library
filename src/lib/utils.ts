@@ -8,20 +8,23 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatDate(input: string | number | Date): string {
     const date = new Date(input);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('it-IT', {
         month: 'long',
         day: 'numeric',
         year: 'numeric'
     });
 }
 
-export function formatAudioLength(minutes: number): string {
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
+export function formatAudioLength(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const remainingAfterHours = seconds % 3600;
+    const minutes = Math.floor(remainingAfterHours / 60);
+    const secs = remainingAfterHours % 60;
 
-    if (hours === 0) {
-        return `${remainingMinutes} min`;
-    }
+    const parts = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0 || hours > 0) parts.push(`${minutes}m`);
+    parts.push(`${secs}s`);
 
-    return `${hours}h ${remainingMinutes}m`;
+    return parts.join(' ');
 }
