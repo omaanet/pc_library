@@ -20,7 +20,7 @@ export function getCommentsByBookId(bookId: string): (Comment & { repliesCount: 
             (SELECT COUNT(*) FROM comments WHERE parent_id = c.id) AS repliesCount
         FROM comments c
         WHERE c.book_id = ?
-        ORDER BY c.created_at DESC
+        ORDER BY c.created_at ASC
     `).all(bookId) as (Comment & { repliesCount: number })[];
     // Convert flat list to threaded structure
     const idToComment: Record<string, (Comment & { replies: (Comment & { repliesCount: number })[]; repliesCount: number })> = {};

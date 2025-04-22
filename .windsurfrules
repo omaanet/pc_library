@@ -1,6 +1,7 @@
 As default and fast overview of the project, its tech stack and API routes, see `Project_Tech_Stack.md` file.
 For complete details about the project, its components, API routes, database structure, and more, see `Codebase Technical Documentation.md`.
 Use pnpm, not npm.
+The server is always running and listening for requests, usually with `next dev --turbo -p 3005`, so there is no need to start it manually.
 
 Database: SQLite stored in `db\books.db3`
 Preferred database library: `better-sqlite3` (not `sqlite3`)
