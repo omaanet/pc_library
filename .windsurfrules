@@ -1,4 +1,6 @@
-For complete details about the project, its components, API routes, database structure, and more, see `Codebase Technical Documentation.md` and `tech_stack.md` file.
+As default and fast overview of the project, its tech stack and API routes, see `Project_Tech_Stack.md` file.
+For complete details about the project, its components, API routes, database structure, and more, see `Codebase Technical Documentation.md`.
+Use pnpm, not npm.
 
 Database: SQLite stored in `db\books.db3`
 Preferred database library: `better-sqlite3` (not `sqlite3`)

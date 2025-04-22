@@ -58,6 +58,7 @@ export interface UserStats {
 }
 
 export interface User {
+    isAdmin?: boolean;
     id: number;
     email: string;
     fullName: string; // maps to full_name in DB

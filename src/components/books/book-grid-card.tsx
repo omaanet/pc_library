@@ -107,9 +107,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                     <h3 className="line-clamp-1 text-lg font-semibold tracking-tight">
                         {book.title}
                     </h3>
-                    <p className="line-clamp-2 text-sm text-muted-foreground">
-                        {book.summary}
-                    </p>
+                    
                     {bookMetadata}
                     <Button
                         variant="secondary"

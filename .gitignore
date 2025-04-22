@@ -51,3 +51,7 @@ _covers_
 *.t_sx
 *.ts_x
 
+db/_archived
+
+# pnpm
+pnpm-lock.yaml

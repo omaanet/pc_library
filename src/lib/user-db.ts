@@ -116,6 +116,7 @@ export function getUserById(id: number): User | null {
             email,
             full_name as fullName,
             is_activated as isActivated,
+            is_admin as isAdmin,
             created_at as createdAt,
             updated_at as updatedAt
         FROM users
@@ -125,6 +126,7 @@ export function getUserById(id: number): User | null {
         email: string,
         fullName: string,
         isActivated: number,
+        isAdmin: number,
         createdAt: string,
         updatedAt?: string
     } | undefined;
@@ -135,6 +137,7 @@ export function getUserById(id: number): User | null {
     // For now, provide default values
     return {
         ...user,
+        isAdmin: Boolean(user.isAdmin),
         name: user.fullName.split(' ')[0], // First name as default name
         preferences: {
             theme: 'system' as const,
