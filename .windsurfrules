@@ -3,20 +3,20 @@ For complete details about the project, its components, API routes, database str
 Use pnpm, not npm.
 The server is always running and listening for requests, usually with `next dev --turbo -p 3005`, so there is no need to start it manually.
 
-Database: SQLite stored in `db\books.db3`
-Preferred database library: `better-sqlite3` (not `sqlite3`)
-Database schema located in `db\schema.sql`
-Type definitions located in `src/types`
-Ensure compatibility with React Fast Refresh
-Always verify imports and exports to avoid unnecessary dependencies
-Avoid deeply nested blocks, prefer shallow nesting
-Avoid duplication of existing code
-Never overwrite `.env` file without explicit confirmation
+Database: SQLite stored in `db\books.db3`.
+Preferred database library: `better-sqlite3` (not `sqlite3`).
+Database schema located in `db\schema.sql`.
+Type definitions located in `src/types`.
+Ensure compatibility with React Fast Refresh.
+Always verify imports and exports to avoid unnecessary dependencies.
+Avoid deeply nested blocks, prefer shallow nesting.
+Avoid duplication of existing code.
+Never overwrite `.env` file without explicit confirmation.
 
-Only touch code relevant to the task, avoid unrelated areas
+Only touch code relevant to the task, avoid unrelated areas.
 Follow the separation of concerns principle and keep the two projects distinct.
 When creating or modifying the code, always find and implement the simplest solution: do not overcomplicate the code or the logic.
 Be sure to check for existing and potentially reusable classes, utilities, or components before developing new frameworks or writing new code.
-If a large change is necessary, STOP, inform the user, and ask for confirmation
+If a large change is necessary, STOP, inform the user, and ask for confirmation.
 
 When in doubt, when you are not sure about something or you need more details or information, stop and ask user for clarification: if needed propose different options.

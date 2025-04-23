@@ -23,8 +23,6 @@ export async function GET(
             return new NextResponse('File not found', { status: 404 });
         }
 
-        // return new NextResponse('File not found', { status: 404 });
-
         // Read the file as a buffer
         const fileBuffer = fs.readFileSync(filePath);
 

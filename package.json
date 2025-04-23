@@ -73,7 +73,10 @@
         "onlyBuiltDependencies": [
             "better-sqlite3",
             "core-js",
-            "sqlite3"
+            "es5-ext",
+            "sharp",
+            "sqlite3",
+            "unrs-resolver"
         ]
     }
 }

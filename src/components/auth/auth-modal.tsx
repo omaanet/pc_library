@@ -24,10 +24,6 @@ export function AuthModal({
     onOpenChange,
     defaultTab = 'login'
 }: AuthModalProps) {
-    // Log whenever open state changes
-    // React.useEffect(() => {
-    //     console.log('[AuthModal] open prop changed:', open);
-    // }, [open]);
     const { login, register, state: { isLoading, error } } = useAuth();
     const [activeTab, setActiveTab] = React.useState<'login' | 'register'>(defaultTab);
     const [formError, setFormError] = React.useState<string | null>(null);
@@ -89,14 +85,10 @@ export function AuthModal({
         dialogDescription = "Registrati per accedere all'esperienza completa";
     }
 
-    // Log render and props
-    // console.log('[AuthModal] Rendering with props:', { open, defaultTab });
-
     return (
         <Dialog
             open={open}
             onOpenChange={(newOpen) => {
-                // console.log('[AuthModal] Dialog onOpenChange called with:', newOpen);
                 onOpenChange(newOpen);
             }}
         >

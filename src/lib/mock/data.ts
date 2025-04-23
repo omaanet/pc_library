@@ -62,7 +62,7 @@ export const defaultUserPreferences: UserPreferences = {
 
 // Mock user data
 export const mockUser: User = {
-    id: 'user-001',
+    id: 1,
     email: 'user@example.com',
     fullName: 'John Doe',
     isActivated: true,

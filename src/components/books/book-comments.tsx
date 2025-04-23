@@ -61,8 +61,8 @@ export default function BookComments({ bookId, isAuthenticated, userName, onLogi
         setReplies(prev => ({ ...prev, [parentId]: prev[parentId] ? [...prev[parentId], newReply] : [newReply] }));
         // Scroll the new reply into view
         setTimeout(() => {
-          const el = document.getElementById(newReply.id);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const el = document.getElementById(newReply.id);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
     }, []);
 
@@ -84,9 +84,9 @@ export default function BookComments({ bookId, isAuthenticated, userName, onLogi
                 setComments(prev => [...prev, data.comment]);
                 // scroll to bottom after adding new comment
                 setTimeout(() => {
-                  if (listRef.current) {
-                    listRef.current.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
-                  }
+                    if (listRef.current) {
+                        listRef.current.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
+                    }
                 }, 100);
             }
             toast({ title: 'Commento aggiunto!' });
@@ -118,19 +118,20 @@ export default function BookComments({ bookId, isAuthenticated, userName, onLogi
                             />
                         )}
             </div>
-            <form onSubmit={handleSubmit} className="pt-2 space-y-2 bg-background shrink-0">
-                {replyingTo && <div className="text-xs text-teal-600 mb-1">
-                    Rispondendo a un commento
-                    <Button type="button" variant="link" size="sm" className="ml-2 p-0 text-red-600" onClick={() => setReplyingTo(null)}>Annulla</Button>
-                </div>}
-                <Textarea
-                    placeholder={isAuthenticated ? (replyingTo ? 'Scrivi una risposta...' : 'Scrivi un commento...') : 'Accedi per commentare'}
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                    disabled={!isAuthenticated}
-                />
-                {isAuthenticated && <Button type="submit" disabled={!newComment.trim()}>Invia commento</Button>}
-            </form>
+            {isAuthenticated && (
+                <form onSubmit={handleSubmit} className="pt-2 space-y-2 bg-background shrink-0">
+                    {replyingTo && <div className="text-xs text-teal-600 mb-1">
+                        Rispondendo a un commento
+                        <Button type="button" variant="link" size="sm" className="ml-2 p-0 text-red-600" onClick={() => setReplyingTo(null)}>Annulla</Button>
+                    </div>}
+                    <Textarea
+                        placeholder={replyingTo ? 'Scrivi una risposta...' : 'Scrivi un commento...'}
+                        value={newComment}
+                        onChange={e => setNewComment(e.target.value)}
+                    />
+                    <Button type="submit" disabled={!newComment.trim()}>Invia commento</Button>
+                </form>
+            )}
         </div>
     );
 }

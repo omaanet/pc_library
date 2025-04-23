@@ -4,9 +4,9 @@ import { getCommentsByBookId, addComment } from '@/lib/db-comments';
 import { getSessionUser } from '@/lib/auth-utils';
 
 // GET /api/books/[id]/comments — fetch threaded comments
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-    // Properly await params to avoid NextJS sync params access warning
-    const { id: bookId } = await Promise.resolve(params);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function GET(req: NextRequest, context: any) {
+    const { id: bookId } = context.params;
 
     if (typeof bookId !== 'string') {
         return NextResponse.json({ error: 'Invalid book id' }, { status: 400 });
@@ -16,9 +16,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // POST /api/books/[id]/comments — add a comment or reply
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-    // Properly await params to avoid NextJS sync params access warning
-    const { id: bookId } = await Promise.resolve(params);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function POST(req: NextRequest, context: any) {
+    const { id: bookId } = context.params;
 
     if (typeof bookId !== 'string') {
         return NextResponse.json({ error: 'Invalid book id' }, { status: 400 });

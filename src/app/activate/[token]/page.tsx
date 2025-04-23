@@ -1,16 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
-export default async function ActivationPage({ params }: { params: Promise<{ token: string }> }) {
-    const awaitedParams = await params;
-    const { token } = awaitedParams;
+export default function ActivationPage() {
     const router = useRouter();
+    const { token } = useParams() as { token: string };
     const { state } = useAuth();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('Activating your account...');

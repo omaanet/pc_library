@@ -72,7 +72,7 @@ export function RegisterModal({
                         <Input
                             id="email"
                             type="email"
-                            placeholder="you@example.com"
+                            placeholder="nome@esempio.it"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={isLoading}
