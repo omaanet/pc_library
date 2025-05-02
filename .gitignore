@@ -55,3 +55,7 @@ db/_archived
 
 # pnpm
 pnpm-lock.yaml
+
+# Codebase Technical Documentation.md
+# *.md
+_output.epub

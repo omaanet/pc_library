@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import audiobooksService from '@/lib/services/audiobooks-service';
+import { fetchAudioBook, saveOrUpdateAudioBook } from '@/lib/services/audiobooks-service';
 
 export async function GET(
     req: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
     try {
         const bookId = (await params).book_id;
-        const audiobook = audiobooksService.getByBookId(bookId);
+        const audiobook = fetchAudioBook(bookId);
 
         if (!audiobook) {
             return NextResponse.json({ message: 'Audiobook not found' }, { status: 404 });
@@ -31,7 +31,7 @@ export async function POST(
         const bookId = (await params).book_id;
         const body = await req.json();
 
-        const audiobook = audiobooksService.save({
+        const audiobook = saveOrUpdateAudioBook({
             book_id: bookId,
             media_id: body.media_id,
             audio_length: body.audio_length ? Number(body.audio_length) : null,

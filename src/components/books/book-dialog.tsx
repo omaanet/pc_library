@@ -19,9 +19,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatAudioLength, cn } from '@/lib/utils';
 import { DEFAULT_COVER_SIZES } from '@/types/images';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
-import type { Book } from '@/types';
+import type { Book, AudioBook } from '@/types';
 import BookComments from './book-comments';
 import { BookExtract } from './book-extract';
+import AudioBookPlayer from '../shared/AudioBookPlayer';
 
 interface BookDialogProps {
     book: Book | null;
@@ -188,7 +189,15 @@ export function BookDialog({
                                     {/* Estratto section */}
                                     <div className="mb-3 sm:mb-2">
                                         <BookExtract bookId={book.id} />
-                                        {isAuthenticated && (
+
+                                        {/* AudioBookPlayer: show only if authenticated and has audio */}
+                                        {isAuthenticated && book.hasAudio && (
+                                            <>
+                                                {/* AudioBookPlayer is self-contained for tracks */}
+                                                <AudioBookPlayer book={book} />
+                                            </>
+                                        )}
+                                        {isAuthenticated && !book.hasAudio && (
                                             <div className="mt-2 mb-0 flex">
                                                 <Link href={`/read-book/${book.id}`} passHref legacyBehavior>
                                                     <Button asChild variant="secondary" size="default" className="ml-auto">
@@ -199,7 +208,9 @@ export function BookDialog({
                                                 </Link>
                                             </div>
                                         )}
+
                                     </div>
+                                    
                                     {/* Comments section: header, scrollable list, posting form at bottom */}
                                     <div className="flex-1 flex flex-col min-h-0 bg-muted/40 rounded p-2">
                                         <h3 className="text-md sm:text-lg font-medium mb-2 text-cyan-400">Commenti</h3>

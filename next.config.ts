@@ -48,11 +48,16 @@ const nextConfig: NextConfig = {
                 headers: [
                     {
                         key: "Content-Security-Policy",
-                        value: "default-src 'self'; script-src 'none'; frame-src 'self'; sandbox allow-same-origin allow-scripts allow-popups;",
+                        value: "default-src 'self'; script-src 'self'; frame-src 'self'; sandbox allow-same-origin allow-scripts allow-popups;"
                     },
                     {
                         key: "Content-Disposition",
-                        value: "inline", // Ensures images display in browser
+                        value: "attachment; filename=\"book.epub\"",
+                        // value: "inline", // Ensures images display in browser
+                    },
+                    {
+                        key: "X-Content-Type-Options",
+                        value: "nosniff",
                     },
                     {
                         key: "Content-Type",
@@ -61,6 +66,10 @@ const nextConfig: NextConfig = {
                     {
                         key: "Cache-Control",
                         value: "no-transform, no-store", // Prevent transformations and caching
+                    },
+                    {
+                        key: "Transfer-Encoding",
+                        value: "identity",
                     },
                     {
                         key: "Content-Encoding",

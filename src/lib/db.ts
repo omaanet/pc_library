@@ -309,10 +309,9 @@ export function getBookById(id: string): Book | undefined {
 }
 
 /**
- * Get a book by ID
+ * Get audiobook by book_id
  */
 export function getAudioBookById(id: string): AudioBook | undefined {
-
     const db = getDb();
     const audiobook = db.prepare(`
         SELECT 
@@ -324,10 +323,44 @@ export function getAudioBookById(id: string): AudioBook | undefined {
         FROM audiobooks 
         WHERE book_id = ?;
     `).get(id) as AudioBook;
-
-    // if (!audiobook) return undefined;
-
     return audiobook;
+}
+
+/**
+ * Insert or update audiobook data (upsert by book_id)
+ */
+export function saveAudioBook(data: {
+    book_id: string;
+    media_id: string | null;
+    audio_length: number | null;
+    publishing_date: string | null;
+}): AudioBook | undefined {
+    const db = getDb();
+    // Try update first for minimal allocations
+    const update = db.prepare(`
+        UPDATE audiobooks
+        SET media_id = ?, audio_length = ?, publishing_date = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE book_id = ?
+    `);
+    const result = update.run(
+        data.media_id,
+        data.audio_length,
+        data.publishing_date,
+        data.book_id
+    );
+    if (result.changes === 0) {
+        // If nothing updated, insert
+        db.prepare(`
+            INSERT INTO audiobooks (book_id, media_id, audio_length, publishing_date)
+            VALUES (?, ?, ?, ?)
+        `).run(
+            data.book_id,
+            data.media_id,
+            data.audio_length,
+            data.publishing_date
+        );
+    }
+    return getAudioBookById(data.book_id);
 }
 
 /**

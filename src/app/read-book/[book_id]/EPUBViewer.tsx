@@ -8,14 +8,17 @@ import { Book } from '@/types';
 
 interface EPUBViewerProps {
     bookId: string;
-    book?: Book;
+    book: Book | undefined;
+    location?: string;
+    onLocationChange?: (location: string) => void;
+    themeOverrides?: any;
 }
 
-const EPUBViewer = ({ bookId, book }: EPUBViewerProps) => {
+const EPUBViewer = ({ bookId, book, location, onLocationChange, themeOverrides }: EPUBViewerProps) => {
     // const router = useRouter();
     const renditionRef = useRef<any>(null);
 
-    const [location, setLocation] = useState<string | number>(0);
+    // Remove local location state (now controlled)
     const [loaded, setLoaded] = useState(false);
     const [title, setTitle] = useState<string>('Il racconto sta caricando...');
     const [error, setError] = useState<string | null>(null);
@@ -24,20 +27,6 @@ const EPUBViewer = ({ bookId, book }: EPUBViewerProps) => {
     const epubUrl = `/epub/${bookId}/output.epub`;
     //const epubUrl = `/api/epub/${bookId}/`;
 
-    // Get stored location from localStorage on initial load
-    useEffect(() => {
-        const storedLocation = localStorage.getItem(`epub-location-${bookId}`);
-        if (storedLocation) {
-            setLocation(storedLocation);
-        }
-    }, [bookId]);
-
-    // Save location to localStorage when it changes
-    useEffect(() => {
-        if (loaded && typeof location === 'string') {
-            localStorage.setItem(`epub-location-${bookId}`, location);
-        }
-    }, [location, loaded, bookId]);
 
     // Show error if any
     if (error) {
@@ -58,7 +47,9 @@ const EPUBViewer = ({ bookId, book }: EPUBViewerProps) => {
     }
 
     const locationChanged = (epubcifi: string) => {
-        setLocation(epubcifi);
+        if (onLocationChange) {
+            onLocationChange(epubcifi);
+        }
     };
 
     // const handleBackClick = () => {
@@ -66,7 +57,8 @@ const EPUBViewer = ({ bookId, book }: EPUBViewerProps) => {
     // };
 
     return (
-        <div className="relative h-full w-full">
+        <>
+            {/* <div className="relative h-full w-full"> */}
             {/* Navigation header */}
             {/* <button onClick={handleBackClick} className="fixed top-2 left-1 z-20">
                 <ArrowLeft className="h-8 w-8 text-gray-700" />
@@ -81,68 +73,69 @@ const EPUBViewer = ({ bookId, book }: EPUBViewerProps) => {
 
             {/* Reader component with top padding for the header */}
             {/* pt-[52px]  */}
-            <div className="h-full w-full">
-                <div className="h-full w-full relative">
-                    <ReactReader
-                        url={epubUrl}
-                        location={location}
-                        locationChanged={locationChanged}
-                        getRendition={(rendition) => {
-                            renditionRef.current = rendition;
+            {/* <div className="h-full w-full">
+                <div className="h-full w-full relative"> */}
+            <ReactReader
+                url={epubUrl}
+                location={location ?? null}
+                locationChanged={locationChanged}
+                getRendition={(rendition) => {
+                    renditionRef.current = rendition;
 
-                            // Add error handling
-                            rendition.on('error', (err: any) => {
-                                console.error('EPUB render error:', err);
-                                setError('Failed to load the book. The file may be corrupted or in an unsupported format.');
-                            });
+                    // Add error handling
+                    rendition.on('error', (err: any) => {
+                        console.error('EPUB render error:', err);
+                        setError('Failed to load the book. The file may be corrupted or in an unsupported format.');
+                    });
 
-                            // Get book metadata
-                            rendition.book.loaded.metadata.then((metadata: any) => {
-                                // console.log('Metadata loaded:', metadata);
-                                if (metadata.title) {
-                                    setTitle(metadata.title);
-                                }
-                            }).catch((err: any) => {
-                                console.error('Error loading metadata:', err);
-                            });
+                    // Get book metadata
+                    rendition.book.loaded.metadata.then((metadata: any) => {
+                        // console.log('Metadata loaded:', metadata);
+                        if (metadata.title) {
+                            setTitle(metadata.title);
+                        }
+                    }).catch((err: any) => {
+                        console.error('Error loading metadata:', err);
+                    });
 
-                            rendition.themes.register('custom', {
-                                'body': {
-                                    'font-family': `Arial, sans-serif !important`,
-                                    'font-size': '1.1rem !important',
-                                    'line-height': '1.5 !important',
-                                    'padding': '0 20px !important',
-                                },
-                                'p': {
-                                    'margin': '1em 0 !important'
-                                }
-                            });
-                            rendition.themes.select('custom');
-                            // Handle onReady here instead of using an unsupported prop
-                            setLoaded(true);
-                        }}
-                        showToc={false}
-                        epubOptions={{
-                            allowPopups: true, // Adds `allow-popups` to sandbox-attribute
-                            allowScriptedContent: true, // Adds `allow-scripts` to sandbox-attribute
-                            flow: 'paginated',
-                            manager: 'continuous',
-                            snap: true,
-                        }}
-                        swipeable
-                        loadingView={<div className="flex items-center justify-center h-full"></div>}
-                        tocChanged={(toc) => {
-                            if (toc.length > 0 && toc[0].label) {
-                                setTitle(toc[0].label);
-                            }
-                        }}
-                        epubInitOptions={{
-                            openAs: 'epub',
-                        }}
-                    />
-                </div>
-            </div>
-        </div>
+                    rendition.themes.register('custom', themeOverrides || {
+                        'body': {
+                            'font-family': `Arial, sans-serif !important`,
+                            'font-size': '1.1rem !important',
+                            'line-height': '1.5 !important',
+                            'padding': '0 20px !important',
+                        },
+                        'p': {
+                            'margin': '1em 0 !important'
+                        }
+                    });
+                    // rendition.themes.select('custom');
+                    // Handle onReady here instead of using an unsupported prop
+                    setLoaded(true);
+                }}
+                showToc={false}
+                epubOptions={{
+                    allowPopups: true, // Adds `allow-popups` to sandbox-attribute
+                    allowScriptedContent: true, // Adds `allow-scripts` to sandbox-attribute
+                    flow: 'paginated',
+                    manager: 'continuous',
+                    snap: true,
+                }}
+                swipeable
+                loadingView={<div className="flex items-center justify-center h-full"></div>}
+                tocChanged={(toc) => {
+                    if (toc.length > 0 && toc[0].label) {
+                        setTitle(toc[0].label);
+                    }
+                }}
+                epubInitOptions={{
+                    openAs: 'epub',
+                }}
+            />
+            {/* </div>
+            </div> */}
+            {/* </div> */}
+        </>
     );
 };
 

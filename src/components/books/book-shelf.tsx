@@ -9,6 +9,7 @@ import { BookDialog } from './book-dialog';
 import { ViewSwitcher } from '@/components/shared/view-switcher';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { Button } from '@/components/ui/button';
+import { AudioBook } from '@/types';
 
 // Direct approach without context
 
@@ -21,6 +22,7 @@ interface BookShelfProps {
 export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
     const [view, setView] = React.useState<'grid' | 'list'>('grid');
     const [selectedBook, setSelectedBook] = React.useState<Book | null>(null);
+    const [selectedAudioBook, setSelectedAudioBook] = React.useState<AudioBook | null>(null);
     const { state: { isAuthenticated } } = useAuth();
 
     // Handle auth modal state
