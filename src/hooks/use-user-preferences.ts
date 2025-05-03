@@ -23,8 +23,8 @@ export function useUserPreferences(): UseUserPreferencesResult {
     const defaultPreferences: UserPreferences = {
         theme: 'system',
         viewMode: 'grid',
-        language: 'en',
-        fontSize: 16,
+        language: 'it',
+        fontSize: 100,
         notifications: {
             email: false,
             push: false,
@@ -42,7 +42,7 @@ export function useUserPreferences(): UseUserPreferencesResult {
             reducedMotion: false
         },
         reading: {
-            fontSize: 'medium',
+            fontSize: 100,
             lineHeight: 'normal',
             fontFamily: 'default'
         },

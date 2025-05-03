@@ -47,12 +47,12 @@ export const defaultUserPreferences: UserPreferences = {
         reducedMotion: false,
     },
     reading: {
-        fontSize: 'medium',
+        fontSize: 100,
         lineSpacing: 'normal',
-        fontFamily: 'inter',
+        fontFamily: 'default',
     },
-    language: '',
-    fontSize: 0,
+    language: 'it',
+    fontSize: 100,
     notifications: {
         email: false,
         push: false,

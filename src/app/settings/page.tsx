@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// src/app/settings/page.tsx
 'use client';
 
 import * as React from 'react';
@@ -12,7 +10,6 @@ import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -22,6 +19,7 @@ import {
     TabsList,
     TabsTrigger,
 } from '@/components/ui/tabs';
+import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
@@ -32,7 +30,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
 
 export default function SettingsPage() {
     const { state: { user, isAuthenticated } } = useAuth();
@@ -43,6 +41,8 @@ export default function SettingsPage() {
         updatePreference,
         error
     } = useUserPreferences();
+
+    const btnHoverClass = preferences.theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200';
 
     const [isSaving, setIsSaving] = React.useState(false);
 
@@ -120,9 +120,9 @@ export default function SettingsPage() {
                 <Tabs defaultValue="appearance" className="space-y-8">
                     <TabsList>
                         <TabsTrigger value="appearance">Appearance</TabsTrigger>
-                        <TabsTrigger value="accessibility">Accessibility</TabsTrigger>
                         <TabsTrigger value="reading">Reading</TabsTrigger>
-                        <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                        <TabsTrigger value="accessibility" disabled>Accessibility</TabsTrigger>
+                        <TabsTrigger value="notifications" disabled>Notifications</TabsTrigger>
                     </TabsList>
 
                     {/* Appearance Settings */}
@@ -175,7 +175,7 @@ export default function SettingsPage() {
                     </TabsContent>
 
                     {/* Accessibility Settings */}
-                    <TabsContent value="accessibility">
+                    {/* <TabsContent value="accessibility">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Accessibility</CardTitle>
@@ -237,7 +237,7 @@ export default function SettingsPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </TabsContent> */}
 
                     {/* Reading Settings */}
                     <TabsContent value="reading">
@@ -251,7 +251,46 @@ export default function SettingsPage() {
                             <CardContent className="space-y-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="font-size">Font Size</Label>
-                                    <Select
+                                    <div className="flex items-center justify-start space-x-7">
+                                        <div className="flex items-center space-x-4">
+                                            <button
+                                                className={`border rounded w-8 h-8 flex items-center justify-center text-base ${btnHoverClass}`}
+                                                onClick={() =>
+                                                    handlePreferenceChange('reading', {
+                                                        ...preferences.reading,
+                                                        fontSize: Math.max(preferences.reading.fontSize - 10, 10),
+                                                    })
+                                                }
+                                            >
+                                                A-
+                                            </button>
+                                            <span className="w-10 text-center text-base">{preferences.reading.fontSize}%</span>
+                                            <button
+                                                className={`border rounded w-8 h-8 flex items-center justify-center text-base ${btnHoverClass}`}
+                                                onClick={() =>
+                                                    handlePreferenceChange('reading', {
+                                                        ...preferences.reading,
+                                                        fontSize: preferences.reading.fontSize + 10,
+                                                    })
+                                                }
+                                            >
+                                                A+
+                                            </button>
+                                        </div>
+                                        <button
+                                            className={`border rounded w-8 h-8 flex items-center justify-center ${btnHoverClass}`}
+                                            onClick={() =>
+                                                handlePreferenceChange('reading', {
+                                                    ...preferences.reading,
+                                                    fontSize: 100,
+                                                })
+                                            }
+                                            aria-label="Reimposta dimensione carattere"
+                                        >
+                                            <RefreshCw className="text-base h-4 w-4" />
+                                        </button>
+                                    </div>
+                                    {/* <Select
                                         value={preferences.reading.fontSize}
                                         onValueChange={(value) =>
                                             handlePreferenceChange('reading', {
@@ -269,9 +308,9 @@ export default function SettingsPage() {
                                             <SelectItem value="large">Large</SelectItem>
                                             <SelectItem value="x-large">Extra Large</SelectItem>
                                         </SelectContent>
-                                    </Select>
+                                    </Select> */}
                                 </div>
-                                <div className="space-y-2">
+                                {/* <div className="space-y-2">
                                     <Label htmlFor="line-spacing">Line Spacing</Label>
                                     <Select
                                         value={preferences.reading.lineSpacing}
@@ -313,13 +352,13 @@ export default function SettingsPage() {
                                             <SelectItem value="openDyslexic">OpenDyslexic</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </div>
+                                </div> */}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
                     {/* Notification Settings */}
-                    <TabsContent value="notifications">
+                    {/* <TabsContent value="notifications">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Notification Settings</CardTitle>
@@ -381,7 +420,7 @@ export default function SettingsPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </TabsContent> */}
                 </Tabs>
 
                 {(isLoading || isSaving) && (

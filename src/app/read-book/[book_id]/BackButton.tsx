@@ -2,7 +2,7 @@
 'use client'; // Mark as client component
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CornerUpLeft } from 'lucide-react';
 
 export function BackButton() {
     const router = useRouter();
@@ -12,8 +12,8 @@ export function BackButton() {
     };
 
     return (
-        <button onClick={handleBackClick} className="fixed top-2 left-1 z-20">
-            <ArrowLeft className="h-8 w-8 text-gray-700" />
+        <button onClick={handleBackClick} className="fixed top-4 left-4 z-20 text-pink-600 hover:text-pink-400 transition-colors">
+            <CornerUpLeft className="h-10 w-10" />
         </button>
     );
 }

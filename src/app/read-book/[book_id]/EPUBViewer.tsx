@@ -4,16 +4,13 @@ import { useState, useRef, useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import { ReactReader, ReactReaderStyle } from 'react-reader';
 import { Book } from '@/types';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Rendition } from 'epubjs';
 
 interface EPUBViewerProps {
     bookId: string;
     book: Book | undefined;
-    location2?: string;
-    onLocationChange?: (location: string) => void;
-    themeOverrides?: any;
-    // External theme selected from sidebar, including system preference
+    readingFontSize?: number;
     theme?: 'system' | 'light' | 'dark' /*| 'sepia'*/;
 }
 
@@ -26,20 +23,11 @@ interface ThemeConfig {
     bodyStyles: CSSProperties;
 }
 
-const EPUBViewer = ({ bookId, book, location2, onLocationChange, themeOverrides, theme: externalTheme }: EPUBViewerProps) => {
+const EPUBViewer = ({ bookId, book, readingFontSize, theme: externalTheme }: EPUBViewerProps) => {
     type ThemeName = 'light' | 'dark' /*| 'sepia'*/;
 
     // Core states
     const [theme, setTheme] = useState<ThemeName>('light');
-    // Initialize fontSize from themeOverrides if provided, else default to 100
-    const getInitialFontSize = () => {
-        if (themeOverrides?.body && themeOverrides.body['font-size']) {
-            const raw = (themeOverrides.body['font-size'] as string).replace('!important', '').trim();
-            return parseInt(raw.replace('%', '')) || 100;
-        }
-        return 100;
-    };
-    const [fontSize, setFontSize] = useState<number>(getInitialFontSize);
     const [location, setLocation] = useState<string | null>(null);
     const [customArrowColor, setCustomArrowColor] = useState<string>('teal');
     const [title, setTitle] = useState<string>('Il racconto sta caricando...');
@@ -67,7 +55,8 @@ const EPUBViewer = ({ bookId, book, location2, onLocationChange, themeOverrides,
             readerStyles: {
                 ...ReactReaderStyle,
                 arrow: { ...ReactReaderStyle.arrow, display: 'none' },
-                readerArea: { ...ReactReaderStyle.readerArea, backgroundColor: '#fff' }
+                readerArea: { ...ReactReaderStyle.readerArea, backgroundColor: '#fff' },
+                titleArea: { ...ReactReaderStyle.titleArea, color: '#222' }
             },
             bodyStyles: {
                 color: '#000',
@@ -118,22 +107,12 @@ const EPUBViewer = ({ bookId, book, location2, onLocationChange, themeOverrides,
         currentThemeRef.current = theme;
     }, [theme]);
 
-    // Sync external font size overrides from sidebar
+    // Update rendition font size immediately on prop change
     useEffect(() => {
-        if (themeOverrides?.body && themeOverrides.body['font-size']) {
-            const raw = (themeOverrides.body['font-size'] as string).replace('!important', '').trim();
-            const num = parseInt(raw.replace('%', '')) || 100;
-            changeFontSize(num);
+        if (readingFontSize != null && renditionRef.current) {
+            renditionRef.current.themes.fontSize(`${readingFontSize}%`);
         }
-        // Sync external font family overrides from sidebar
-        if (themeOverrides?.body && themeOverrides.body['font-family']) {
-            const rawFamily = (themeOverrides.body['font-family'] as string).replace('!important', '').trim();
-            if (renditionRef.current) {
-                // Use camelCase CSSProperties key for fontFamily
-                renditionRef.current.themes.override('body', { fontFamily: rawFamily } as any);
-            }
-        }
-    }, [themeOverrides]);
+    }, [readingFontSize]);
 
     // Apply external theme selection, with system fallback
     useEffect(() => {
@@ -182,11 +161,11 @@ const EPUBViewer = ({ bookId, book, location2, onLocationChange, themeOverrides,
     }
 
     const locationChanged = (epubcifi: string) => {
-        if (onLocationChange) {
-            onLocationChange(epubcifi);
-        } else {
-            setLocation(epubcifi);
-        }
+        // if (onLocationChange) {
+        //     onLocationChange(epubcifi);
+        // } else {
+        setLocation(epubcifi);
+        // }
 
         // Check boundaries after location change
         setTimeout(checkBoundaries, 50);
@@ -194,6 +173,7 @@ const EPUBViewer = ({ bookId, book, location2, onLocationChange, themeOverrides,
 
     // Apply theme function for controlling image filters, disabling transitions on initial load
     const initialLoadRef = useRef<boolean>(true);
+
     const applyTheme = (rendition: Rendition, themeName: ThemeName) => {
         if (!rendition) return;
 
@@ -267,26 +247,21 @@ const EPUBViewer = ({ bookId, book, location2, onLocationChange, themeOverrides,
             // } as CSSProperties
         });
 
-        /*
-        rendition.themes.register('sepia', {
-            body: themes.sepia.bodyStyles as CSSProperties,
-            'img, svg': {
-                filter: 'none'
-            } as CSSProperties
-        });
-        */
+        // rendition.themes.register('sepia', {
+        //     body: themes.sepia.bodyStyles as CSSProperties,
+        //     'img, svg': {
+        //         filter: 'none'
+        //     } as CSSProperties
+        // });
 
         // Apply the current theme
         applyTheme(rendition, theme);
 
-        // Set font size
-        rendition.themes.fontSize(`${fontSize}%`);
-
-        // Apply initial font family override
-        if (themeOverrides?.body && themeOverrides.body['font-family']) {
-            const rawFamily = (themeOverrides.body['font-family'] as string).replace('!important', '').trim();
-            changeFontFamily(rawFamily);
+        // Apply initial reading font size
+        if (readingFontSize != null) {
+            rendition.themes.fontSize(`${readingFontSize}%`);
         }
+        changeFontFamily(fontFamily);
 
         // Set up listeners for boundary detection
         rendition.on('relocated', () => {
@@ -315,9 +290,8 @@ const EPUBViewer = ({ bookId, book, location2, onLocationChange, themeOverrides,
         }
     };
 
-    // Function to change font size
+    // Function to change font size directly on rendition (no state)
     const changeFontSize = (size: number) => {
-        setFontSize(size);
         if (renditionRef.current) {
             renditionRef.current.themes.fontSize(`${size}%`);
         }
@@ -345,77 +319,28 @@ const EPUBViewer = ({ bookId, book, location2, onLocationChange, themeOverrides,
     };
 
     return (
-        <div style={{ height: '100vh', position: 'relative' }}>
-            {/* Theme switcher */}
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 50,
-                zIndex: 1000,
-                padding: 10,
-                background: 'rgba(255,255,255,0.7)',
-                borderRadius: '0 0 10px 0'
-            }}>
-                {Object.keys(themes).map((themeName) => (
-                    <button
-                        key={themeName}
-                        onClick={() => changeTheme(themeName as ThemeName)}
-                        style={{
-                            fontWeight: theme === themeName ? 'bold' : 'normal',
-                            marginRight: 15
-                        }}
-                        className="me-3"
-                    >
-                        {themeName.charAt(0).toUpperCase() + themeName.slice(1)}
-                    </button>
-                ))}
-
-                <button onClick={() => changeFontSize(fontSize - 10)} className="me-3">A-</button>
-                <span style={{ margin: '0 5px' }}>{fontSize}%</span>
-                <button onClick={() => changeFontSize(fontSize + 10)} className="ms-3">A+</button>
-            </div>
-
+        <div className="h-full w-full">
             {/* Left navigation arrow - hidden on first page */}
             {!isFirstPage && (
                 <button
-                    style={{
-                        position: 'absolute',
-                        top: '50%',
-                        zIndex: 1000,
-                        left: 10,
-                        fontSize: 32,
-                        color: customArrowColor,
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        transform: 'translateY(-50%)'
-                    }}
+                    className="absolute top-1/2 left-4 z-[1000] text-2xl bg-transparent border-none cursor-pointer transform -translate-y-1/2 hover:opacity-70 transition-opacity"
+                    style={{ color: customArrowColor }}
                     onClick={goToPrevious}
                     aria-label="Pagina precedente"
                 >
-                    <ArrowLeft />
+                    <ChevronLeft className="h-14 w-14" />
                 </button>
             )}
 
             {/* Right navigation arrow - hidden on last page */}
             {!isLastPage && (
                 <button
-                    style={{
-                        position: 'absolute',
-                        top: '50%',
-                        zIndex: 1000,
-                        right: 10,
-                        fontSize: 32,
-                        color: customArrowColor,
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        transform: 'translateY(-50%)'
-                    }}
+                    className="absolute top-1/2 right-4 z-[1000] text-2xl bg-transparent border-none cursor-pointer transform -translate-y-1/2 hover:opacity-70 transition-opacity"
+                    style={{ color: customArrowColor }}
                     onClick={goToNext}
                     aria-label="Pagina successiva"
                 >
-                    <ArrowRight />
+                    <ChevronRight className="h-14 w-14" />
                 </button>
             )}
 
