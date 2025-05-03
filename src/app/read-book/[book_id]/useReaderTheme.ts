@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect, useCallback } from 'react';
 
 /**
@@ -5,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
  * @param bookId string
  */
 export interface ReaderStyleConfig {
+    theme?: 'system' | 'light' | 'dark' /*| 'sepia'*/;
     fontFamily?: string;
     fontSize?: string;
     lineHeight?: string;
@@ -12,19 +14,15 @@ export interface ReaderStyleConfig {
 
 export function useReaderTheme(bookId: string) {
     const key = `reader-style:${bookId}`;
-    const [styleConfig, setStyleConfig] = useState<ReaderStyleConfig>({});
-
-    // Load style from localStorage
-    useEffect(() => {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-            try {
-                setStyleConfig(JSON.parse(stored));
-            } catch (e) {
-                setStyleConfig({});
-            }
+    // Initialize styleConfig synchronously from localStorage (client-only)
+    const [styleConfig, setStyleConfig] = useState<ReaderStyleConfig>(() => {
+        try {
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) as ReaderStyleConfig : {};
+        } catch {
+            return {};
         }
-    }, [key]);
+    });
 
     // Save style to localStorage
     const saveStyle = useCallback((newConfig: ReaderStyleConfig) => {

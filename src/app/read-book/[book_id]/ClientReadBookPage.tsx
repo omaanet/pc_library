@@ -3,12 +3,14 @@
 import dynamic from 'next/dynamic';
 import { BackButton } from './BackButton';
 // Removed useTheme import as theme handling is now part of EPUBViewer's themeOverrides
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Book } from '@/types';
 import OptionsSidebar from './OptionsSidebar';
+import type { ReaderStyleConfig } from './useReaderTheme';
 import { Settings } from 'lucide-react';
 import { useReadingProgress } from './useReadingProgress';
 import { useReaderTheme } from './useReaderTheme';
+import { useTheme } from 'next-themes';
 
 // --- Import the NEW EPUBViewer ---
 // Ensure the path is correct based on your file structure
@@ -25,11 +27,31 @@ interface ClientReadBookPageProps {
 // StyleConfig is now imported from useReaderTheme
 
 export default function ClientReadBookPage({ bookId, book /*, myTracks, hasAudio*/ }: ClientReadBookPageProps) {
+    "use client";
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Global theme via next-themes
+    const { theme: globalTheme, setTheme: setGlobalTheme } = useTheme();
 
     // EPUB reading progress and theme
     const { progress: epubLocation, saveProgress: saveEpubLocation } = useReadingProgress(bookId, 'epub');
-    const { styleConfig, saveStyle } = useReaderTheme(bookId);
+    const { styleConfig, saveStyle, resetStyle } = useReaderTheme(bookId);
+
+    // Sync global theme to reader styleConfig
+    useEffect(() => {
+        const allowed = ['system', 'light', 'dark'/*,'sepia'*/] as const;
+        if (globalTheme && allowed.includes(globalTheme as any) && globalTheme !== styleConfig.theme) {
+            saveStyle({ ...styleConfig, theme: globalTheme as ReaderStyleConfig['theme'] });
+        }
+    }, [globalTheme]);
+
+    // Handle sidebar style changes (reader to global)
+    const handleStyleChange = (config: typeof styleConfig) => {
+        saveStyle(config);
+        if (config.theme && config.theme !== globalTheme) {
+            setGlobalTheme(config.theme);
+        }
+    };
 
     // Map styleConfig to EPUBViewer themeOverrides
     const generateThemeOverrides = (config: typeof styleConfig) => {
@@ -65,12 +87,13 @@ export default function ClientReadBookPage({ bookId, book /*, myTracks, hasAudio
             >
                 <Settings size={22} />
             </button>
+
             {/* Sidebar */}
             <OptionsSidebar
                 open={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
                 styleConfig={styleConfig}
-                onStyleChange={saveStyle}
+                onStyleChange={handleStyleChange}
             />
 
             {/* Back Button */}
@@ -79,23 +102,32 @@ export default function ClientReadBookPage({ bookId, book /*, myTracks, hasAudio
             {/* Main Content Area */}
             <div className="min-h-screen flex flex-col relative bg-background text-foreground">
                 {/* EPUB Viewer Container */}
-                {book && (
-                    <div id="epub-viewer-container" className="h-screen w-full overflow-hidden">
+                {!book ? (
+                    <div className="flex items-center justify-center h-screen">
+                        <p>Book data not found.</p>
+                    </div>
+                ) : (
+                    <div id="epub-viewer-container" className="h-screen w-full">
                         <EPUBViewer
                             book={book}
                             bookId={bookId}
-                            location={typeof epubLocation === 'string' ? epubLocation : undefined}
+                            location2={typeof epubLocation === 'string' ? epubLocation : undefined}
                             onLocationChange={saveEpubLocation}
                             themeOverrides={epubViewerThemeOverrides}
+                            theme={styleConfig.theme || 'light'}
                         />
-                    </div>
-                )}
-                {!book && (
-                    <div className="flex items-center justify-center h-screen">
-                        <p>Book data not found.</p>
                     </div>
                 )}
             </div>
         </div>
     );
+}
+
+interface EPUBViewerProps {
+    book: Book;
+    bookId: string;
+    location2?: string;
+    onLocationChange: (location: string) => void;
+    themeOverrides: any;
+    theme: string; // Accept theme in EPUBViewerProps
 }

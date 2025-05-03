@@ -435,7 +435,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     const currentSortKey = `${sort.by}-${sort.order}`;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-100">
             {/* Controls Section */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
@@ -466,7 +466,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
             </div>
 
             {/* Filters Section */}
-            <div className="flex flex-wrap gap-4 rounded-lg border bg-card p-4">
+            <div className="flex flex-wrap gap-4 rounded-lg border bg-card p-4 w-100">
                 <div className="flex-1">
                     <Input
                         ref={searchInputRef}
@@ -485,7 +485,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                         onCheckedChange={handleAudioFilterChange}
                         disabled={showLoadingState}
                     />
-                    <Label htmlFor="audioFilter">Audio Disponibile</Label>
+                    <Label htmlFor="audioFilter">Mostra solo Audio Racconti</Label>
                 </div>
             </div>
 
@@ -497,11 +497,11 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                     <BookListSkeleton count={localPagination?.perPage || 8} />
                 )
             ) : (
-                <div className="space-y-6">
+                <div className="space-y-6 w-100">
                     {localBooks && localBooks.length > 0 ? (
                         <>
                             {viewMode === 'grid' ? (
-                                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 w-100">
                                     {localBooks.map((book) => (
                                         <BookGridCard
                                             key={book.id}
@@ -511,7 +511,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="divide-y rounded-lg border bg-card">
+                                <div className="divide-y rounded-lg border bg-card w-100">
                                     {localBooks.map((book) => (
                                         <BookListCard
                                             key={book.id}
