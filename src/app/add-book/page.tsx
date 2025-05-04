@@ -37,7 +37,7 @@ export default function AddBookPage() {
 
     // Handle form submission
     const handleSubmit = async (values: z.infer<any>) => {
-        console.log('handleSubmit - Form values:', values);
+        // console.log('handleSubmit - Form values:', values);
         setIsSubmitting(true);
 
         try {
@@ -62,7 +62,7 @@ export default function AddBookPage() {
 
             // Refresh the book list
             await fetchBooks();
-            
+
             // Reset form and switch to manage tab
             setEditingBook(undefined);
             setActiveTab('manage');

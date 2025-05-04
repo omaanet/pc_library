@@ -197,7 +197,7 @@ export function BookDialog({
                                                 <AudioBookPlayer book={book} />
                                             </>
                                         )}
-                                        {isAuthenticated && !book.hasAudio && (
+                                        {isAuthenticated /*&& !book.hasAudio*/&& (
                                             <div className="mt-2 mb-0 flex">
                                                 <Link href={`/read-book/${book.id}`} passHref legacyBehavior>
                                                     <Button asChild variant="secondary" size="default" className="ml-auto">

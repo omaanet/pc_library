@@ -44,7 +44,8 @@ export async function GET() {
                     isActivated: user.isActivated,
                     stats: user.stats,
                     createdAt: user.createdAt,
-                    updatedAt: user.updatedAt
+                    updatedAt: user.updatedAt,
+                    isAdmin: user.isAdmin
                 }
             });
         } catch (parseError) {

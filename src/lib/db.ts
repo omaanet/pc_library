@@ -194,7 +194,10 @@ export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedR
     //     }
     // }
 
-    const orderByClause = `[has_audio] DESC, [order] ASC`;
+    // const direction = sortOrder?.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    const orderByClause = `[has_audio] ASC, [order] ASC`;
+
+    // console.log('orderByClause:', orderByClause);
 
     // First query: Get total count for pagination info
     const countQuery = `
@@ -237,6 +240,21 @@ export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedR
         dataQuery += ` LIMIT ? OFFSET ?`;
         allParams = [...queryParams, perPage, offset];
     }
+
+
+    // if (displayPreviews === 1) {
+    //     // console.log('##### >>>>> displayPreviews === 1', dataQuery);
+    //     // return {
+    //     //     data: [],
+    //     //     pagination: {
+    //     //         total: 0,
+    //     //         page: 1,
+    //     //         perPage: shouldPaginate ? perPage : 0,
+    //     //         totalPages: 1,
+    //     //     }
+    //     // };
+    // }
+
 
     // Execute the data query with parameters
     const books = db.prepare(dataQuery).all(...allParams) as Book[];

@@ -1,7 +1,8 @@
 // src/app/api/auth/activate/route.ts
 import { NextResponse } from 'next/server';
-import { findUserByVerificationToken, activateUser, generateRandomPassword, getUserById } from '@/lib/user-db';
+import { findUserByVerificationToken, activateUser, getUserById } from '@/lib/user-db';
 import { getMailer } from '@/lib/mailer';
+import { ItalianMarkovPasswordGenerator } from '@/lib/italian-markov-password-generator';
 
 export async function POST(request: Request) {
     try {
@@ -24,8 +25,11 @@ export async function POST(request: Request) {
             );
         }
 
-        // Generate a random password
-        const password = generateRandomPassword(10);
+        // Initialize Italian Markov password generator for memorable passwords
+        const markovGen = new ItalianMarkovPasswordGenerator();
+
+        // Generate a password using Italian Markov generator for better memorability
+        const password = markovGen.generatePassword({ minLength: 8, maxLength: 8 });
 
         // Activate the user account
         const activated = activateUser(user.id, password);

@@ -13,6 +13,9 @@ Avoid deeply nested blocks, prefer shallow nesting.
 Avoid duplication of existing code.
 Never overwrite `.env` file without explicit confirmation.
 
+All API routes must follow the file-based routing convention under `src/app/api`, using `[param]` to define dynamic segments and `route.ts` to implement HTTP method handlers, ensuring URL structures like `/api/resource/[id]` are correctly mapped.
+For example: `src/app/api/epub/[book_id]/route.ts`.
+
 Only touch code relevant to the task, avoid unrelated areas.
 Follow the separation of concerns principle and keep the two projects distinct.
 When creating or modifying the code, always find and implement the simplest solution: do not overcomplicate the code or the logic.

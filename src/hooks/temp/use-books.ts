@@ -18,7 +18,7 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
         setError(null);
 
         try {
-            const response = await fetch('/api/books');
+            const response = await fetch('/api/books?displayPreviews=-1'); // &sortOrder=desc
 
             if (!response.ok) {
                 throw new Error(`Error fetching books: ${response.status}`);

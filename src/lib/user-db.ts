@@ -2,6 +2,7 @@
 import { getDb } from './db';
 import { User } from '@/types';
 import crypto from 'crypto';
+// import { generateRandomPassword } from './utils';
 
 /**
  * Check if a user with the given email exists
@@ -193,19 +194,4 @@ export function validateUserCredentials(email: string, password: string): User |
     if (!user) return null;
 
     return getUserById(user.id);
-}
-
-/**
- * Generate a random password
- */
-export function generateRandomPassword(length = 12): string {
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let password = '';
-
-    for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * charset.length);
-        password += charset[randomIndex];
-    }
-
-    return password;
 }

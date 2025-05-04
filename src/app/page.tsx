@@ -1,34 +1,34 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// src/app/page.tsx
 'use client';
 
-import * as React from 'react';
+import React, { useState, useEffect } from 'react';
 import { RootNav } from '@/components/layout/root-nav';
 import { BookCollectionWrapper } from '@/components/books/book-collection-wrapper';
-import { BookCollection } from '@/components/books/book-collection';
-import { BookListCard } from '@/components/books/book-list-card';
+// import { BookCollection } from '@/components/books/book-collection';
+// import { BookListCard } from '@/components/books/book-list-card';
 import { BookCover } from '@/components/books/book-cover';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { Book } from '@/types';
 import { useAuth } from '@/context/auth-context';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button';
 import { Book as BookIcon, Headphones } from 'lucide-react';
-import { cn } from '@/lib/utils';
-// import { BookVideoCover } from '@/components/books/book-video-cover';
-import MuxPlayer from '@mux/mux-player-react';
+// import { cn } from '@/lib/utils';
+
+import dynamic from 'next/dynamic';
+const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), { ssr: false });
 import { DEFAULT_COVER_SIZES } from '@/types/images';
 
 export default function HomePage() {
-    const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const { state: { isAuthenticated, user } } = useAuth();
-    const [books, setBooks] = React.useState<Book[]>([]);
-    const [loading, setLoading] = React.useState(true);
+    const [books, setBooks] = useState<Book[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [mounted, setMounted] = useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         async function fetchPreviewBooks() {
             try {
                 setLoading(true);
-                const response = await fetch('/api/books?displayPreviews=1');
+                const response = await fetch('/api/books?displayPreviews=1&sortOrder=desc');
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch preview books: ${response.status}`);
@@ -46,6 +46,10 @@ export default function HomePage() {
         fetchPreviewBooks();
     }, []);
 
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     return (
         <>
             <RootNav
@@ -59,12 +63,17 @@ export default function HomePage() {
                 <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">
                     {/* <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]" /> */}
                     <div className="container space-y-2">
-                        <div className="space-y-6 text-center">
-                            <h1 className="text-3xl font-medium tracking-tight sm:text-5xl" style={{ color: 'hsl(200, 90%, 45%)' }}>
+                        <div className="space-y-4 text-center">
+                            <h1 className="text-3xl font-medium t2racking-tight sm:text-5xl text-sky-600 dark:text-sky-400">
                                 Racconti in Voce e Caratteri<br />Espressioni di Scrittura Creativa
                             </h1>
-                            <p className="mx-auto max-w-5xl text-lg text-muted-foreground" style={{ color: 'hsl(205, 84%, 27%)' }}>
+
+                            <p className="mx-auto max-w-5xl text-lg tracking-tight text-sky-400 dark:text-sky-500">
                                 Una variegata raccolta narrativa di fantasia. Novelle in libera lettura a scopo benefico.
+                            </p>
+
+                            <p className="mx-auto max-w-5xl text-lg tr2acking-tight text-sky-500 dark:text-sky-300">
+                                Sito web dedicato alla lettura a scopo benefico
                             </p>
                         </div>
 
@@ -112,16 +121,19 @@ export default function HomePage() {
                                     className="relative flex justify-center items-center bg-muted/30 rounded-sm"
                                     style={{ height: DEFAULT_COVER_SIZES.video.height }}
                                 >
-                                    {typeof window !== 'undefined' && (
-                                        <></>
-                                        // <MuxPlayer
-                                        //     playbackId="00cc2D1BA4VPs2uNwHl01ZGGkZu9seiUHu"
-                                        //     metadata={{
-                                        //         video_title: 'Il Mistero del Dipinto',
-                                        //         viewer_user_id: '1',
-                                        //     }}
-                                        //     style={{ width: DEFAULT_COVER_SIZES.video.width, height: DEFAULT_COVER_SIZES.video.height, "--cast-button": "none" } as React.CSSProperties}
-                                        // />
+                                    {mounted && (
+                                        <MuxPlayer
+                                            playbackId="00cc2D1BA4VPs2uNwHl01ZGGkZu9seiUHu"
+                                            metadata={{
+                                                video_title: 'Il Mistero del Dipinto',
+                                                viewer_user_id: '1',
+                                            }}
+                                            style={{
+                                                width: DEFAULT_COVER_SIZES.video.width,
+                                                height: DEFAULT_COVER_SIZES.video.height,
+                                                "--cast-button": "none",
+                                            } as React.CSSProperties}
+                                        />
                                     )}
                                 </div>
 
@@ -135,7 +147,7 @@ export default function HomePage() {
                                     </div>
                                 ) : (
                                     books.map((book, index) => (
-                                        <BookCover key={`${book.id}-${index}`} book={book} orientation="portrait"/>
+                                        <BookCover key={`${book.id}-${index}`} book={book} orientation="portrait" />
                                     ))
                                 )}
                             </div>

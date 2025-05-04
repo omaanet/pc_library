@@ -100,6 +100,16 @@ export function RootNav({
                                     <Link href="/my-books">La mia libreria</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
+
+                                {state.user?.isAdmin && (
+                                    <>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/add-book">Gestisci Racconti</Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                    </>
+                                )}
+
                                 <DropdownMenuItem onClick={() => logout()}>
                                     Esci
                                 </DropdownMenuItem>
@@ -132,7 +142,10 @@ export function RootNav({
             {isMobileMenuOpen && (
                 <div className="md:hidden border-t">
                     <nav className="flex flex-col space-y-4 p-4">
-                        <Link
+                        <Link href="/settings">
+                            Impostazioni
+                        </Link>
+                        {/* <Link
                             href="/books"
                             className={cn(
                                 "text-sm font-medium transition-colors hover:text-primary",
@@ -151,7 +164,7 @@ export function RootNav({
                             onClick={() => setIsMobileMenuOpen(false)}
                         >
                             Audioracconti
-                        </Link>
+                        </Link> */}
                         <Link
                             href="/add-book"
                             className={cn(

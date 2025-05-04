@@ -42,6 +42,7 @@ const EPUBViewer = ({ bookId, book, readingFontSize, theme: externalTheme }: EPU
     const renditionRef = useRef<Rendition | null>(null);
     const locationRef = useRef<string | null>(location);
     const currentThemeRef = useRef<ThemeName>(theme);
+    const initialLoadRef = useRef<boolean>(true);
 
     // URL to load the EPUB file
     const epubUrl = `/epub/${bookId}/output.epub`;
@@ -172,8 +173,6 @@ const EPUBViewer = ({ bookId, book, readingFontSize, theme: externalTheme }: EPU
     };
 
     // Apply theme function for controlling image filters, disabling transitions on initial load
-    const initialLoadRef = useRef<boolean>(true);
-
     const applyTheme = (rendition: Rendition, themeName: ThemeName) => {
         if (!rendition) return;
 

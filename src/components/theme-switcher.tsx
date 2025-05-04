@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Check } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function ThemeSwitcher() {
-    const { setTheme } = useTheme();
+    const { setTheme, theme } = useTheme();
+
+    // Helper to check if a theme is the user's explicit selection
+    const isActive = (t: string) => theme === t;
 
     return (
         <DropdownMenu>
@@ -27,12 +30,15 @@ export function ThemeSwitcher() {
             <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setTheme("light")}>
                     Light
+                    <span className="ml-auto inline-flex w-5 justify-center">{isActive('light') ? <Check className="h-4 w-4 text-primary" /> : null}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setTheme("dark")}>
                     Dark
+                    <span className="ml-auto inline-flex w-5 justify-center">{isActive('dark') ? <Check className="h-4 w-4 text-primary" /> : null}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setTheme("system")}>
                     System
+                    <span className="ml-auto inline-flex w-5 justify-center">{isActive('system') ? <Check className="h-4 w-4 text-primary" /> : null}</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
