@@ -19,11 +19,9 @@ export async function GET(request: Request) {
         const displayPreviews = displayPreviewsParam ?
             parseInt(displayPreviewsParam) : 0; // Default to non-preview books (0)
 
-        // console.log('perPage:', perPage);
-        // return NextResponse.json({
-        //     books: [],
-        //     pagination: []
-        // });
+        const isVisibleParam = url.searchParams.get('isVisible');
+        const isVisible: number | null = isVisibleParam ?
+            parseInt(isVisibleParam) : -1; // Default to visible books (-1)
 
         // Parse sorting parameters
         const sortBy: [string, 'ASC' | 'DESC'][] | string | undefined = undefined;
@@ -65,7 +63,7 @@ export async function GET(request: Request) {
         //     sortBy = [['has_audio', 'ASC']];
         // }
 
-        // sortBy = [['has_audio', 'ASC'], ['order', 'ASC']];
+        // sortBy = [['has_audio', 'ASC'], ['display_order', 'ASC']];
 
         // Prepare query options for the optimized function
         const queryOptions: BookQueryOptions = {
@@ -75,7 +73,8 @@ export async function GET(request: Request) {
             sortOrder,
             page,
             perPage,
-            displayPreviews
+            displayPreviews,
+            isVisible
         };
 
         // Get books using the optimized function that handles filtering, sorting,

@@ -27,7 +27,7 @@ export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
 
     // Handle auth modal state
     const [showAuthModal, setShowAuthModal] = React.useState(false);
-    
+
     // Log state changes for debugging
     React.useEffect(() => {
         console.log('[BookShelf] showAuthModal state changed:', showAuthModal);
@@ -44,7 +44,7 @@ export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
         setShowAuthModal(true);
         console.log('[BookShelf] Set modal state to true');
     };
-    
+
 
 
     return (
@@ -54,9 +54,9 @@ export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
                     Library Collection
                 </h2>
                 <div className="flex items-center gap-2">
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+                    <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => {
                             console.log('[BookShelf] Test button clicked, current state:', showAuthModal);
                             setShowAuthModal(true);
@@ -98,7 +98,7 @@ export function BookShelf({ books, onSelectBook, className }: BookShelfProps) {
                 isAuthenticated={isAuthenticated}
                 onLoginClick={handleBookAction}
             />
-            
+
             {/* Auth Modal */}
             <AuthModal
                 open={showAuthModal}

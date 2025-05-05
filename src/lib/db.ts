@@ -12,6 +12,8 @@ export interface BookQueryOptions {
     page?: number;
     perPage?: number;
     displayPreviews?: number; // -1: all, 0: non-preview only, 1: preview only
+    displayOrder?: number;
+    isVisible?: number;
 }
 
 // Define the pagination result type
@@ -43,53 +45,57 @@ export function getDb(): Database.Database {
  * Get all books from the database
  * @deprecated Use getAllBooksOptimized instead for better performance with filtering
  */
-export function getAllBooks(displayPreviews: number): Book[] {
-    const db = getDb();
+// export function getAllBooks(displayPreviews: number): Book[] {
+//     const db = getDb();
 
-    let query = `
-        SELECT 
-            id, 
-            title, 
-            cover_image as coverImage, 
-            publishing_date as publishingDate, 
-            summary, 
-            has_audio as hasAudio, 
-            audio_length as audioLength,
-            extract,
-            rating,
-            is_preview as isPreview,
-            created_at AS createdAt,
-            updated_at AS updatedAt
-        FROM books
-    `;
+//     let query = `
+//         SELECT 
+//             id, 
+//             title, 
+//             cover_image as coverImage, 
+//             publishing_date as publishingDate, 
+//             summary, 
+//             has_audio as hasAudio, 
+//             audio_length as audioLength,
+//             extract,
+//             rating,
+//             is_preview as isPreview,
+//             [display_order] AS [displayOrder],
+//             is_visible as isVisible,
+//             created_at AS createdAt,
+//             updated_at AS updatedAt
+//         FROM books
+//     `;
 
-    // Apply filtering based on displayPreviews parameter
-    if (displayPreviews === 0) {
-        query += ` WHERE is_preview IS NULL OR is_preview != 1`;
-    } else if (displayPreviews === 1) {
-        query += ` WHERE is_preview = 1`;
-    }
-    // If displayPreviews is -1, no filter is applied (get all books)
+//     // Apply filtering based on displayPreviews parameter
+//     if (displayPreviews === 0) {
+//         query += ` WHERE is_preview IS NULL OR is_preview != 1`;
+//     } else if (displayPreviews === 1) {
+//         query += ` WHERE is_preview = 1`;
+//     }
+//     // If displayPreviews is -1, no filter is applied (get all books)
 
-    query += `;`;
+//     query += `;`;
 
-    const books = db.prepare(query).all() as Book[];
+//     const books = db.prepare(query).all() as Book[];
 
-    return books.map((book) => ({
-        id: book.id,
-        title: book.title,
-        coverImage: book.coverImage,
-        publishingDate: book.publishingDate,
-        summary: book.summary,
-        hasAudio: Boolean(book.hasAudio),
-        audioLength: book.audioLength,
-        extract: book.extract,
-        rating: book.rating,
-        isPreview: Boolean(book.isPreview),
-        createdAt: book.createdAt,
-        updatedAt: book.updatedAt,
-    } as Book));
-}
+//     return books.map((book) => ({
+//         id: book.id,
+//         title: book.title,
+//         coverImage: book.coverImage,
+//         publishingDate: book.publishingDate,
+//         summary: book.summary,
+//         hasAudio: Boolean(book.hasAudio),
+//         audioLength: book.audioLength,
+//         extract: book.extract,
+//         rating: book.rating,
+//         isPreview: Boolean(book.isPreview),
+//         displayOrder: book.displayOrder,
+//         isVisible: book.isVisible,
+//         createdAt: book.createdAt,
+//         updatedAt: book.updatedAt,
+//     } as Book));
+// }
 
 /**
  * Get books from the database with optimized filtering, search, sorting, and pagination
@@ -104,12 +110,20 @@ export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedR
         sortOrder = 'desc', // Default to descending order (newest/highest first)
         page = 1,
         perPage = 10,
-        displayPreviews = 0 // Default to non-preview books (0)
+        displayPreviews = 0, // Default to non-preview books (0)
+        isVisible = 1 // Default to visible books (true)
     } = options;
 
     // Start building the query parts
     const whereConditions: string[] = [];
     const queryParams: any[] = [];
+
+
+    // Handle visibility filter (using index on is_visible)
+    if (isVisible !== undefined && isVisible !== -1) {
+        whereConditions.push('is_visible = ?');
+        queryParams.push(isVisible ? 1 : 0);
+    }
 
     // Handle preview filtering
     if (displayPreviews === 0) {
@@ -146,7 +160,7 @@ export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedR
     //     const validColumns = [
     //         'id', 'title', 'cover_image', 'publishing_date', 'summary',
     //         'has_audio', 'audio_length', 'extract', 'rating', 'is_preview',
-    //         'created_at', 'updated_at', "order"
+    //         'created_at', 'updated_at', "display_order"
     //     ];
 
     //     const sortClauses = sortBy.map(([column, direction]) => {
@@ -187,6 +201,7 @@ export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedR
     //             case 'isPreview': column = 'is_preview'; break;
     //             case 'createdAt': column = 'created_at'; break;
     //             case 'updatedAt': column = 'updated_at'; break;
+    //             case 'displayOrder': column = 'display_order'; break;
     //             default: column = sortBy as string || 'title';
     //         }
 
@@ -195,7 +210,7 @@ export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedR
     // }
 
     // const direction = sortOrder?.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-    const orderByClause = `[has_audio] ASC, [order] ASC`;
+    const orderByClause = `[has_audio] ASC, [display_order] ASC`;
 
     // console.log('orderByClause:', orderByClause);
 
@@ -224,6 +239,8 @@ export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedR
             extract,
             rating,
             is_preview as isPreview,
+            is_visible as isVisible,
+            display_order as displayOrder,
             created_at AS createdAt,
             updated_at AS updatedAt
         FROM books
@@ -271,6 +288,8 @@ export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedR
         extract: book.extract,
         rating: book.rating,
         isPreview: Boolean(book.isPreview),
+        isVisible: book.isVisible,
+        displayOrder: book.displayOrder,
         createdAt: book.createdAt,
         updatedAt: book.updatedAt,
     } as Book));
@@ -303,6 +322,9 @@ export function getBookById(id: string): Book | undefined {
             audio_length as audioLength,
             extract,
             rating,
+            is_preview as isPreview,
+            is_visible as isVisible,
+            display_order as displayOrder,
             created_at AS createdAt,
             updated_at AS updatedAt
         FROM books
@@ -321,6 +343,9 @@ export function getBookById(id: string): Book | undefined {
         audioLength: book.audioLength,
         extract: book.extract,
         rating: book.rating,
+        isPreview: Boolean(book.isPreview),
+        isVisible: book.isVisible,
+        displayOrder: book.displayOrder,
         createdAt: book.createdAt,
         updatedAt: book.updatedAt,
     } as Book;
@@ -399,8 +424,10 @@ export function createBook(book: Omit<Book, 'id'>): Book {
             audio_length,
             extract,
             rating,
-            is_preview
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            is_preview,
+            display_order,
+            is_visible
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)   
     `).run(
         id,
         book.title,
@@ -411,7 +438,9 @@ export function createBook(book: Omit<Book, 'id'>): Book {
         book.audioLength || null,
         book.extract || null,
         book.rating || null,
-        book.isPreview ? 1 : null
+        book.isPreview ? 1 : null,
+        book.displayOrder || null,
+        book.isVisible ? 1 : null
     );
 
     return {
@@ -473,6 +502,16 @@ export function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): boolean
     if (book.isPreview !== undefined) {
         updates.push('is_preview = ?');
         values.push(book.isPreview ? 1 : null);
+    }
+
+    if (book.isVisible !== undefined) {
+        updates.push('is_visible = ?');
+        values.push(book.isVisible || null);
+    }
+
+    if (book.displayOrder !== undefined) {
+        updates.push('display_order = ?');
+        values.push(book.displayOrder || null);
     }
 
     // Add updated_at timestamp

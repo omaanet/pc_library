@@ -29,15 +29,15 @@ export function ThemeSwitcher() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setTheme("light")}>
-                    Light
+                    Chiaro
                     <span className="ml-auto inline-flex w-5 justify-center">{isActive('light') ? <Check className="h-4 w-4 text-primary" /> : null}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setTheme("dark")}>
-                    Dark
+                    Scuro
                     <span className="ml-auto inline-flex w-5 justify-center">{isActive('dark') ? <Check className="h-4 w-4 text-primary" /> : null}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setTheme("system")}>
-                    System
+                    Sistema
                     <span className="ml-auto inline-flex w-5 justify-center">{isActive('system') ? <Check className="h-4 w-4 text-primary" /> : null}</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>

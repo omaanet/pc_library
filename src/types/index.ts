@@ -11,6 +11,8 @@ export interface Book {
     isPreview?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
+    displayOrder?: number;
+    isVisible?: number;
 
     // Application-specific fields
     readingProgress?: number;

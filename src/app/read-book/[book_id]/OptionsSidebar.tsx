@@ -9,15 +9,21 @@ interface OptionsSidebarProps {
     onClose: () => void;
 }
 
+export function fontSize(rawSize?: string | number): number {
+    if (typeof rawSize === 'string') {
+        return parseInt(rawSize.replace('%', '')) || 100;
+    }
+    if (typeof rawSize === 'number') {
+        return rawSize;
+    }
+    return 100;
+}
+
 export default function OptionsSidebar({ open, onClose }: OptionsSidebarProps) {
     // Determine hover background based on current or system theme
     const { resolvedTheme } = useTheme();
     const { preferences, updatePreference } = useUserPreferences();
-    // Normalize fontSize to a number
-    const rawSize = preferences.reading?.fontSize;
-    const currentFontSize = typeof rawSize === 'string'
-        ? parseInt(rawSize.replace('%', '')) || 100
-        : (typeof rawSize === 'number' ? rawSize : 100);
+    const currentFontSize = fontSize(preferences.reading?.fontSize);
     const effectiveTheme = preferences.theme === 'system' ? resolvedTheme : (preferences.theme || 'light');
     const btnHoverClass = effectiveTheme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200';
 
@@ -84,7 +90,7 @@ export default function OptionsSidebar({ open, onClose }: OptionsSidebarProps) {
                                 onClick={() =>
                                     updatePreference('reading', {
                                         ...preferences.reading,
-                                        fontSize: currentFontSize + 10,
+                                        fontSize: Math.min(currentFontSize + 10, 400),
                                     })
                                 }
                             >A+</button>

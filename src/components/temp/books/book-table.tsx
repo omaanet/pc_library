@@ -11,8 +11,10 @@ import {
     Search,
     RefreshCw,
     Eye,
+    EyeOff,
     Check,
-    Upload
+    Upload,
+    Loader2
 } from 'lucide-react';
 import { formatDate, formatAudioLength } from '@/lib/utils';
 import { getCoverImageUrl } from '@/lib/image-utils';
@@ -46,7 +48,7 @@ interface BookTableProps {
     isLoading: boolean;
 }
 
-type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview';
+type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'book_id' | 'epub' | 'displayOrder' | 'isVisible';
 type SortDirection = 'asc' | 'desc';
 
 export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: BookTableProps) {
@@ -58,7 +60,7 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
 
     useEffect(() => {
         books.forEach(book => {
-            if (!book.hasAudio && epubExists[book.id] === undefined && !epubLoading[book.id]) {
+            if (/*!book.hasAudio &&*/ epubExists[book.id] === undefined && !epubLoading[book.id]) {
                 setEpubLoading(prev => ({ ...prev, [book.id]: true }));
                 fetch(`/epub/${book.id}/output.epub`, { method: 'HEAD' })
                     .then(res => setEpubExists(prev => ({ ...prev, [book.id]: res.ok })))
@@ -68,31 +70,6 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
         });
     }, [books, epubExists, epubLoading]);
 
-    // Optimized: Fetch EPUB existence for all relevant books at once
-    React.useEffect(() => {
-        const relevantBooks = books.filter(book => !book.hasAudio && epubExists[book.id] === undefined);
-        if (relevantBooks.length === 0) return;
-        const bookIds = relevantBooks.map(book => book.id);
-        setEpubLoading(prev => ({ ...prev, ...Object.fromEntries(bookIds.map(id => [id, true])) }));
-        fetch('/api/epub_exists/batch', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookIds }),
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.exists) {
-                    setEpubExists(prev => ({ ...prev, ...data.exists }));
-                }
-            })
-            .catch(() => {
-                setEpubExists(prev => ({ ...prev, ...Object.fromEntries(bookIds.map(id => [id, false])) }));
-            })
-            .finally(() => {
-                setEpubLoading(prev => ({ ...prev, ...Object.fromEntries(bookIds.map(id => [id, false])) }));
-            });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [books]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAudioOnly, setShowAudioOnly] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -146,6 +123,24 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
                 return sortDirection === 'asc'
                     ? (a.isPreview ? 1 : 0) - (b.isPreview ? 1 : 0)
                     : (b.isPreview ? 1 : 0) - (a.isPreview ? 1 : 0);
+            } else if (sortField === 'book_id') {
+                return sortDirection === 'asc'
+                    ? a.id.localeCompare(b.id)
+                    : b.id.localeCompare(a.id);
+            } else if (sortField === 'epub') {
+                const aEpub = !!epubExists[a.id];
+                const bEpub = !!epubExists[b.id];
+                return sortDirection === 'asc'
+                    ? (aEpub === bEpub ? 0 : aEpub ? 1 : -1)
+                    : (aEpub === bEpub ? 0 : aEpub ? -1 : 1);
+            } else if (sortField === 'displayOrder') {
+                return sortDirection === 'asc'
+                    ? ((a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+                    : ((b.displayOrder ?? 0) - (a.displayOrder ?? 0));
+            } else if (sortField === 'isVisible') {
+                return sortDirection === 'asc'
+                    ? ((a.isVisible ? 1 : 0) - (b.isVisible ? 1 : 0))
+                    : ((b.isVisible ? 1 : 0) - (a.isVisible ? 1 : 0));
             }
             return 0;
         });
@@ -207,92 +202,95 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="text-sm">book_id</TableHead>
-                            <TableHead className="w-[300px]">
+                            <TableHead className="w-24 cursor-pointer select-none text-xs text-muted-foreground whitespace-nowrap" onClick={() => handleSort('book_id')}>
+                                ID {getSortIcon('book_id')}
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap" style={{ width: 'auto' }}>
                                 <Button
                                     variant="ghost"
-                                    className="flex items-center gap-1 p-0 font-medium"
+                                    className="flex items-center gap-1 p-0 font-medium whitespace-nowrap w-full justify-start"
                                     onClick={() => handleSort('title')}
                                 >
                                     Title {getSortIcon('title')}
                                 </Button>
                             </TableHead>
-                            <TableHead>
+                            <TableHead className="text-xs text-muted-foreground">
                                 <Button
                                     variant="ghost"
-                                    className="flex items-center gap-1 p-0 font-medium"
+                                    className="flex items-center gap-1 p-0 font-medium text-xs text-muted-foreground"
                                     onClick={() => handleSort('publishingDate')}
                                 >
                                     Published {getSortIcon('publishingDate')}
                                 </Button>
                             </TableHead>
-                            <TableHead>
+
+                            <TableHead className="text-xs text-muted-foreground text-center">
                                 <Button
                                     variant="ghost"
-                                    className="flex items-center gap-1 p-0 font-medium"
+                                    className="flex items-center gap-1 p-0 font-medium text-xs text-muted-foreground mx-auto"
                                     onClick={() => handleSort('hasAudio')}
                                 >
                                     Audio {getSortIcon('hasAudio')}
                                 </Button>
                             </TableHead>
-                            <TableHead>
+                            <TableHead className="text-xs text-muted-foreground text-center">
                                 <Button
                                     variant="ghost"
-                                    className="flex items-center gap-1 p-0 font-medium"
+                                    className="flex items-center gap-1 p-0 font-medium text-xs text-muted-foreground mx-auto"
                                     onClick={() => handleSort('isPreview')}
                                 >
                                     Preview {getSortIcon('isPreview')}
                                 </Button>
                             </TableHead>
-                            <TableHead>Epub</TableHead>
+                            <TableHead className="w-20 cursor-pointer select-none" onClick={() => handleSort('epub')}>
+                                EPUB {getSortIcon('epub')}
+                            </TableHead>
+                            <TableHead className="text-xs text-muted-foreground text-center cursor-pointer select-none" onClick={() => handleSort('displayOrder')}>
+                                Display order {getSortIcon('displayOrder')}
+                            </TableHead>
+                            <TableHead className="text-xs text-muted-foreground text-center cursor-pointer select-none" onClick={() => handleSort('isVisible')}>
+                                Visible {getSortIcon('isVisible')}
+                            </TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredBooks.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
+                                <TableCell colSpan={9} className="h-24 text-center">
                                     {isLoading ? 'Loading books...' : 'No books found.'}
                                 </TableCell>
                             </TableRow>
                         ) : (
                             filteredBooks.map((book) => (
                                 <TableRow key={book.id}>
-                                    <TableCell className="text-sm">{book.id}</TableCell>
-                                    <TableCell className="font-medium">{book.title}</TableCell>
-                                    <TableCell>{formatDate(book.publishingDate)}</TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{book.id}</TableCell>
+                                    <TableCell className="font-medium whitespace-nowrap flex-1 min-w-0" style={{ width: 'auto' }}>{book.title}</TableCell>
+                                    <TableCell className="text-xs text-muted-foreground">{formatDate(book.publishingDate)}</TableCell>
+
+                                    <TableCell className="text-xs whitespace-nowrap text-center">
                                         {book.hasAudio ? (
-                                            <div className="flex items-center gap-1">
-                                                <Headphones className="h-4 w-4" />
-                                                {book.audioLength ? formatAudioLength(book.audioLength) : 'Yes'}
-                                            </div>
-                                        ) : 'No'}
+                                            <Headphones className="h-4 w-4 text-muted-foreground mx-auto" />
+                                        ) : null}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-xs whitespace-nowrap text-center">
                                         {book.isPreview ? (
-                                            <div className="flex items-center gap-1">
-                                                <Eye className="h-4 w-4" />
-                                                <span>Preview</span>
-                                            </div>
-                                        ) : 'No'}
+                                            <Eye className="h-4 w-4 text-muted-foreground mx-auto" />
+                                        ) : null}
                                     </TableCell>
-                                    <TableCell>
-                                        {/* EPUB column: Only for books with no audio */}
-                                        {!book.hasAudio ? (
-                                            epubLoading[book.id] ? (
-                                                <span className="text-muted-foreground">...</span>
-                                            ) : epubExists[book.id] ? (
-                                                <Check className="h-5 w-5 text-green-600" aria-label="EPUB present" />
-                                            ) : (
-                                                <span className="text-muted-foreground">—</span>
-                                            )
-                                        ) : (
-                                            <span className="text-muted-foreground">—</span>
-                                        )}
+                                    <TableCell className="text-center">
+                                        {epubLoading[book.id] ? (
+                                            <span className="text-muted-foreground">...</span>
+                                        ) : epubExists[book.id] ? (
+                                            <Check className="h-5 w-5 text-green-600" aria-label="EPUB present" />
+                                        ) : null}
+                                    </TableCell>
+                                    <TableCell className="text-xs whitespace-nowrap text-center">{book.displayOrder}</TableCell>
+                                    <TableCell className="text-xs whitespace-nowrap text-center">
+                                        {book.isVisible ? null : <EyeOff className="h-4 w-4 text-muted-foreground mx-auto" aria-label="Hidden" />}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
+                                        <div className="flex justify-end gap-2 items-center">
                                             <Button
                                                 variant="outline"
                                                 size="icon"
@@ -398,7 +396,13 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
                             }}
                             disabled={!selectedFile || uploading}
                         >
-                            {uploading ? 'Uploading...' : 'Upload'}
+                            <span className="inline-block w-[90px] text-center">
+                                {uploading ? (
+                                    <Loader2 className="mx-auto h-5 w-5 animate-spin" aria-label="Uploading..." />
+                                ) : (
+                                    'Upload'
+                                )}
+                            </span>
                         </Button>
                     </DialogFooter>
                 </DialogContent>

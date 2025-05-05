@@ -31,6 +31,8 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { fontSize } from '@/app/read-book/[book_id]/OptionsSidebar';
+import { CopyrightFooter } from '@/components/shared/copyright-footer';
 
 export default function SettingsPage() {
     const { state: { user, isAuthenticated } } = useAuth();
@@ -43,6 +45,7 @@ export default function SettingsPage() {
     } = useUserPreferences();
 
     const btnHoverClass = preferences.theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200';
+    const currentFontSize = fontSize(preferences.reading?.fontSize);
 
     const [isSaving, setIsSaving] = React.useState(false);
 
@@ -89,7 +92,7 @@ export default function SettingsPage() {
                 <footer className="border-t mt-auto py-6 md:py-0">
                     <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row mx-auto">
                         <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                            &copy; {new Date().getFullYear()} OMAA.net - Tutti i diritti riservati.
+                            <CopyrightFooter lang="it" detailed />
                         </p>
                     </div>
                 </footer>
@@ -153,7 +156,7 @@ export default function SettingsPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="space-y-2">
+                                {/* <div className="space-y-2">
                                     <Label htmlFor="view-mode">Vista predefinita</Label>
                                     <Select
                                         value={preferences.viewMode}
@@ -169,7 +172,7 @@ export default function SettingsPage() {
                                             <SelectItem value="list">Lista</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </div>
+                                </div> */}
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -193,19 +196,19 @@ export default function SettingsPage() {
                                                 onClick={() =>
                                                     handlePreferenceChange('reading', {
                                                         ...preferences.reading,
-                                                        fontSize: Math.max(preferences.reading.fontSize - 10, 10),
+                                                        fontSize: Math.max(currentFontSize - 10, 10),
                                                     })
                                                 }
                                             >
                                                 A-
                                             </button>
-                                            <span className="w-10 text-center text-base">{preferences.reading.fontSize}%</span>
+                                            <span className="w-10 text-center text-base">{currentFontSize}%</span>
                                             <button
                                                 className={`border rounded w-8 h-8 flex items-center justify-center text-base ${btnHoverClass}`}
                                                 onClick={() =>
                                                     handlePreferenceChange('reading', {
                                                         ...preferences.reading,
-                                                        fontSize: preferences.reading.fontSize + 10,
+                                                        fontSize: Math.min(currentFontSize + 10, 400),
                                                     })
                                                 }
                                             >
@@ -217,7 +220,7 @@ export default function SettingsPage() {
                                             onClick={() =>
                                                 handlePreferenceChange('reading', {
                                                     ...preferences.reading,
-                                                    fontSize: 100,
+                                                    fontSize: currentFontSize,
                                                 })
                                             }
                                             aria-label="Reimposta dimensione carattere"
@@ -370,7 +373,7 @@ export default function SettingsPage() {
             <footer className="border-t mt-auto py-6 md:py-0">
                 <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row mx-auto">
                     <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                        &copy; {new Date().getFullYear()} OMAA.net - All rights reserved.
+                        <CopyrightFooter lang="it" detailed />
                     </p>
                 </div>
             </footer>

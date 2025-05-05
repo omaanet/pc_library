@@ -74,6 +74,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
                 perPage: state.pagination.perPage.toString(),
                 sortBy: state.sort.by,
                 sortOrder: state.sort.order,
+                isVisible: '1'
             });
 
             // Add filter parameters if they exist

@@ -16,6 +16,7 @@ import { Book as BookIcon, Headphones } from 'lucide-react';
 import dynamic from 'next/dynamic';
 const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), { ssr: false });
 import { DEFAULT_COVER_SIZES } from '@/types/images';
+import { CopyrightFooter } from '@/components/shared/copyright-footer';
 
 export default function HomePage() {
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -28,7 +29,7 @@ export default function HomePage() {
         async function fetchPreviewBooks() {
             try {
                 setLoading(true);
-                const response = await fetch('/api/books?displayPreviews=1&sortOrder=desc');
+                const response = await fetch('/api/books?displayPreviews=1&sortOrder=desc&isVisible=1');
 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch preview books: ${response.status}`);
@@ -109,7 +110,7 @@ export default function HomePage() {
                     <div className="rounded-xl border bg-card p-6">
                         <div className="flex flex-row items-center justify-center mb-8">
                             <BookIcon className="h-10 w-10 mx-2" />
-                            <div className="text-xl font-semibold mx-2 text-center">Libri In Anteprima</div>
+                            <div className="text-xl font-semibold mx-2 text-center">Racconti In Anteprima</div>
                         </div>
 
                         <section id="previews-collection">
@@ -162,7 +163,7 @@ export default function HomePage() {
             <footer className="border-t mt-10 py-6 md:py-0">
                 <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row mx-auto">
                     <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                        &copy; {new Date().getFullYear()} OMAA.net - All rights reserved.
+                        <CopyrightFooter lang="it" detailed />
                     </p>
                 </div>
             </footer>

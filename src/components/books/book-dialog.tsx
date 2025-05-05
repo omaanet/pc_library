@@ -188,7 +188,15 @@ export function BookDialog({
                                 <div className="flex-1 flex flex-col h-full min-h-0">
                                     {/* Estratto section */}
                                     <div className="mb-3 sm:mb-2">
-                                        <BookExtract bookId={book.id} />
+                                        {book.extract && (
+                                            <div>
+                                                <h3 className="text-md sm:text-lg font-medium mb-3 text-cyan-400">Estratto</h3>
+                                                <p className="bg-muted/40 rounded py-4 px-6 text-xs sm:text-lg font-light text-justify whites2pace-pre-line leading-relaxed line-clamp-5 text-ellipsis overflow-hidden">
+                                                    {book.extract || 'Nessun estratto disponibile'}
+                                                </p>
+                                            </div>
+                                            // <BookExtract extract={book.extract} />
+                                        )}
 
                                         {/* AudioBookPlayer: show only if authenticated and has audio */}
                                         {isAuthenticated && book.hasAudio && (
@@ -197,7 +205,7 @@ export function BookDialog({
                                                 <AudioBookPlayer book={book} />
                                             </>
                                         )}
-                                        {isAuthenticated /*&& !book.hasAudio*/&& (
+                                        {isAuthenticated /*&& !book.hasAudio*/ && (
                                             <div className="mt-2 mb-0 flex">
                                                 <Link href={`/read-book/${book.id}`} passHref legacyBehavior>
                                                     <Button asChild variant="secondary" size="default" className="ml-auto">
@@ -210,7 +218,7 @@ export function BookDialog({
                                         )}
 
                                     </div>
-                                    
+
                                     {/* Comments section: header, scrollable list, posting form at bottom */}
                                     <div className="flex-1 flex flex-col min-h-0 bg-muted/40 rounded p-2">
                                         <h3 className="text-md sm:text-lg font-medium mb-2 text-cyan-400">Commenti</h3>

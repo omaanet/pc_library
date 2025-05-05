@@ -59,7 +59,7 @@ CREATE TABLE "books" (
 	[extract]	TEXT,
 	[rating]	INTEGER,
 	[is_preview]	INTEGER,
-	[order]	INTEGER,
+	[display_order]	INTEGER,
 	[created_at]	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	[updated_at]	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY([id])

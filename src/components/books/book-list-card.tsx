@@ -104,7 +104,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                     size="sm"
                     onClick={() => onSelect(book)}
                 >
-                    Vedi Dettagli
+                    {book.hasAudio ? 'Ascolta' : 'Leggi'}
                 </Button>
             </div>
             <p className="text-sm text-muted-foreground line-clamp-2">

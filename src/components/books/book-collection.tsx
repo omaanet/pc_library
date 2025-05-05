@@ -97,7 +97,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         const loadBooks = async () => {
             setLocalIsLoading(true);
 
-            console.log('Loading books with displayPreviews:', displayPreviews);
+            // console.log('Loading books with displayPreviews:', displayPreviews);
             try {
                 // Build query params with existing filters plus displayPreviews
                 const params = new URLSearchParams({
@@ -105,7 +105,8 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                     perPage: pagination.perPage.toString(),
                     sortBy: sort.by,
                     sortOrder: sort.order,
-                    displayPreviews: displayPreviews.toString()
+                    displayPreviews: displayPreviews.toString(),
+                    isVisible: '1'
                 });
 
                 // Add other filters
@@ -124,7 +125,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                 }
 
                 const data: BookResponse = await response.json();
-                console.log('Fetched books for displayPreviews', displayPreviews, ':', data);
+                // console.log('Fetched books for displayPreviews', displayPreviews, ':', data);
 
                 // Only update local state if component is still mounted
                 if (isMounted) {
@@ -148,7 +149,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                     setLocalIsLoading(false);
                 }
             }
-            console.log('Finished loading books for displayPreviews:', displayPreviews);
+            // console.log('Finished loading books for displayPreviews:', displayPreviews);
         };
 
         loadBooks();
@@ -235,7 +236,8 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                 sortBy: sort.by,
                 sortOrder: sort.order,
                 displayPreviews: displayPreviews.toString(),
-                search: value
+                search: value,
+                isVisible: '1'
             });
 
             // Add other existing filters
@@ -339,7 +341,8 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                 perPage: pagination.perPage.toString(),
                 sortBy: sort.by,
                 sortOrder: sort.order,
-                displayPreviews: displayPreviews.toString()
+                displayPreviews: displayPreviews.toString(),
+                isVisible: '1'
             });
 
             // Add other filters
@@ -398,7 +401,8 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                                         perPage: pagination.perPage.toString(),
                                         sortBy: sort.by,
                                         sortOrder: sort.order,
-                                        displayPreviews: displayPreviews.toString()
+                                        displayPreviews: displayPreviews.toString(),
+                                        isVisible: '1'
                                     });
 
                                     if (filters.search) {
@@ -557,7 +561,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                 onOpenChange={(open) => !open && selectBook(null)}
                 isAuthenticated={isAuthenticated}
                 onLoginClick={() => {
-                    console.log('BookCollection: Setting auth modal open');
+                    // console.log('BookCollection: Setting auth modal open');
                     setIsAuthModalOpen(true);
                 }}
             />

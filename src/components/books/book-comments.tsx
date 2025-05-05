@@ -119,7 +119,7 @@ export default function BookComments({ bookId, isAuthenticated, userName, onLogi
                         )}
             </div>
             {isAuthenticated && (
-                <form onSubmit={handleSubmit} className="pt-2 space-y-2 bg-background shrink-0">
+                <form onSubmit={handleSubmit} className="pt-2 space-y-2 shrink-0">
                     {replyingTo && <div className="text-xs text-teal-600 mb-1">
                         Rispondendo a un commento
                         <Button type="button" variant="link" size="sm" className="ml-2 p-0 text-red-600" onClick={() => setReplyingTo(null)}>Annulla</Button>

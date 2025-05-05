@@ -146,11 +146,11 @@ export function AudioTrackForm({ bookId, onCancel }: AudioTrackFormProps) {
                     name="audio_length"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Audio Length (minutes)</FormLabel>
+                            <FormLabel>Audio Length (seconds)</FormLabel>
                             <FormControl>
                                 <Input
                                     type="number"
-                                    placeholder="Audio length in minutes"
+                                    placeholder="Audio length in seconds"
                                     {...field}
                                     value={field.value || ''}
                                     onChange={(e) => {

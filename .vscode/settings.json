@@ -14,5 +14,8 @@
         "node_modules": true,
         ".next": true
     },
-    "explorerExclude.backup": {}
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "*.ts": "${basename}.d.ts, ${basename}.js"
+    }
 }

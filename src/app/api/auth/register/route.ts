@@ -38,12 +38,12 @@ export async function POST(request: Request) {
 
         const { userId, verificationToken } = result;
 
-        console.log('Creating user...');
-        console.log('Sending verification email...');
+        // console.log('Creating user...');
+        // console.log('Sending verification email...');
         const mailer = getMailer();
-        console.log('Mailer initialized');
+        // console.log('Mailer initialized');
         const emailSent = await mailer.sendVerificationEmail(email, fullName, verificationToken);
-        console.log('Email sent:', emailSent);
+        // console.log('Email sent:', emailSent);
 
         if (!emailSent) {
             // If email could not be sent, return an error

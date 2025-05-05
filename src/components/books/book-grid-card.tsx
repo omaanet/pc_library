@@ -80,18 +80,19 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
 
     // Memoize book metadata to prevent unnecessary re-renders
     const bookMetadata = React.useMemo(() => (
-        <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-                {formatDate(book.publishingDate)}
-            </span>
-            {book.hasAudio && book.audioLength && (
-                <span className="flex items-center gap-1 text-muted-foreground">
+        <div className="flex flex-col items-center justify-center text-sm">
+            {book.hasAudio && book.audioLength ? (
+                <div className="flex items-center gap-y-0 gap-x-2 text-muted-foreground">
                     <Headphones className="h-4 w-4" />
                     {formatAudioLength(book.audioLength)}
-                </span>
+                </div>
+            ) : (
+                <>
+                    {/* {formatDate(book.publishingDate)} */}
+                </>
             )}
         </div>
-    ), [book.publishingDate, book.hasAudio, book.audioLength]);
+    ), [/*book.publishingDate,*/ book.hasAudio, book.audioLength]);
 
     return (
         <Card
@@ -103,18 +104,21 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
             <CardContent className="p-0">
                 {coverImage}
 
-                <div className="space-y-2 p-4">
-                    <h3 className="line-clamp-1 text-lg font-semibold tracking-tight">
-                        {book.title}
-                    </h3>
-                    
-                    {bookMetadata}
+                <div className="px-4 py-0">
+
+                    <div className="flex flex-col items-center justify-center mb-2 h-[3.25rem]">
+                        <h3 className="line-clamp-1 text-center text-lg font-semibold tracking-tight">
+                            {book.title}
+                        </h3>
+                        {bookMetadata}
+                    </div>
+
                     <Button
                         variant="secondary"
                         className="w-full"
                         onClick={() => onSelect(book)}
                     >
-                        Vedi Dettagli
+                        {book.hasAudio ? 'Ascolta' : 'Leggi'}
                     </Button>
                 </div>
             </CardContent>
