@@ -31,7 +31,7 @@ export function RegisterModal({
 
         try {
             // Here you would implement your registration logic
-            console.log('Registration attempt with:', { email, fullName });
+            // console.log('Registration attempt with:', { email, fullName });
 
             // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -59,6 +59,8 @@ export function RegisterModal({
                         <Label htmlFor="fullName">Nome completo</Label>
                         <Input
                             id="fullName"
+                            type="text"
+                            autoComplete="name"
                             placeholder="John Doe"
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
@@ -72,6 +74,7 @@ export function RegisterModal({
                         <Input
                             id="email"
                             type="email"
+                            autoComplete="email"
                             placeholder="nome@esempio.it"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}

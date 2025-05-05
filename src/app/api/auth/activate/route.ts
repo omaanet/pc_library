@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
         if (!token) {
             return NextResponse.json(
-                { error: 'Verification token is required' },
+                { error: 'Token di verifica richiesto' },
                 { status: 400 }
             );
         }
@@ -19,9 +19,32 @@ export async function POST(request: Request) {
         // Find the user by verification token
         const user = findUserByVerificationToken(token);
         if (!user) {
+            // Try to find a user who previously had this token, even if already activated
+            // We'll need to check the database for a user with verification_token = NULL and is_activated = 1
+            // This requires a query by token (even if now null) or by email if you can get it from the frontend
+            // Instead, let's check all users for a matching token, and if not, try by email (if provided)
+            // But since token is now null after activation, we can't find by token anymore
+            // So, we return a specific error for "already activated" if the token is not found but the user exists and is activated
+
+            // Try to find a user who was activated recently (edge case: frontend could pass email as fallback)
+            // For now, return a friendly message
             return NextResponse.json(
-                { error: 'Invalid or expired verification token' },
+                { error: 'Token di verifica non valido o già utilizzato. L\'account potrebbe essere già stato attivato.' },
                 { status: 400 }
+            );
+        }
+
+        // Check if already activated
+        const completeUser = getUserById(user.id);
+        if (completeUser && completeUser.isActivated) {
+            return NextResponse.json(
+                {
+                    success: true,
+                    alreadyActivated: true,
+                    message: 'Il tuo account è già stato attivato. Puoi effettuare il login.',
+                    user: completeUser
+                },
+                { status: 200 }
             );
         }
 
@@ -35,7 +58,7 @@ export async function POST(request: Request) {
         const activated = activateUser(user.id, password);
         if (!activated) {
             return NextResponse.json(
-                { error: 'Failed to activate account' },
+                { error: 'Impossibile attivare l\'account' },
                 { status: 500 }
             );
         }
@@ -51,31 +74,30 @@ export async function POST(request: Request) {
         }
 
         // Get the complete user object for the session
-        const completeUser = getUserById(user.id);
-        if (!completeUser) {
+        const updatedUser = getUserById(user.id);
+        if (!updatedUser) {
             return NextResponse.json(
-                { error: 'User not found' },
+                { error: 'Utente non trovato' },
                 { status: 404 }
             );
         }
 
         // Create a session for the user
-        // In a real app, you would use a proper session management library
         const session = {
-            user: completeUser,
+            user: updatedUser,
             expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         };
 
         return NextResponse.json({
             success: true,
-            message: 'Account activated successfully',
-            user: completeUser,
+            message: 'Account attivato con successo',
+            user: updatedUser,
             session,
         }, {
             headers: {
                 // Set a cookie for the session
                 'Set-Cookie': `session=${Buffer.from(JSON.stringify({
-                    userId: completeUser.id,
+                    userId: updatedUser.id,
                     expires: session.expires.toISOString(),
                 })).toString('base64')}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}`,
             },
@@ -83,7 +105,7 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error('Activation error:', error);
         return NextResponse.json(
-            { error: 'An unexpected error occurred. Please try again later.' },
+            { error: 'Si è verificato un errore imprevisto. Riprova più tardi.' },
             { status: 500 }
         );
     }

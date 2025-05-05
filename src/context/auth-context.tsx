@@ -53,10 +53,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const data = await response.json();
                     if (data.user) {
                         dispatch({ type: 'SET_USER', payload: data.user });
+                        dispatch({ type: 'SET_AUTHENTICATED', payload: true });
                     }
                 }
-            } catch (error) {
-                console.error('Failed to initialize auth:', error);
+            } catch (error_catched) {
+                console.error('Failed to initialize auth:', error_catched);
             } finally {
                 dispatch({ type: 'SET_LOADING', payload: false });
             }
@@ -68,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const login = useCallback(async (credentials: LoginCredentials) => {
         dispatch({ type: 'SET_LOADING', payload: true });
         dispatch({ type: 'SET_ERROR', payload: null });
+        dispatch({ type: 'SET_AUTHENTICATED', payload: false });
 
         try {
             const response = await fetch('/api/auth/login', {
@@ -78,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.message || 'Login failed');
+                throw new Error(error.message || 'Login fallito');
             }
 
             const data = await response.json();
@@ -94,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const register = useCallback(async (credentials: RegisterCredentials) => {
         dispatch({ type: 'SET_LOADING', payload: true });
         dispatch({ type: 'SET_ERROR', payload: null });
+        dispatch({ type: 'SET_AUTHENTICATED', payload: false });
 
         try {
             const response = await fetch('/api/auth/register', {
@@ -103,8 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Registration failed');
+                const error_response = await response.json();
+                throw new Error(error_response.error || 'Registrazione fallita');
             }
 
             const data = await response.json();
@@ -123,9 +126,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             const response = await fetch('/api/auth/logout', { method: 'POST' });
             if (!response.ok) {
-                throw new Error('Logout failed');
+                throw new Error('Logout fallito');
             }
             dispatch({ type: 'SET_USER', payload: null });
+            dispatch({ type: 'SET_AUTHENTICATED', payload: false });
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error as Error });
             throw error;
@@ -154,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 preferences: { ...state.user.preferences, ...preferences },
             };
             dispatch({ type: 'SET_USER', payload: updatedUser });
+            dispatch({ type: 'SET_AUTHENTICATED', payload: true });
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error as Error });
             throw error;

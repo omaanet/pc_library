@@ -34,6 +34,11 @@ export function LoginModal({
     const router = useRouter();
     const searchParams = useSearchParams();
 
+    // Clear errors when modal opens
+    React.useEffect(() => {
+        if (open) setError(null);
+    }, [open]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -96,11 +101,12 @@ export function LoginModal({
                         <Input
                             id="email"
                             type="email"
-                            placeholder="you@example.com"
+                            autoComplete="username"
+                            required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={isLoading}
-                            required
+                            placeholder="you@example.com"
                         />
                     </div>
 
@@ -109,10 +115,11 @@ export function LoginModal({
                         <Input
                             id="password"
                             type="password"
+                            autoComplete="current-password"
+                            required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             disabled={isLoading}
-                            required
                         />
                     </div>
 

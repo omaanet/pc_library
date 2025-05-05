@@ -24,9 +24,9 @@ export function AuthModal({
     onOpenChange,
     defaultTab = 'login'
 }: AuthModalProps) {
-    const { login, register, state: { isLoading, error } } = useAuth();
+    const { login, register, state: { isLoading, error }, dispatch } = useAuth();
     const [activeTab, setActiveTab] = React.useState<'login' | 'register'>(defaultTab);
-    const [formError, setFormError] = React.useState<string | null>(null);
+    const [message, setMessage] = React.useState<{ text: string; type: 'error' | 'success'; tab: 'login' | 'register' } | null>(null);
 
     // Login form state
     const [loginData, setLoginData] = React.useState<LoginCredentials>({
@@ -45,34 +45,38 @@ export function AuthModal({
         if (!open) {
             setLoginData({ email: '', password: '' });
             setRegisterData({ email: '', fullName: '' });
-            setFormError(null);
+            setMessage(null);
+            dispatch({ type: 'SET_ERROR', payload: null });
         }
+    }, [open]);
+
+    // Clear all errors on open/close
+    React.useEffect(() => {
+        setMessage(null);
+        dispatch({ type: 'SET_ERROR', payload: null });
     }, [open]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        setFormError(null);
+        setMessage(null);
 
         try {
             await login(loginData);
             onOpenChange(false);
-        } catch (error) {
-            setFormError(error instanceof Error ? error.message : 'Login failed');
+        } catch (error_catched) {
+            setMessage({ text: error_catched instanceof Error ? error_catched.message : 'Login fallito', type: 'error', tab: 'login' });
         }
     };
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        setFormError(null);
+        setMessage(null);
 
         try {
             await register(registerData);
-            // Show success message about email verification
-            setFormError('Registration successful! Please check your email to activate your account.');
-            // Optionally switch to login tab after successful registration
-            setActiveTab('login');
-        } catch (error) {
-            setFormError(error instanceof Error ? error.message : 'Registration failed');
+            setMessage({ text: 'Registrazione effettuata con successo! Controlla la tua email per attivare il tuo account.', type: 'success', tab: 'register' });
+        } catch (error_catched) {
+            setMessage({ text: error_catched instanceof Error ? error_catched.message : 'Registrazione fallita', type: 'error', tab: 'register' });
         }
     };
 
@@ -104,23 +108,24 @@ export function AuthModal({
                         <TabsTrigger value="register">Registrati</TabsTrigger>
                     </TabsList>
 
-                    {/* Error Alert */}
-                    {(error || formError) && (
-                        <Alert variant={formError?.includes('successful') ? 'default' : 'destructive'}>
-                            <AlertDescription>
-                                {error?.message || formError}
-                            </AlertDescription>
-                        </Alert>
-                    )}
-
                     {/* Login Tab */}
                     <TabsContent value="login">
+                        {/* Unified message */}
+                        {message && activeTab === 'login' && message.tab === 'login' && (
+                            <Alert
+                                variant={message.type === 'error' ? 'destructive' : 'default'}
+                                className={`my-4 ${message.type === 'success' ? 'border-sky-500 text-sky-700 bg-sky-50' : ''}`}
+                            >
+                                <AlertDescription>{message.text}</AlertDescription>
+                            </Alert>
+                        )}
                         <form onSubmit={handleLogin} className="space-y-4 mt-4">
                             <div className="space-y-2">
                                 <Label htmlFor="login-email">Email</Label>
                                 <Input
                                     id="login-email"
                                     type="email"
+                                    autoComplete="username"
                                     required
                                     disabled={isLoading}
                                     value={loginData.email}
@@ -132,6 +137,7 @@ export function AuthModal({
                                 <Input
                                     id="login-password"
                                     type="password"
+                                    autoComplete="current-password"
                                     required
                                     disabled={isLoading}
                                     value={loginData.password}
@@ -147,12 +153,22 @@ export function AuthModal({
 
                     {/* Register Tab */}
                     <TabsContent value="register">
+                        {/* Unified message */}
+                        {message && activeTab === 'register' && message.tab === 'register' && (
+                            <Alert
+                                variant={message.type === 'error' ? 'destructive' : 'default'}
+                                className={`my-4 ${message.type === 'success' ? 'border-sky-500 text-sky-700 bg-sky-50' : ''}`}
+                            >
+                                <AlertDescription>{message.text}</AlertDescription>
+                            </Alert>
+                        )}
                         <form onSubmit={handleRegister} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="register-email">Email</Label>
                                 <Input
                                     id="register-email"
                                     type="email"
+                                    autoComplete="email"
                                     required
                                     disabled={isLoading}
                                     value={registerData.email}

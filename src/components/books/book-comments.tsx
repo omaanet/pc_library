@@ -102,7 +102,9 @@ export default function BookComments({ bookId, isAuthenticated, userName, onLogi
             <div className="flex-1 overflow-auto" ref={listRef}>
                 {loading ? <div className="text-muted-foreground">Caricamento commenti...</div>
                     : error ? <div className="text-red-600">{error}</div>
-                        : (comments.length === 0 ? <div className="text-muted-foreground mb-4">Nessun commento ancora. Sii il primo a commentare!</div>
+                        : (comments.length === 0 ? (
+                            <div className="text-muted-foreground mt-2 px-2">{isAuthenticated ? 'Lascia un commento!' : 'Accedi per commentare!'}</div>
+                        )
                             : <CommentThread
                                 comments={comments}
                                 expanded={expanded}
@@ -152,7 +154,7 @@ interface CommentThreadProps {
 
 function CommentThread({ comments, expanded, replies, loadingReplies, onToggleExpand, onReply, replyingToId, onReplyInsert, isAuthenticated, onLoginClick, bookId }: CommentThreadProps) {
     return (
-        <ul className="space-y-4">
+        <ul className="space-y-4 mt-3">
             {comments.map(comment => (
                 <li id={comment.id} key={comment.id} className="flex gap-3">
                     <div className="flex-shrink-0">

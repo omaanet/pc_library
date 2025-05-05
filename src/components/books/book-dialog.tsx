@@ -188,15 +188,7 @@ export function BookDialog({
                                 <div className="flex-1 flex flex-col h-full min-h-0">
                                     {/* Estratto section */}
                                     <div className="mb-3 sm:mb-2">
-                                        {book.extract && (
-                                            <div>
-                                                <h3 className="text-md sm:text-lg font-medium mb-3 text-cyan-400">Estratto</h3>
-                                                <p className="bg-muted/40 rounded py-4 px-6 text-xs sm:text-lg font-light text-justify whites2pace-pre-line leading-relaxed line-clamp-5 text-ellipsis overflow-hidden">
-                                                    {book.extract || 'Nessun estratto disponibile'}
-                                                </p>
-                                            </div>
-                                            // <BookExtract extract={book.extract} />
-                                        )}
+                                        <BookExtract extract={book.extract} />
 
                                         {/* AudioBookPlayer: show only if authenticated and has audio */}
                                         {isAuthenticated && book.hasAudio && (
@@ -220,7 +212,7 @@ export function BookDialog({
                                     </div>
 
                                     {/* Comments section: header, scrollable list, posting form at bottom */}
-                                    <div className="flex-1 flex flex-col min-h-0 bg-muted/40 rounded p-2">
+                                    <div className="flex-1 flex flex-col min-h-0 bg-muted/40 rounded px-4 py-4">
                                         <h3 className="text-md sm:text-lg font-medium mb-2 text-cyan-400">Commenti</h3>
                                         <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                                             <BookComments
@@ -231,8 +223,10 @@ export function BookDialog({
                                         </div>
                                     </div>
                                     {!isAuthenticated && (
-                                        <div className="mt-2 flex justify-end">
-                                            <Button onClick={onLoginClick}>Accedi per leggere e commentare</Button>
+                                        <div className="mt-4 mb-1 flex justify-end">
+                                            <Button onClick={onLoginClick} size="default" className="bg-cyan-800 hover:bg-emerald-900 text-cyan-50 hover:text-emerald-50 font-normal">
+                                                {book?.hasAudio ? 'Accedi per ascoltare e commentare' : 'Accedi per leggere e commentare'}
+                                            </Button>
                                         </div>
                                     )}
                                 </div>

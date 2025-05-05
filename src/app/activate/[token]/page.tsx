@@ -10,9 +10,9 @@ import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 export default function ActivationPage() {
     const router = useRouter();
     const { token } = useParams() as { token: string };
-    const { state } = useAuth();
+    const { state, dispatch } = useAuth();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-    const [message, setMessage] = useState('Activating your account...');
+    const [message, setMessage] = useState('Attivazione del tuo account...');
 
     useEffect(() => {
         const activateAccount = async () => {
@@ -20,26 +20,34 @@ export default function ActivationPage() {
                 const response = await fetch('/api/auth/activate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ token }),
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    setStatus('success');
-                    setMessage('Your account has been activated successfully! You will be redirected to the home page.');
+                    if (data.alreadyActivated) {
+                        setStatus('success');
+                        setMessage(data.message || 'Il tuo account è già stato attivato. Puoi effettuare il login.');
+                    } else {
+                        setStatus('success');
+                        setMessage('Il tuo account è stato attivato con successo! Verrai reindirizzato alla pagina iniziale.');
+                        dispatch({ type: 'SET_USER', payload: data.user });
+                        dispatch({ type: 'SET_AUTHENTICATED', payload: true });
 
-                    // Redirect to home page after 3 seconds
-                    setTimeout(() => {
-                        router.push('/');
-                    }, 3000);
+                        // Redirect to home page after 3 seconds
+                        setTimeout(() => {
+                            router.push('/');
+                        }, 3000);
+                    }
                 } else {
                     setStatus('error');
-                    setMessage(data.error || 'Failed to activate your account. Please try again or contact support.');
+                    setMessage(data.error || 'Impossibile attivare l\'account. Riprova o contatta il supporto.');
                 }
             } catch (error) {
                 setStatus('error');
-                setMessage('An unexpected error occurred. Please try again later or contact support.');
+                setMessage('Si è verificato un errore imprevisto. Riprova più tardi o contatta il supporto.');
                 console.error('Activation error:', error);
             }
         };
@@ -48,19 +56,19 @@ export default function ActivationPage() {
             activateAccount();
         } else {
             setStatus('error');
-            setMessage('You are already logged in. Please log out before activating a new account.');
+            setMessage('Sei già autenticato. Disconnettiti prima di attivare un nuovo account.');
         }
     }, [token, router, state.isAuthenticated]);
 
     return (
-        <div className="container flex items-center justify-center min-h-screen py-12">
+        <div className="flex h-screen items-center justify-center px-4">
             <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle className="text-2xl font-bold text-center">Account Activation</CardTitle>
+                    <CardTitle className="text-2xl font-bold text-center">Attivazione Account</CardTitle>
                     <CardDescription className="text-center">
-                        {status === 'loading' && 'We are processing your account activation'}
-                        {status === 'success' && 'Your account has been activated!'}
-                        {status === 'error' && 'There was a problem activating your account'}
+                        {status === 'loading' && 'Stiamo processando la tua attivazione'}
+                        {status === 'success' && 'Il tuo account è stato attivato!'}
+                        {status === 'error' && 'Ci sono stati problemi durante l\'attivazione del tuo account'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center p-6">
@@ -78,13 +86,13 @@ export default function ActivationPage() {
                 <CardFooter className="flex justify-center">
                     {status === 'error' && (
                         <Button onClick={() => router.push('/')}>
-                            Return to Home
+                            Torna alla Home
                         </Button>
                     )}
                     {status === 'success' && (
                         <Button disabled className="cursor-not-allowed opacity-50">
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Redirecting...
+                            Reindirizzamento...
                         </Button>
                     )}
                 </CardFooter>

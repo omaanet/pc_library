@@ -5,13 +5,15 @@ interface BookExtractProps {
 }
 
 export function BookExtract({ extract }: BookExtractProps) {
-    // Placeholder for now. Replace with actual logic to fetch/display book lines.
+    if (!extract) return null;
+
     return (
-        <div>
+        <div className="flex-1 flex flex-col min-h-0 bg-muted/40 rounded px-4 py-4">
             <h3 className="text-md sm:text-lg font-medium mb-3 text-cyan-400">Estratto</h3>
-            <div className="bg-muted/40 rounded p-3 text-xs sm:text-sm whitespace-pre-line lh-1">
+            {/* bg-b2lack/70 roun2ded-lg  */}
+            <p className="py-0 ps-2 pe-3 indent-4 ital2ic text-xs sm:text-[1.10rem] text-gray-300 font-light text-justify whitespace-pre-line leading-relaxed line-clamp-4 text-ellipsis overflow-hidden">
                 {extract || 'Nessun estratto disponibile'}
-            </div>
+            </p>
         </div>
     );
 }

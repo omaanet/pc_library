@@ -11,7 +11,7 @@ export async function POST(request: Request) {
         // Validate required fields
         if (!email || !fullName) {
             return NextResponse.json(
-                { error: 'Email and full name are required' },
+                { error: 'Email e nome completo sono richiesti' },
                 { status: 400 }
             );
         }
@@ -20,23 +20,21 @@ export async function POST(request: Request) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return NextResponse.json(
-                { error: 'Invalid email format' },
+                { error: 'Formato email non valido' },
                 { status: 400 }
             );
         }
 
-        // Create the user or get existing unactivated user
-        const result = createUser(email, fullName);
-
-        // If result is null, an account with this email already exists and is activated
-        if (!result) {
+        // Check if email is already registered
+        if (userExists(email)) {
             return NextResponse.json(
-                { error: 'A user with this email already exists and is activated' },
-                { status: 409 } // Conflict
+                { error: 'Un utente con questa email esiste già' },
+                { status: 409 }
             );
         }
 
-        const { userId, verificationToken } = result;
+        // Create a new user
+        const { userId, verificationToken } = createUser(email, fullName)!;
 
         // console.log('Creating user...');
         // console.log('Sending verification email...');
@@ -50,19 +48,19 @@ export async function POST(request: Request) {
             // In a production app, you might want to handle this differently,
             // perhaps by queuing the email for retry
             return NextResponse.json(
-                { error: 'Failed to send verification email. Please try again later.' },
+                { error: 'Impossibile inviare la mail di verifica. Riprova più tardi.' },
                 { status: 500 }
             );
         }
 
         return NextResponse.json({
             success: true,
-            message: 'Registration successful! Please check your email to activate your account.',
+            message: 'Registrazione effettuata con successo! Controlla la tua email per attivare il tuo account.',
         });
     } catch (error) {
         console.error('Registration error:', error);
         return NextResponse.json(
-            { error: 'An unexpected error occurred. Please try again later.' },
+            { error: 'Si è verificato un errore imprevisto. Riprova più tardi.' },
             { status: 500 }
         );
     }
