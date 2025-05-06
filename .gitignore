@@ -56,5 +56,9 @@ db/_archived
 # pnpm
 pnpm-lock.yaml
 
-*.md
+# *.md
 tmp
+db/books - Copy.db3
+db/dump-postgreSQL.sql
+db/dump-REMOVE-postgreSQL.sql
+db/dump.sql

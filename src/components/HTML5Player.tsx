@@ -196,11 +196,11 @@ const HTML5Player = ({ tracks, autoPlay = false, initialVolume = 25 }: HTML5Play
                             <button
                                 ref={volumeButtonRef}
                                 onClick={handleVolumeButtonClick}
-                                className="rounded-full hover:bg-opacity-20 hover:bg-gray-400 transition-colors duration-300 ease-in-out text-teal-300 hover:text-emerald-500"
+                                className="rounded-full align-middle my-1 hover:bg-opacity-20 hover:bg-gray-400 transition-colors duration-300 ease-in-out text-teal-500 hover:text-emerald-600 dark:text-teal-300 dark:hover:text-emerald-500"
                                 title={muted || volume === 0 ? "Unmute" : "Mute/Volume"}
                                 aria-label="Volume"
                             >
-                                {(muted || volume === 0) ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                                {(muted || volume === 0) ? <VolumeX size={21} /> : <Volume2 size={21} />}
                             </button>
                             {showVolumeSlider && (
                                 <div

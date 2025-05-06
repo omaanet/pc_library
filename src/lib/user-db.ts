@@ -142,12 +142,12 @@ export function getUserById(id: number): User | null {
         name: user.fullName.split(' ')[0], // First name as default name
         preferences: {
             theme: 'system' as const,
-            language: 'en',
+            language: 'it',
             fontSize: 16,
             viewMode: 'grid' as const,
             notifications: {
-                email: true,
-                push: true,
+                email: false,
+                push: false,
                 SMS: false,
             },
             accessibility: {

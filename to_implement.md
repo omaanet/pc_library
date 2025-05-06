@@ -1,55 +1,136 @@
-# Code Refactoring: OptionsSidebar and EPUBViewer Component Refactoring
+# Migration Plan: SQLite to Neon (PostgreSQL)
 
-## Context
+## 1. Migration Task Overview
 
-Connect the various configuration options present in `EPUBViewer` with the component `OptionsSidebar` (used in `src\app\read-book\[book_id]\ClientReadBookPage.tsx`).
+This migration will transition the backend database from SQLite (using `better-sqlite3`) to Neon (PostgreSQL). The goal is to:
 
-## Specific Tasks: OptionsSidebar options
+-   Replace all SQLite-specific code and dependencies with PostgreSQL-compatible code and drivers.
+-   Update database access logic, queries, and schema definitions.
+-   Ensure all API routes, services, and utilities interact with Neon/PostgreSQL.
+-   Maintain full feature parity and data integrity, with minimal disruption.
 
-1. Remove `Line Height` option.
-2. Replace `Font Size` option with a control that works like the changeFontSize in `EPUBViewer` ('A-', 'A+', etc.). Add a reset to 100% button.
-3. Implement `Font Family` option in `EPUBViewer`.
+**Key Considerations:**
 
-## Specific Tasks: EPUBViewer
+-   Neon is a fully managed PostgreSQL service, so connection handling, pooling, and async/await support are required.
+-   SQL syntax differences: types, autoincrement, booleans, and date/time functions.
+-   Migration of existing data from SQLite to PostgreSQL (using provided SQL dumps or ETL tools).
+-   Environment variables for DB connection (host, port, user, password, database).
 
-If `EPUBViewer` has any configuration options missing from `OptionsSidebar`, create and implement them updating the `OptionsSidebar` component.
+---
 
-## General Code Guidelines and Important Considerations
+## 2. Codebase Analysis: Files to Update
 
--   Avoid modifying unrelated code.
--   Reuse existing utilities/components where possible.
--   Keep code simple and maintainable.
--   Ask for clarification when unsure.
+Below is a summary of all components, services, utilities, and API routes that interact with the database or reference SQLite-specific logic. These files must be updated to use Neon/PostgreSQL:
 
-## Expected Outcome
+### Database Layer
 
--   Code is more maintainable with clear separation of concerns
--   No duplicate or redundant code remains
+-   **`src/lib/db.ts`**
+    -   Uses `better-sqlite3` and SQLite file path logic.
+    -   Contains all book and audiobook queries (filtering, sorting, pagination, CRUD).
+    -   Must be refactored to use a PostgreSQL client (e.g., `pg` or Neon SDK) and async query APIs.
+-   **`src/lib/user-db.ts`**
+    -   User management: registration, activation, credential validation.
+    -   All queries use SQLite syntax and the `getDb()` function.
+    -   Must be rewritten for PostgreSQL with async/await and parameterized queries.
+-   **`src/lib/db-comments.ts`**
+    -   Handles threaded comments and replies.
+    -   All queries and inserts are SQLite-specific.
+    -   Needs to be ported to PostgreSQL syntax.
 
-## TO-DO
+### Service Layer
 
--   [x] **Remove 'Line Height' option** from `OptionsSidebar`
+-   **`src/lib/services/audiobooks-service.ts`**
+    -   Calls book/audiobook DB functions—ensure it uses the new async PostgreSQL logic.
 
-    -   [x] Identify and remove UI control and any state/effect logic.
-    -   [x] Remove any corresponding props or events if present.
+### API Routes
 
--   [x] **Replace 'Font Size' control** in `OptionsSidebar`
+-   **`src/app/api/books/route.ts`**
+-   **`src/app/api/books/[id]/route.ts`**
+-   **`src/app/api/books/[id]/comments/route.ts`**
+-   **`src/app/api/books/[id]/replies/route.ts`**
+-   **`src/app/api/audiobooks/[book_id]/route.ts`**
+-   **`src/app/api/auth/login/route.ts`**
+-   **`src/app/api/auth/register/route.ts`**
+-   **`src/app/api/auth/activate/route.ts`**
+-   **`src/app/api/auth/session/route.ts`**
+    -   All of these use DB access functions (directly or indirectly). They must be checked for:
+        -   Awaiting async DB calls
+        -   Error handling updates
+        -   Any SQL assumptions (e.g., result shapes, IDs)
 
-    -   [x] Remove old font size input or slider.
-    -   [x] Add buttons: `A-`, `A+`, and `Reset` (use italian labels).
-    -   [x] Connect these buttons to `changeFontSize` in `EPUBViewer`.
-    -   [x] Ensure reset sets font size to 100%.
+### Utilities & Context
 
--   [x] **Implement 'Font Family' option** in `EPUBViewer` and `OptionsSidebar`
+-   **`src/lib/auth-utils.ts`**
+    -   Uses DB to fetch user by ID for session validation.
+    -   Update for async/await and new DB logic.
+-   **`src/context/auth-context.tsx`**
+-   **`src/context/library-context.tsx`**
+    -   These use API endpoints; check for any assumptions about sync/async API responses.
 
-    -   [x] Use the existing font family dropdown/select in `OptionsSidebar` for font families (e.g., Serif, Sans-serif, Monospace).
-    -   [x] Connect selection to a new function in `EPUBViewer` that changes the font family.
-    -   [x] Ensure EPUB styling reflects the selected font family correctly.
+### Database Schema & Migrations
 
--   [x] **Audit existing config options** in `EPUBViewer` vs `OptionsSidebar`
+-   **`db/schema.sql`**
+    -   Rewrite schema in PostgreSQL DDL.
+    -   Use provided `db/dump-postgreSQL.sql` as a reference.
+-   **`db/dump.sql`, `db/dump-postgreSQL.sql`**
+    -   Use for data migration and validation.
 
-    -   [x] List all options supported by `EPUBViewer`.
-    -   [x] Compare against controls present in `OptionsSidebar`.
-    -   [x] For each missing config in sidebar:
-        -   [x] Add UI control.
-        -   [x] Connect control to corresponding `EPUBViewer` method or prop.
+### Project Config & Dependencies
+
+-   **`package.json`**
+    -   Remove `better-sqlite3`, add `pg` or Neon client.
+-   **`.env` files**
+    -   Add PostgreSQL connection string(s).
+
+### Other
+
+-   **Any code referencing `db/books.db3` or SQLite-specific logic**
+-   **Documentation:**
+    -   `Codebase Technical Documentation.md`, `Project_Tech_Stack.md` (update DB references)
+
+---
+
+## 3. Migration To-Do Checklist
+
+### Database & Data
+
+-   [ ] Write new PostgreSQL schema (`db/schema.sql`) using Neon/Postgres types.
+-   [ ] Migrate data from SQLite to Neon/Postgres (can use `db/dump-postgreSQL.sql`).
+-   [ ] Update `.env` files with Neon/Postgres connection info.
+
+### Code Changes
+
+-   [ ] Remove `better-sqlite3` and SQLite-specific code from `package.json` and codebase.
+-   [ ] Add and configure PostgreSQL/Neon client (e.g., `pg` or Neon SDK).
+-   [ ] Refactor `src/lib/db.ts` to use async PostgreSQL client and update all queries.
+-   [ ] Refactor `src/lib/user-db.ts` for PostgreSQL and async/await.
+-   [ ] Refactor `src/lib/db-comments.ts` for PostgreSQL and async/await.
+-   [ ] Update all API routes to await new DB functions and handle errors.
+-   [ ] Update service layer (e.g., audiobooks-service) to use new DB logic.
+-   [ ] Update utilities (e.g., `auth-utils.ts`) for async DB access.
+-   [ ] Update or add TypeScript types as needed for new query results.
+-   [ ] Update any frontend code that makes assumptions about API response timing/shape.
+
+### Testing & Validation
+
+-   [ ] Test all API endpoints for correct behavior and error handling.
+-   [ ] Validate data integrity after migration.
+-   [ ] Update or add integration tests for critical flows (auth, books, comments).
+
+### Documentation & Cleanup
+
+-   [ ] Update documentation to reference Neon/PostgreSQL instead of SQLite.
+-   [ ] Remove SQLite files and references (e.g., `db/books.db3`).
+-   [ ] Remove old schema and dump files if no longer needed.
+
+---
+
+## 4. References
+
+-   Neon Docs: https://neon.tech/docs/
+-   Node.js `pg` package: https://node-postgres.com/
+-   Example migration guides: [DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-migrate-from-sqlite-to-postgresql-on-ubuntu-20-04), [Neon Blog](https://neon.tech/blog/migrating-from-sqlite-to-postgres)
+
+---
+
+**End of migration plan.**

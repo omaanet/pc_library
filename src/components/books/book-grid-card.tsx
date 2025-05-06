@@ -36,9 +36,9 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
 
     // Memoize the cover image component to prevent unnecessary re-renders
     const coverImage = React.useMemo(() => (
+        // style={{ minHeight: height }}
         <div
-            className="relative w-full h-auto flex justify-center items-center cursor-pointer"
-            style={{ minHeight: height }}
+            className="relative w-full h-auto flex justify-center items-center cursor-pointer pt-4 pb-0 px-0"
             onClick={() => onSelect(book)}
         >
             {/* Loading skeleton */}
@@ -104,7 +104,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
             <CardContent className="p-0">
                 {coverImage}
 
-                <div className="px-4 py-0">
+                <div className="px-4 pt-2 pb-3">
 
                     <div className="flex flex-col items-center justify-center mb-2 h-[3.25rem]">
                         <h3 className="line-clamp-1 text-center text-lg font-semibold tracking-tight">
@@ -117,6 +117,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                         variant="secondary"
                         className="w-full"
                         onClick={() => onSelect(book)}
+                        size="lg"
                     >
                         {book.hasAudio ? 'Ascolta' : 'Leggi'}
                     </Button>
