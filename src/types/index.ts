@@ -14,6 +14,9 @@ export interface Book {
     displayOrder?: number;
     isVisible?: number;
 
+    pages_count?: number;
+    pagesCount?: number;
+
     // Application-specific fields
     readingProgress?: number;
     status?: 'unread' | 'reading' | 'completed' | 'on-hold';

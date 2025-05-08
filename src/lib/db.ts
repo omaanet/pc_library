@@ -191,7 +191,7 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
     total = countRow?.total ? parseInt(countRow.total, 10) : 0;
 
     // Data query
-    const dataQuery = `SELECT id, title, cover_image as "coverImage", publishing_date as "publishingDate", summary, has_audio as "hasAudio", audio_length as "audioLength", extract, rating, is_preview as "isPreview", display_order as "displayOrder", is_visible as "isVisible", created_at as "createdAt", updated_at as "updatedAt" FROM books ${whereClause} ${orderByClause} ${limitClause}`;
+    const dataQuery = `SELECT id, title, cover_image as "coverImage", publishing_date as "publishingDate", summary, has_audio as "hasAudio", audio_length as "audioLength", extract, rating, is_preview as "isPreview", display_order as "displayOrder", is_visible as "isVisible", created_at as "createdAt", updated_at as "updatedAt", pages_count as "pagesCount" FROM books ${whereClause} ${orderByClause} ${limitClause}`;
     const dataRes = await client.query(
         dataQuery,
         params
@@ -264,7 +264,7 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
 export async function getBookById(id: string): Promise<Book | undefined> {
     const client = getNeonClient();
     const res = await client.query(
-        `SELECT id, title, cover_image as "coverImage", publishing_date as "publishingDate", summary, has_audio as "hasAudio", audio_length as "audioLength", extract, rating, is_preview as "isPreview", is_visible as "isVisible", display_order as "displayOrder", created_at as "createdAt", updated_at as "updatedAt" FROM books WHERE id = $1`,
+        `SELECT id, title, cover_image as "coverImage", publishing_date as "publishingDate", summary, has_audio as "hasAudio", audio_length as "audioLength", extract, rating, is_preview as "isPreview", is_visible as "isVisible", display_order as "displayOrder", created_at as "createdAt", updated_at as "updatedAt", pages_count as "pagesCount" FROM books WHERE id = $1`,
         [id]
     );
     const book = getFirstRow<Book>(res);
@@ -326,9 +326,9 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<Book> {
     const idRes = await client.query('SELECT gen_random_uuid() as id');
     const id = idRes.rows[0].id;
     await client.query(
-        `INSERT INTO books (id, title, cover_image, publishing_date, summary, has_audio, audio_length, extract, rating, is_preview, display_order, is_visible)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-        [id, book.title, book.coverImage, book.publishingDate, book.summary, book.hasAudio ? 1 : 0, book.audioLength || null, book.extract || null, book.rating || null, book.isPreview ? 1 : null, book.displayOrder || null, book.isVisible ? 1 : null]
+        `INSERT INTO books (id, title, cover_image, publishing_date, summary, has_audio, audio_length, extract, rating, is_preview, display_order, is_visible, pages_count)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [id, book.title, book.coverImage, book.publishingDate, book.summary, book.hasAudio ? 1 : 0, book.audioLength || null, book.extract || null, book.rating || null, book.isPreview ? 1 : null, book.displayOrder || null, book.isVisible ? 1 : null, book.pagesCount || null]
     );
     return { ...book, id };
 }
@@ -385,6 +385,10 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
     if (book.displayOrder !== undefined) {
         updates.push('display_order = $' + (updates.length + 1));
         values.push(book.displayOrder || null);
+    }
+    if (book.pagesCount !== undefined) {
+        updates.push('pages_count = $' + (updates.length + 1));
+        values.push(book.pagesCount || null);
     }
     // Add updated_at timestamp
     updates.push('updated_at = NOW()');
