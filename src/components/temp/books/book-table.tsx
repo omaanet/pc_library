@@ -64,7 +64,6 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
         });
     }, [books]);
 
-
     // useEffect(() => {
     //     books.forEach(book => {
     //         if (/*!book.hasAudio &&*/ epubExists[book.id] === undefined && !epubLoading[book.id]) {

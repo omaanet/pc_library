@@ -153,9 +153,10 @@ export function BookDialog({
                         <div className="flex-1 flex flex-col h-full min-h-0">
                             <div className="flex flex-1 flex-col md:flex-row gap-y-2 md:gap-4 h-full min-h-0 px-2 sm:px-6 pt-4 pb-2 sm:py-3">
                                 {/* Left column: Book cover with audio badge, responsive */}
-                                <div className="flex flex-col items-center justify-center w-full md:w-1/3 max-w-[320px] md:max-w-xs mx-auto md:mx-0 h-auto min-h-0 mt-0 mb-0">
-                                    <div className="relative w-full h-full flex items-center justify-center">
-                                        <div className="relative w-full h-auto max-h-full rounded-lg bg-muted/30 flex items-center justify-center p-1">
+                                <div className="flex flex-col items-center justify-center w-full md:w-1/3 ma2x-w-[320px] md:max-w-xs mx-auto md:mx-0 h-auto min-h-0 mt-0 mb-0">
+
+                                    <div className="relative w-full h-full flex flex-col sm:flex-col items-center justify-center rounded-lg bg-muted/30 px-3 py-2 space-y-1">
+                                        <div className="relative w-fu2ll h-auto m2ax-h-full">
                                             {/* Responsive image wrapper for mobile */}
                                             {!imageLoaded && (
                                                 <Skeleton className="absolute inset-0 rounded-lg" />
@@ -170,7 +171,7 @@ export function BookDialog({
                                                 width={DEFAULT_COVER_SIZES.detail.width}
                                                 height={DEFAULT_COVER_SIZES.detail.height}
                                                 className={cn(
-                                                    "w-full h-auto max-w-[70vw] max-h-[45vw] sm:max-w-full sm:max-h-[60vh] object-contain transition-opacity duration-400",
+                                                    "w-full h-auto max-w-[70vw] max-h-[25vw] sm:max-w-full sm:max-h-[60vh] object-contain transition-opacity duration-400",
                                                     imageLoaded ? "opacity-100" : "opacity-0"
                                                 )}
                                                 sizes="(max-width: 640px) 70vw, (min-width: 768px) 33vw, 100vw"
@@ -182,8 +183,23 @@ export function BookDialog({
                                             />
                                             {renderAudioBadge(book, imageLoaded)}
                                         </div>
+
+                                        {isAuthenticated /*&& !book.hasAudio*/ && (
+                                            <div className="mx-auto">
+                                                <Link href={`/read-book/${book.id}`} passHref legacyBehavior>
+                                                    <Button asChild variant="secondary" className="h-8 md:h-10 px-auto text-xs md:text-base">
+                                                        <a rel="noopener noreferrer">
+                                                            <BookOpen className="mr-2 h-3 w-3" /> Leggi
+                                                        </a>
+                                                    </Button>
+                                                </Link>
+                                            </div>
+                                        )}
+
                                     </div>
+
                                 </div>
+                                
                                 {/* Right column: Extract, Comments, Posting Form */}
                                 <div className="flex-1 flex flex-col h-full min-h-0">
                                     {/* Estratto section */}
@@ -197,17 +213,8 @@ export function BookDialog({
                                                 <AudioBookPlayer book={book} />
                                             </>
                                         )}
-                                        {isAuthenticated /*&& !book.hasAudio*/ && (
-                                            <div className="mt-2 mb-0 flex">
-                                                <Link href={`/read-book/${book.id}`} passHref legacyBehavior>
-                                                    <Button asChild variant="secondary" size="default" className="ml-auto">
-                                                        <a rel="noopener noreferrer">
-                                                            <BookOpen className="mr-2 h-4 w-4" /> Leggi
-                                                        </a>
-                                                    </Button>
-                                                </Link>
-                                            </div>
-                                        )}
+
+                                        {/* ZZ */}
 
                                     </div>
 
