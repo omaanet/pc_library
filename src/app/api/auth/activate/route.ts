@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         const user = await findUserByVerificationToken(token);
         if (!user) {
             // Try to find a user who previously had this token, even if already activated
-            // We'll need to check the database for a user with verification_token = NULL and is_activated = 1
+            // We'll need to check the database for a user with verification_token = NULL and is_activated = TRUE
             // This requires a query by token (even if now null) or by email if you can get it from the frontend
             // Instead, let's check all users for a matching token, and if not, try by email (if provided)
             // But since token is now null after activation, we can't find by token anymore

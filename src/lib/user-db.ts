@@ -8,7 +8,7 @@ import crypto from 'crypto';
  * Check if a user with the given email exists
  * @returns user object with id and is_activated flag if exists, null otherwise
  */
-export async function userExists(email: string): Promise<{ id: number; is_activated: number; verification_token: string } | null> {
+export async function userExists(email: string): Promise<{ id: number; is_activated: boolean; verification_token: string } | null> {
     const client = getNeonClient();
     const res = await client.query('SELECT id, is_activated, verification_token FROM users WHERE email = $1', [email.toLowerCase()]);
     return getFirstRow(res);
@@ -29,7 +29,7 @@ export async function createUser(email: string, fullName: string): Promise<{ use
 
     if (existingUser) {
         // If user exists and is activated, halt the procedure
-        if (existingUser.is_activated === 1) {
+        if (existingUser.is_activated === true) {
             return null;
         }
         // If user exists but is not activated, return the existing verification token
@@ -47,7 +47,8 @@ export async function createUser(email: string, fullName: string): Promise<{ use
         `INSERT INTO users (email, full_name, is_activated, verification_token) VALUES ($1, $2, $3, $4) RETURNING id`,
         [email.toLowerCase(), fullName, 0, verificationToken]
     );
-    const userId = insertRes.rows[0]?.id;
+    // const userId = insertRes.rows[0]?.id;
+    const userId = insertRes[0]?.id;
     if (!userId) return null;
     return { userId, verificationToken };
 }
@@ -76,7 +77,7 @@ export async function activateUser(userId: number, password: string): Promise<bo
         .digest('hex');
     try {
         await client.query(
-            `UPDATE users SET is_activated = 1, password_hash = $1, verification_token = NULL, updated_at = NOW() WHERE id = $2`,
+            `UPDATE users SET is_activated = true, password_hash = $1, verification_token = NULL, updated_at = NOW() WHERE id = $2`,
             [passwordHash, userId]
         );
         return true;
@@ -132,7 +133,7 @@ export async function getUserById(id: number): Promise<User | null> {
             readingStreak: 0,
             lastReadDate: new Date().toISOString(),
         },
-        isActivated: Boolean(user.isActivated),
+        isActivated: user.isActivated,
         createdAt: user.createdAt ? new Date(user.createdAt) : undefined,
         updatedAt: user.updatedAt ? new Date(user.updatedAt) : undefined,
     };

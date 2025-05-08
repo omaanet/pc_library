@@ -37,9 +37,10 @@ export default function ActivationPage() {
                         dispatch({ type: 'SET_AUTHENTICATED', payload: true });
 
                         // Redirect to home page after 3 seconds
-                        setTimeout(() => {
-                            router.push('/');
-                        }, 3000);
+                        // setTimeout(() => {
+                        //     router.push('/');
+                        // }, 3000);
+                        router.push('/');
                     }
                 } else {
                     setStatus('error');
@@ -58,7 +59,7 @@ export default function ActivationPage() {
             setStatus('error');
             setMessage('Sei già autenticato. Disconnettiti prima di attivare un nuovo account.');
         }
-    }, [token, router, state.isAuthenticated]);
+    }, [token]);
 
     return (
         <div className="flex h-screen items-center justify-center px-4">
