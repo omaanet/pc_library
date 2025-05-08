@@ -37,10 +37,9 @@ export default function ActivationPage() {
                         dispatch({ type: 'SET_AUTHENTICATED', payload: true });
 
                         // Redirect to home page after 3 seconds
-                        // setTimeout(() => {
-                        //     router.push('/');
-                        // }, 3000);
-                        router.push('/');
+                        setTimeout(() => {
+                            router.push('/');
+                        }, 3000);
                     }
                 } else {
                     setStatus('error');
