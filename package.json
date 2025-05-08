@@ -28,7 +28,6 @@
         "@radix-ui/react-tabs": "^1.1.11",
         "@radix-ui/react-toast": "^1.2.13",
         "@types/nodemailer": "^6.4.17",
-
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
@@ -42,11 +41,10 @@
         "react": "19.0.0-rc-66855b96-20241106",
         "react-day-picker": "^9.6.7",
         "react-dom": "19.0.0-rc-66855b96-20241106",
-        "react-hook-form": "^7.56.2",
+        "react-hook-form": "^7.56.3",
         "react-reader": "^2.0.13",
         "sharp": "^0.33.5",
         "sqlite": "^5.1.1",
-
         "tailwind-merge": "^2.6.0",
         "tailwindcss-animate": "^1.0.7",
         "update": "^0.4.2",
@@ -55,8 +53,7 @@
     },
     "devDependencies": {
         "@shadcn/ui": "^0.0.4",
-
-        "@types/node": "^20.17.43",
+        "@types/node": "^20.17.45",
         "@types/react": "^18.3.21",
         "@types/react-dom": "^18.3.7",
         "autoprefixer": "^10.4.21",
@@ -67,16 +64,13 @@
     },
     "pnpm": {
         "ignoredBuiltDependencies": [
-
             "core-js",
             "sqlite3"
         ],
         "onlyBuiltDependencies": [
-
             "core-js",
             "es5-ext",
             "sharp",
-
             "unrs-resolver"
         ]
     }

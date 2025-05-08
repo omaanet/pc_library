@@ -232,29 +232,24 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
     // Adjust zoom level
     const adjustZoom = (amount: number, centerX?: number, centerY?: number) => {
-        const oldZoom = zoomLevel;
-        const newZoom = Math.max(10, Math.min(300, oldZoom + amount));
+        setZoomLevel((prevZoom) => {
+            const oldZoom = prevZoom;
+            const newZoom = Math.max(10, Math.min(300, oldZoom + amount));
+            if (oldZoom === newZoom) return oldZoom;
 
-        if (oldZoom === newZoom) return; // No change
+            // If zooming with a specific center point (e.g., mouse position)
+            if (centerX !== undefined && centerY !== undefined && viewerContainerRef.current) {
+                const viewerRect = viewerContainerRef.current.getBoundingClientRect();
+                const viewerCenterX = viewerRect.width / 2;
+                const viewerCenterY = viewerRect.height / 2;
+                const dx = centerX - viewerCenterX;
+                const dy = centerY - viewerCenterY;
+                setCurrentTranslateX((prevX) => (prevX + dx) * newZoom / oldZoom - dx);
+                setCurrentTranslateY((prevY) => (prevY + dy) * newZoom / oldZoom - dy);
+            }
 
-        setZoomLevel(newZoom);
-
-        // If zooming with a specific center point (e.g., mouse position)
-        if (centerX !== undefined && centerY !== undefined && viewerContainerRef.current) {
-            // Calculate how the position should change to keep the point under the cursor
-            const viewerRect = viewerContainerRef.current.getBoundingClientRect();
-            const viewerCenterX = viewerRect.width / 2;
-            const viewerCenterY = viewerRect.height / 2;
-
-            // Offset from center
-            const dx = centerX - viewerCenterX;
-            const dy = centerY - viewerCenterY;
-
-            // Adjust position based on zoom change
-            const zoomRatio = newZoom / oldZoom;
-            setCurrentTranslateX((currentTranslateX + dx) * zoomRatio - dx);
-            setCurrentTranslateY((currentTranslateY + dy) * zoomRatio - dy);
-        }
+            return newZoom;
+        });
     };
 
     // Reset zoom to 100%
