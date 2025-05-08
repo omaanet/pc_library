@@ -60,15 +60,24 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
 
     useEffect(() => {
         books.forEach(book => {
-            if (/*!book.hasAudio &&*/ epubExists[book.id] === undefined && !epubLoading[book.id]) {
-                setEpubLoading(prev => ({ ...prev, [book.id]: true }));
-                fetch(`/epub/${book.id}/output.epub`, { method: 'HEAD' })
-                    .then(res => setEpubExists(prev => ({ ...prev, [book.id]: res.ok })))
-                    .catch(() => setEpubExists(prev => ({ ...prev, [book.id]: false })))
-                    .finally(() => setEpubLoading(prev => ({ ...prev, [book.id]: false })));
-            }
+            setEpubLoading(prev => ({ ...prev, [book.id]: true }));
         });
-    }, [books, epubExists, epubLoading]);
+    }, [books]);
+
+
+    // useEffect(() => {
+    //     books.forEach(book => {
+    //         if (/*!book.hasAudio &&*/ epubExists[book.id] === undefined && !epubLoading[book.id]) {
+    //             setEpubLoading(prev => ({ ...prev, [book.id]: true }));
+    //             /*
+    //             fetch(`/epub/${book.id}/output.epub`, { method: 'HEAD' })
+    //                 .then(res => setEpubExists(prev => ({ ...prev, [book.id]: res.ok })))
+    //                 .catch(() => setEpubExists(prev => ({ ...prev, [book.id]: false })))
+    //                 .finally(() => setEpubLoading(prev => ({ ...prev, [book.id]: false })));
+    //             */
+    //         }
+    //     });
+    // }, [books, epubExists, epubLoading]);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [showAudioOnly, setShowAudioOnly] = useState(false);

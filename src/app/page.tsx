@@ -58,14 +58,14 @@ export default function HomePage() {
                 onAuthClick={() => setIsAuthModalOpen(true)}
             />
 
-            <main className="flex-1 mx-auto">
+            <main className="flex-1 mx-auto mx-5 sm:mx-auto">
 
                 {/* Hero Section */}
                 <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">
                     {/* <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]" /> */}
-                    <div className="container space-y-2">
+                    <div className="container mx-auto space-y-2">
                         <div className="space-y-4 text-center">
-                            <h1 className="text-3xl font-medium t2racking-tight sm:text-5xl text-sky-600 dark:text-sky-400">
+                            <h1 className="text-3xl font-medium tracking-tight md:tracking-normal sm:text-5xl text-sky-600 dark:text-sky-400">
                                 Racconti in Voce e Caratteri<br />Espressioni di Scrittura Creativa
                             </h1>
 
@@ -73,7 +73,7 @@ export default function HomePage() {
                                 Una variegata raccolta narrativa di fantasia. Novelle in libera lettura a scopo benefico.
                             </p>
 
-                            <p className="mx-auto max-w-5xl text-lg tr2acking-tight text-sky-500 dark:text-sky-300">
+                            <p className="mx-auto max-w-5xl text-lg tracking-tight md:tracking-normal text-sky-500 dark:text-sky-300">
                                 Sito web dedicato alla lettura a scopo benefico
                             </p>
                         </div>

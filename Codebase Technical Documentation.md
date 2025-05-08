@@ -112,7 +112,7 @@ function UpdatePreferencesButton() {
 
             const data = await response.json();
             toast({ title: 'Success', description: 'Preferences updated successfully.' });
-            // Optionally update local state based on response data.data
+            // Optionally update local state based on response data
         } catch (error) {
             console.error('Error updating preferences:', error);
             toast({

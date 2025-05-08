@@ -34,38 +34,15 @@ export function RootNav({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-center">
-            <div className="container flex h-16 items-center justify-between mx-auto">
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-center px-4">
+            <div className="container-fluid flex h-16 items-center justify-between mx-auto">
                 {/* Logo and Brand */}
-                <Link href="/" className="flex items-center space-x-2">
+                <Link href="/" className="flex items-center">
                     <Library className="h-6 w-6" />
-                    {/* <span className="font-bold">Racconti in Voce e Caratteri</span> */}
                 </Link>
 
                 {/* Desktop Navigation */}
-                <nav className="hidden md:flex items-center space-x-6">
-                    {/* <Link
-                        href="/books"
-                        className={cn(
-                            "text-sm font-medium transition-colors hover:text-primary",
-                            pathname === "/books" && "text-primary"
-                        )}
-                    >
-                        Racconti
-                    </Link> */}
-
-                    {/* {isAuthenticated && false && (
-                        <Link
-                            href="/audiobooks"
-                            className={cn(
-                                "text-sm font-medium transition-colors hover:text-primary",
-                                pathname === "/audiobooks" && "text-primary"
-                            )}
-                        >
-                            Audioracconti
-                        </Link>
-                    )} */}
-
+                {/* <nav className="hidden md:flex items-center space-x-6">
                     {isAuthenticated && false && (
                         <Link
                             href="/my-books"
@@ -77,7 +54,7 @@ export function RootNav({
                             La mia libreria
                         </Link>
                     )}
-                </nav>
+                </nav> */}
 
                 {/* Actions */}
                 <div className="flex items-center space-x-4">
@@ -118,23 +95,24 @@ export function RootNav({
                     ) : (
                         <Button
                             variant="outline"
-                            size="sm"
+                            size="default"
                             onClick={onAuthClick}
+                            className="hidden md:block h-9"
                         >
                             Accedi
                         </Button>
                     )}
 
                     {/* Mobile Menu Button */}
-                    <Button
+                    {/* <Button
                         variant="ghost"
                         className="md:hidden"
                         size="icon"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     >
-                        <Menu className="h-6 w-6" />
+                        <Menu className="h-7 w-7" />
                         <span className="sr-only">Toggle menu</span>
-                    </Button>
+                    </Button> */}
                 </div>
             </div>
 
@@ -142,54 +120,36 @@ export function RootNav({
             {isMobileMenuOpen && (
                 <div className="md:hidden border-t">
                     <nav className="flex flex-col space-y-4 p-4">
-                        <Link href="/settings">
-                            Impostazioni
-                        </Link>
-                        {/* <Link
-                            href="/books"
-                            className={cn(
-                                "text-sm font-medium transition-colors hover:text-primary",
-                                pathname === "/books" && "text-primary"
-                            )}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                            Racconti
-                        </Link>
-                        <Link
-                            href="/audiobooks"
-                            className={cn(
-                                "text-sm font-medium transition-colors hover:text-primary",
-                                pathname === "/audiobooks" && "text-primary"
-                            )}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                            Audioracconti
-                        </Link> */}
-                        <Link
-                            href="/add-book"
-                            className={cn(
-                                "text-sm font-medium transition-colors hover:text-primary",
-                                pathname === "/add-book" && "text-primary"
-                            )}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                            Aggiungi Racconto
-                        </Link>
-                        {isAuthenticated && (
-                            <Link
-                                href="/my-books"
-                                className={cn(
-                                    "text-sm font-medium transition-colors hover:text-primary",
-                                    pathname === "/my-books" && "text-primary"
-                                )}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                La mia libreria
-                            </Link>
-                        )}
+
+                        {isAuthenticated ? (
+                            <>
+                                <Link href="/settings">
+                                    Impostazioni
+                                </Link>
+                                <Link
+                                    href="/add-book"
+                                    className={cn(
+                                        "text-sm font-medium transition-colors hover:text-primary",
+                                        pathname === "/add-book" && "text-primary"
+                                    )}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                    Aggiungi Racconto
+                                </Link>
+                            </>
+                        ) : (
+                            <>
+                                <Link href="/auth/login">
+                                    Accedi
+                                </Link>
+                                <Link href="/auth/register">
+                                    Registrati
+                                </Link>
+                            </>)}
                     </nav>
                 </div>
             )}
+
         </header>
     );
 }

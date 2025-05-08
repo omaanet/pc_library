@@ -436,41 +436,22 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     }
 
     const showLoadingState = localIsLoading && !isLoadingMore;
-    const currentSortKey = `${sort.by}-${sort.order}`;
+    // const currentSortKey = `${sort.by}-${sort.order}`;
 
     return (
-        <div className="space-y-6 w-100">
+        <div className="space-y-4 sm:space-y-6 w-100 mx-2 md:mx-0">
             {/* Controls Section */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5" />
-                    <h2 className="text-2xl font-semibold tracking-tight">
+                <div className="flex items-baseline gap-4">
+                    <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <h2 className="text-2xl sm:text-3xl font-medium tracking-normal">
                         Biblioteca
                     </h2>
                 </div>
-                {/* <div className="flex items-center gap-4">
-                    <ViewSwitcher view={viewMode} onViewChange={setViewMode} />
-                    <Select
-                        value={currentSortKey}
-                        onValueChange={handleSortChange}
-                        disabled={showLoadingState}
-                    >
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Ordina..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.entries(SORT_OPTIONS).map(([key, { label }]) => (
-                                <SelectItem key={key} value={key}>
-                                    {label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div> */}
             </div>
 
             {/* Filters Section */}
-            <div className="flex flex-wrap gap-4 rounded-lg border bg-card p-4 w-100">
+            <div className="flex flex-wrap gap-4 rounded-lg border bg-card px-4 py-2 sm:py-4 w-100">
                 <div className="flex-1">
                     <Input
                         ref={searchInputRef}
@@ -489,7 +470,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                         onCheckedChange={handleAudioFilterChange}
                         disabled={showLoadingState}
                     />
-                    <Label htmlFor="audioFilter">Mostra solo Audio Racconti</Label>
+                    <Label htmlFor="audioFilter">Audio Racconti</Label>
                 </div>
             </div>
 

@@ -26,8 +26,10 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
 
             const data = await response.json();
 
+            console.debug(data);
+
             // New backend returns { data, pagination }
-            setBooks(data.data || []);
+            setBooks(data.books || []);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch books';
             setError(errorMessage);
