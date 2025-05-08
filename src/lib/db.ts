@@ -1,7 +1,55 @@
 // src/lib/db.ts
-import Database from 'better-sqlite3';
-import path from 'path';
+// Neon/Postgres migration: remove SQLite dependencies
+import { neon } from '@neondatabase/serverless';
+// Only import Neon connection, not sql tagged template
+
 import { AudioBook, Book } from '@/types';
+
+// Neon connection string from environment variable
+const connectionString = process.env.DATABASE_URL as string;
+if (!connectionString) {
+    throw new Error('DATABASE_URL environment variable is required for Neon connection');
+}
+
+// Create a singleton Neon client (pool)
+let neonClient: any = null;
+
+export function getNeonClient(): any {
+    if (!neonClient) {
+        // Create the base Neon client
+        neonClient = neon(connectionString);
+
+        // Save the original query method
+        const originalQuery = neonClient.query;
+
+        // Override the query method with our debugging wrapper
+        neonClient.query = async function (sql: string, params?: any[]) {
+            // Log query info
+            // console.debug('------ DATABASE QUERY -------');
+            // console.debug('[Neon SQL] Query:', sql);
+            // console.debug('[Neon SQL] Params:', params);
+
+            try {
+                // Call the original query method, preserving 'this' context
+                const result = await originalQuery.call(this, sql, params);
+
+                // Log result info
+                // console.debug('[Neon SQL] Success! Rows:', result?.rows?.length || 0);
+                if (result?.rows?.length > 0) {
+                    // console.debug('[Neon SQL] First row:', JSON.stringify(result.rows[0]));
+                }
+
+                return result;
+            } catch (error) {
+                // Log error info
+                console.error('[Neon SQL] Error executing query:', error);
+                throw error;
+            }
+        };
+    }
+
+    return neonClient;
+}
 
 // Define types for the enhanced book query options
 export interface BookQueryOptions {
@@ -27,105 +75,56 @@ export interface PaginatedResult<T> {
     };
 }
 
-// Database singleton
-let db: Database.Database | null = null;
+// --- Neon DB Connection ---
+// Use getNeonClient() to get the Neon Postgres client for all DB operations.
+// All queries are async and parameterized for safety.
 
 /**
- * Get a connection to the SQLite database
+ * Extract first row from query result (handles both array and object formats)
  */
-export function getDb(): Database.Database {
-    if (!db) {
-        const dbPath = path.resolve(process.cwd(), 'db', 'books.db3');
-        db = new Database(dbPath, { verbose: console.log });
-    }
-    return db;
+export function getFirstRow<T = any>(result: any): T | null {
+    return (Array.isArray(result) ? result[0] : result?.rows?.[0]) || null;
 }
 
 /**
- * Get all books from the database
- * @deprecated Use getAllBooksOptimized instead for better performance with filtering
+ * Utility to robustly extract rows from Neon/Postgres query results.
+ * Handles both array and { rows: [...] } result shapes.
  */
-// export function getAllBooks(displayPreviews: number): Book[] {
-//     const db = getDb();
+export function extractRows<T = any>(res: any): T[] {
+    if (Array.isArray(res)) {
+        return res as T[];
+    }
+    if (res && Array.isArray(res.rows)) {
+        return res.rows as T[];
+    }
+    console.error('[extractRows] Unexpected query result:', res);
+    return [];
+}
 
-//     let query = `
-//         SELECT 
-//             id, 
-//             title, 
-//             cover_image as coverImage, 
-//             publishing_date as publishingDate, 
-//             summary, 
-//             has_audio as hasAudio, 
-//             audio_length as audioLength,
-//             extract,
-//             rating,
-//             is_preview as isPreview,
-//             [display_order] AS [displayOrder],
-//             is_visible as isVisible,
-//             created_at AS createdAt,
-//             updated_at AS updatedAt
-//         FROM books
-//     `;
-
-//     // Apply filtering based on displayPreviews parameter
-//     if (displayPreviews === 0) {
-//         query += ` WHERE is_preview IS NULL OR is_preview != 1`;
-//     } else if (displayPreviews === 1) {
-//         query += ` WHERE is_preview = 1`;
-//     }
-//     // If displayPreviews is -1, no filter is applied (get all books)
-
-//     query += `;`;
-
-//     const books = db.prepare(query).all() as Book[];
-
-//     return books.map((book) => ({
-//         id: book.id,
-//         title: book.title,
-//         coverImage: book.coverImage,
-//         publishingDate: book.publishingDate,
-//         summary: book.summary,
-//         hasAudio: Boolean(book.hasAudio),
-//         audioLength: book.audioLength,
-//         extract: book.extract,
-//         rating: book.rating,
-//         isPreview: Boolean(book.isPreview),
-//         displayOrder: book.displayOrder,
-//         isVisible: book.isVisible,
-//         createdAt: book.createdAt,
-//         updatedAt: book.updatedAt,
-//     } as Book));
-// }
-
-/**
- * Get books from the database with optimized filtering, search, sorting, and pagination
- * directly using SQL queries instead of JavaScript operations.
- */
-export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedResult<Book> {
-    const db = getDb();
+export async function getAllBooksOptimized(options: BookQueryOptions = {}): Promise<PaginatedResult<Book>> {
+    const client = getNeonClient();
     const {
         search,
         hasAudio,
-        sortBy = '', // Default to recent books
-        sortOrder = 'desc', // Default to descending order (newest/highest first)
+        sortBy = '',
+        sortOrder = 'desc',
         page = 1,
         perPage = 10,
-        displayPreviews = 0, // Default to non-preview books (0)
-        isVisible = 1 // Default to visible books (true)
+        displayPreviews = 0,
+        isVisible = 1
     } = options;
 
     // Start building the query parts
     const whereConditions: string[] = [];
-    const queryParams: any[] = [];
-
+    const params: any[] = [];
 
     // Handle visibility filter (using index on is_visible)
     if (isVisible !== undefined && isVisible !== -1) {
-        whereConditions.push('is_visible = ?');
-        queryParams.push(isVisible ? 1 : 0);
+        whereConditions.push(`is_visible = $${params.length + 1}`);
+        params.push(isVisible > 0 ? 1 : 0);
     }
 
-    // Handle preview filtering
+    // Handle preview filtering (using hardcoded values since they're not params)
     if (displayPreviews === 0) {
         whereConditions.push('(is_preview IS NULL OR is_preview != 1)');
     } else if (displayPreviews === 1) {
@@ -135,14 +134,14 @@ export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedR
     // Handle search (using index on title + full text search on summary)
     if (search) {
         const searchParam = `%${search.toLowerCase()}%`;
-        whereConditions.push('(LOWER(title) LIKE ? OR LOWER(summary) LIKE ?)');
-        queryParams.push(searchParam, searchParam);
+        whereConditions.push(`(LOWER(title) LIKE $${params.length + 1} OR LOWER(summary) LIKE $${params.length + 2})`);
+        params.push(searchParam, searchParam);
     }
 
     // Handle audio filter (using index on has_audio)
     if (hasAudio !== undefined) {
-        whereConditions.push('has_audio = ?');
-        queryParams.push(hasAudio ? 1 : 0);
+        whereConditions.push(`has_audio = $${params.length + 1}`);
+        params.push(hasAudio ? 1 : 0);
     }
 
     // Construct WHERE clause if conditions exist
@@ -150,257 +149,169 @@ export function getAllBooksOptimized(options: BookQueryOptions = {}): PaginatedR
         ? `WHERE ${whereConditions.join(' AND ')}`
         : '';
 
-    // Generate ORDER BY clause
-    // let orderByClause: string;
-
-    // Handle array of sorting criteria
-    // if (Array.isArray(sortBy)) {
-    //     // Build compound sorting from array of [column, direction] pairs
-    //     // Handle potential SQL injection by validating column names against DB schema
+    // Sorting
+    // let orderByClause = '';
+    // if (Array.isArray(sortBy) && sortBy.length > 0) {
     //     const validColumns = [
     //         'id', 'title', 'cover_image', 'publishing_date', 'summary',
     //         'has_audio', 'audio_length', 'extract', 'rating', 'is_preview',
-    //         'created_at', 'updated_at', "display_order"
+    //         'created_at', 'updated_at', 'display_order'
     //     ];
-
-    //     const sortClauses = sortBy.map(([column, direction]) => {
-    //         // Validate column name is safe
-    //         if (!validColumns.includes(column)) {
-    //             // Default to title if invalid column
-    //             // column = 'title';
-    //             return;
-    //         }
-
-    //         // Validate direction is safe
-    //         const safeDirection = direction === 'ASC' ? 'ASC' : 'DESC';
-
-    //         // Handle NULLS LAST for ratings
-    //         const nullsClause = column === 'rating' ? ' NULLS LAST' : '';
-
-    //         return `${column} ${safeDirection}${nullsClause}`;
-    //     });
-
-    //     orderByClause = sortClauses.join(', ');
+    //     const sortClauses = sortBy
+    //         .filter(([col]: [string, string]) => validColumns.includes(col))
+    //         .map(([col, dir]: [string, string]) => `${col} ${dir}`)
+    //         .join(', ');
+    //     orderByClause = sortClauses ? `ORDER BY ${sortClauses}` : 'ORDER BY publishing_date DESC NULLS LAST';
+    // } else if (typeof sortBy === 'string' && sortBy) {
+    //     orderByClause = `ORDER BY ${sortBy} ${sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC'} NULLS LAST`;
     // } else {
-    //     // Handle string-based sortBy for backward compatibility
-    //     const direction = sortOrder === 'asc' ? 'ASC' : 'DESC';
-
-    //     // Special sort modes
-    //     if (sortBy === 'recent') {
-    //         orderByClause = `publishing_date ${direction}`;
-    //     } else if (sortBy === 'top_rated') {
-    //         orderByClause = `rating ${direction} NULLS LAST, title ASC`;
-    //     } else {
-    //         // Convert from JavaScript property names to DB column names
-    //         let column: string;
-    //         switch (sortBy) {
-    //             case 'coverImage': column = 'cover_image'; break;
-    //             case 'publishingDate': column = 'publishing_date'; break;
-    //             case 'hasAudio': column = 'has_audio'; break;
-    //             case 'audioLength': column = 'audio_length'; break;
-    //             case 'isPreview': column = 'is_preview'; break;
-    //             case 'createdAt': column = 'created_at'; break;
-    //             case 'updatedAt': column = 'updated_at'; break;
-    //             case 'displayOrder': column = 'display_order'; break;
-    //             default: column = sortBy as string || 'title';
-    //         }
-
-    //         orderByClause = `${column} ${direction}`;
-    //     }
+    //     // Default sort to newest books first
+    //     orderByClause = 'ORDER BY publishing_date DESC NULLS LAST';
     // }
 
-    // const direction = sortOrder?.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-    const orderByClause = `[has_audio] ASC, [display_order] ASC`;
+    const orderByClause = `ORDER BY has_audio ASC, display_order ASC`;
 
-    // console.log('orderByClause:', orderByClause);
-
-    // First query: Get total count for pagination info
-    const countQuery = `
-        SELECT COUNT(*) as total
-        FROM books
-        ${whereClause}
-    `;
-
-    const { total } = db.prepare(countQuery).get(...queryParams) as { total: number };
-
-    // Determine if pagination should be applied
-    const shouldPaginate = perPage > 0;
-
-    // Build data query
-    let dataQuery = `
-        SELECT 
-            id, 
-            title, 
-            cover_image as coverImage, 
-            publishing_date as publishingDate, 
-            summary, 
-            has_audio as hasAudio, 
-            audio_length as audioLength,
-            extract,
-            rating,
-            is_preview as isPreview,
-            is_visible as isVisible,
-            display_order as displayOrder,
-            created_at AS createdAt,
-            updated_at AS updatedAt
-        FROM books
-        ${whereClause}
-        ORDER BY ${orderByClause}
-    `;
-
-    // Only add pagination if perPage > 0
-    let allParams = [...queryParams];
-
-    if (shouldPaginate) {
-        // Calculate pagination values
-        const offset = (page - 1) * perPage;
-        dataQuery += ` LIMIT ? OFFSET ?`;
-        allParams = [...queryParams, perPage, offset];
+    // Pagination
+    const offset = (page - 1) * perPage;
+    const limitClause = perPage > 0 ? `LIMIT $${params.length + 1} OFFSET $${params.length + 2}` : '';
+    if (perPage > 0) {
+        params.push(perPage, offset);
     }
 
+    // Count query - use a copy of params without pagination params
+    const countQueryParams = perPage > 0 ? params.slice(0, -2) : params;
+    const countRes = await client.query(
+        `SELECT COUNT(*) AS total FROM books ${whereClause}`,
+        countQueryParams
+    );
 
-    // if (displayPreviews === 1) {
-    //     // console.log('##### >>>>> displayPreviews === 1', dataQuery);
-    //     // return {
-    //     //     data: [],
-    //     //     pagination: {
-    //     //         total: 0,
-    //     //         page: 1,
-    //     //         perPage: shouldPaginate ? perPage : 0,
-    //     //         totalPages: 1,
-    //     //     }
-    //     // };
+    // Get total count from result (handle both array and object formats)
+    let total = 0;
+    const countRow = getFirstRow(countRes);
+    total = countRow?.total ? parseInt(countRow.total, 10) : 0;
+
+    // Data query
+    const dataQuery = `SELECT id, title, cover_image as "coverImage", publishing_date as "publishingDate", summary, has_audio as "hasAudio", audio_length as "audioLength", extract, rating, is_preview as "isPreview", display_order as "displayOrder", is_visible as "isVisible", created_at as "createdAt", updated_at as "updatedAt" FROM books ${whereClause} ${orderByClause} ${limitClause}`;
+    const dataRes = await client.query(
+        dataQuery,
+        params
+    );
+
+    // Extra debugging to troubleshoot data transformation
+    // console.debug('============================================================');
+    // console.debug('[Books Debug] SQL:', dataQuery);
+    // console.debug('[Books Debug] Params:', orderByClause);
+    // console.debug('[Books Debug] displayPreviews:', displayPreviews);
+    // console.debug('[Books Debug] isVisible:', isVisible);
+
+    // Handle both response formats robustly using extractRows utility
+    const books = extractRows<Book>(dataRes);
+    // console.debug('[Books Debug] Direct array length:', rowsData.length);
+    if (books.length > 0) {
+        // console.debug('[Books Debug] First row sample:', JSON.stringify(rowsData[0]));
+    }
+
+    // Map raw database records to Book objects with boolean conversions
+    // const books = rowsData.length > 0 ? rowsData.map((book: Book) => {
+    //     // Convert database integer values to booleans
+    //     const transformedBook = {
+    //         ...book,
+    //         hasAudio: book.hasAudio,
+    //         isPreview: book.isPreview,
+    //         isVisible: book.isVisible
+    //     };
+
+    //     // if (rowsData.indexOf(book) === 0) {
+    //     //     console.debug('[Books Debug] Transformed first book:', JSON.stringify(transformedBook));
+    //     // }
+
+    //     return transformedBook;
+    // }) : [];
+
+    // Final debug of result being returned
+    // if (process.env.NODE_ENV === 'development') {
+    //     console.debug('[Books Debug] Final books array length:', books.length);
+    //     console.debug('[Books Debug] Pagination info:', JSON.stringify({
+    //         total,
+    //         page,
+    //         perPage,
+    //         totalPages: perPage > 0 ? Math.ceil(total / perPage) : 1
+    //     }));
     // }
 
-
-    // Execute the data query with parameters
-    const books = db.prepare(dataQuery).all(...allParams) as Book[];
-
-    // Process boolean values and return the result
-    const processedBooks = books.map((book) => ({
-        id: book.id,
-        title: book.title,
-        coverImage: book.coverImage,
-        publishingDate: book.publishingDate,
-        summary: book.summary,
-        hasAudio: Boolean(book.hasAudio),
-        audioLength: book.audioLength,
-        extract: book.extract,
-        rating: book.rating,
-        isPreview: Boolean(book.isPreview),
-        isVisible: book.isVisible,
-        displayOrder: book.displayOrder,
-        createdAt: book.createdAt,
-        updatedAt: book.updatedAt,
-    } as Book));
-
-    // Return the result (paginated or not)
-    return {
-        data: processedBooks,
+    const result = {
+        data: books,
         pagination: {
             total,
-            page: shouldPaginate ? page : 1,
-            perPage: shouldPaginate ? perPage : total,
-            totalPages: shouldPaginate ? Math.ceil(total / perPage) : 1,
-        }
+            page,
+            perPage,
+            totalPages: perPage > 0 ? Math.ceil(total / perPage) : 1,
+        },
     };
+
+    // if (displayPreviews === 1) {
+    //     console.debug('************************************************************************');
+    //     console.debug('---->> result:', result);
+    //     console.debug('************************************************************************');
+    // }
+
+    return result;
 }
 
 /**
  * Get a book by ID
  */
-export function getBookById(id: string): Book | undefined {
-    const db = getDb();
-    const book = db.prepare(`
-        SELECT 
-            id, 
-            title, 
-            cover_image as coverImage, 
-            publishing_date as publishingDate, 
-            summary, 
-            has_audio as hasAudio, 
-            audio_length as audioLength,
-            extract,
-            rating,
-            is_preview as isPreview,
-            is_visible as isVisible,
-            display_order as displayOrder,
-            created_at AS createdAt,
-            updated_at AS updatedAt
-        FROM books
-        WHERE id = ?;
-    `).get(id) as Book;
-
+export async function getBookById(id: string): Promise<Book | undefined> {
+    const client = getNeonClient();
+    const res = await client.query(
+        `SELECT id, title, cover_image as "coverImage", publishing_date as "publishingDate", summary, has_audio as "hasAudio", audio_length as "audioLength", extract, rating, is_preview as "isPreview", is_visible as "isVisible", display_order as "displayOrder", created_at as "createdAt", updated_at as "updatedAt" FROM books WHERE id = $1`,
+        [id]
+    );
+    const book = getFirstRow<Book>(res);
     if (!book) return undefined;
-
     return {
-        id: book.id,
-        title: book.title,
-        coverImage: book.coverImage,
-        publishingDate: book.publishingDate,
-        summary: book.summary,
-        hasAudio: Boolean(book.hasAudio),
-        audioLength: book.audioLength,
-        extract: book.extract,
-        rating: book.rating,
-        isPreview: Boolean(book.isPreview),
-        isVisible: book.isVisible,
-        displayOrder: book.displayOrder,
-        createdAt: book.createdAt,
-        updatedAt: book.updatedAt,
-    } as Book;
+        ...book,
+        hasAudio: book.hasAudio,
+        isPreview: book.isPreview,
+    };
 }
 
 /**
  * Get audiobook by book_id
  */
-export function getAudioBookById(id: string): AudioBook | undefined {
-    const db = getDb();
-    const audiobook = db.prepare(`
-        SELECT 
-            id,
-            book_id,
-            media_id,
-            audio_length,
-            publishing_date
-        FROM audiobooks 
-        WHERE book_id = ?;
-    `).get(id) as AudioBook;
-    return audiobook;
+export async function getAudioBookById(id: string): Promise<AudioBook | undefined> {
+    const client = getNeonClient();
+    const res = await client.query(
+        `SELECT id, book_id, media_id, audio_length, publishing_date FROM audiobooks WHERE book_id = $1`,
+        [id]
+    );
+
+    const audioBook = getFirstRow<AudioBook>(res);
+    if (!audioBook) return undefined;
+
+    return audioBook;
 }
 
 /**
  * Insert or update audiobook data (upsert by book_id)
  */
-export function saveAudioBook(data: {
+export async function saveAudioBook(data: {
     book_id: string;
     media_id: string | null;
     audio_length: number | null;
     publishing_date: string | null;
-}): AudioBook | undefined {
-    const db = getDb();
-    // Try update first for minimal allocations
-    const update = db.prepare(`
-        UPDATE audiobooks
-        SET media_id = ?, audio_length = ?, publishing_date = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE book_id = ?
-    `);
-    const result = update.run(
-        data.media_id,
-        data.audio_length,
-        data.publishing_date,
-        data.book_id
+}): Promise<AudioBook | undefined> {
+    const client = getNeonClient();
+    // Try update first
+    const updateRes = await client.query(
+        `UPDATE audiobooks SET media_id = $1, audio_length = $2, publishing_date = $3, updated_at = NOW() WHERE book_id = $4`,
+        [data.media_id, data.audio_length, data.publishing_date, data.book_id]
     );
-    if (result.changes === 0) {
+    if (updateRes.rowCount === 0) {
         // If nothing updated, insert
-        db.prepare(`
-            INSERT INTO audiobooks (book_id, media_id, audio_length, publishing_date)
-            VALUES (?, ?, ?, ?)
-        `).run(
-            data.book_id,
-            data.media_id,
-            data.audio_length,
-            data.publishing_date
+        await client.query(
+            `INSERT INTO audiobooks (book_id, media_id, audio_length, publishing_date) VALUES ($1, $2, $3, $4)`,
+            [data.book_id, data.media_id, data.audio_length, data.publishing_date]
         );
     }
     return getAudioBookById(data.book_id);
@@ -409,135 +320,89 @@ export function saveAudioBook(data: {
 /**
  * Create a new book
  */
-export function createBook(book: Omit<Book, 'id'>): Book {
-    const db = getDb();
-    const id = `book-${Date.now()}`;
-
-    db.prepare(`
-        INSERT INTO books (
-            id, 
-            title, 
-            cover_image, 
-            publishing_date, 
-            summary, 
-            has_audio, 
-            audio_length,
-            extract,
-            rating,
-            is_preview,
-            display_order,
-            is_visible
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)   
-    `).run(
-        id,
-        book.title,
-        book.coverImage,
-        book.publishingDate,
-        book.summary,
-        book.hasAudio ? 1 : 0,
-        book.audioLength || null,
-        book.extract || null,
-        book.rating || null,
-        book.isPreview ? 1 : null,
-        book.displayOrder || null,
-        book.isVisible ? 1 : null
+export async function createBook(book: Omit<Book, 'id'>): Promise<Book> {
+    const client = getNeonClient();
+    // Use gen_random_uuid() if available, otherwise fallback to uuid_generate_v4()
+    const idRes = await client.query('SELECT gen_random_uuid() as id');
+    const id = idRes.rows[0].id;
+    await client.query(
+        `INSERT INTO books (id, title, cover_image, publishing_date, summary, has_audio, audio_length, extract, rating, is_preview, display_order, is_visible)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        [id, book.title, book.coverImage, book.publishingDate, book.summary, book.hasAudio ? 1 : 0, book.audioLength || null, book.extract || null, book.rating || null, book.isPreview ? 1 : null, book.displayOrder || null, book.isVisible ? 1 : null]
     );
-
-    return {
-        ...book,
-        id,
-    };
+    return { ...book, id };
 }
+
 
 /**
  * Update an existing book
  */
-export function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): boolean {
-    const db = getDb();
-
-    // Build the SET part of the query dynamically based on provided fields
+export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): Promise<boolean> {
+    const client = getNeonClient();
+    // Build the SET part of the query dynamically
     const updates: string[] = [];
     const values: any[] = [];
-
     if (book.title !== undefined) {
-        updates.push('title = ?');
+        updates.push('title = $' + (updates.length + 1));
         values.push(book.title);
     }
-
     if (book.coverImage !== undefined) {
-        updates.push('cover_image = ?');
+        updates.push('cover_image = $' + (updates.length + 1));
         values.push(book.coverImage);
     }
-
     if (book.publishingDate !== undefined) {
-        updates.push('publishing_date = ?');
+        updates.push('publishing_date = $' + (updates.length + 1));
         values.push(book.publishingDate);
     }
-
     if (book.summary !== undefined) {
-        updates.push('summary = ?');
+        updates.push('summary = $' + (updates.length + 1));
         values.push(book.summary);
     }
-
     if (book.hasAudio !== undefined) {
-        updates.push('has_audio = ?');
+        updates.push('has_audio = $' + (updates.length + 1));
         values.push(book.hasAudio ? 1 : 0);
     }
-
     if (book.audioLength !== undefined) {
-        updates.push('audio_length = ?');
+        updates.push('audio_length = $' + (updates.length + 1));
         values.push(book.audioLength || null);
     }
-
     if (book.extract !== undefined) {
-        updates.push('extract = ?');
+        updates.push('extract = $' + (updates.length + 1));
         values.push(book.extract || null);
     }
-
     if (book.rating !== undefined) {
-        updates.push('rating = ?');
+        updates.push('rating = $' + (updates.length + 1));
         values.push(book.rating || null);
     }
-
     if (book.isPreview !== undefined) {
-        updates.push('is_preview = ?');
+        updates.push('is_preview = $' + (updates.length + 1));
         values.push(book.isPreview ? 1 : null);
     }
-
     if (book.isVisible !== undefined) {
-        updates.push('is_visible = ?');
+        updates.push('is_visible = $' + (updates.length + 1));
         values.push(book.isVisible || null);
     }
-
     if (book.displayOrder !== undefined) {
-        updates.push('display_order = ?');
+        updates.push('display_order = $' + (updates.length + 1));
         values.push(book.displayOrder || null);
     }
-
     // Add updated_at timestamp
-    updates.push('updated_at = CURRENT_TIMESTAMP');
-
+    updates.push('updated_at = NOW()');
     if (updates.length === 0) {
         return false; // Nothing to update
     }
-
     // Add the id to the values array
     values.push(id);
-
-    const result = db.prepare(`
-        UPDATE books
-        SET ${updates.join(', ')}
-        WHERE id = ?
-    `).run(...values);
-
-    return result.changes > 0;
+    const sql = `UPDATE books SET ${updates.join(', ')} WHERE id = $${values.length}`;
+    const res = await client.query(sql, values);
+    return res.rowCount > 0;
 }
 
 /**
  * Delete a book by ID
  */
-export function deleteBook(id: string): boolean {
-    const db = getDb();
-    const result = db.prepare('DELETE FROM books WHERE id = ?').run(id);
-    return result.changes > 0;
+export async function deleteBook(id: string): Promise<boolean> {
+    const client = getNeonClient();
+    const res = await client.query('DELETE FROM books WHERE id = $1', [id]);
+    return res.rowCount > 0;
 }

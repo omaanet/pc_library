@@ -29,14 +29,14 @@ export default function HomePage() {
         async function fetchPreviewBooks() {
             try {
                 setLoading(true);
-                const response = await fetch('/api/books?displayPreviews=1&sortOrder=desc&isVisible=1');
-
+                const response = await fetch('/api/books?displayPreviews=1&sortOrder=desc&isVisible=1'); // expects { data, pagination }
                 if (!response.ok) {
                     throw new Error(`Failed to fetch preview books: ${response.status}`);
                 }
 
-                const data = await response.json();
-                setBooks(data.books);
+                const { books } = await response.json();
+
+                setBooks(Array.isArray(books) ? books : []);
             } catch (error) {
                 console.error('Error loading preview books:', error);
             } finally {
@@ -127,7 +127,7 @@ export default function HomePage() {
                                             playbackId="00cc2D1BA4VPs2uNwHl01ZGGkZu9seiUHu"
                                             metadata={{
                                                 video_title: 'Il Mistero del Dipinto',
-                                                viewer_user_id: '1',
+                                                viewer_user_id: '1'
                                             }}
                                             style={{
                                                 width: DEFAULT_COVER_SIZES.video.width,
@@ -142,7 +142,7 @@ export default function HomePage() {
                                     <div className="py-4 text-muted-foreground">
                                         Caricamento anteprima libri...
                                     </div>
-                                ) : books.length === 0 ? (
+                                ) : (!Array.isArray(books) || books.length === 0) ? (
                                     <div className="py-4 text-muted-foreground">
                                         Al momento non sono disponibili anteprime dei libri.
                                     </div>

@@ -6,19 +6,19 @@ import { getSessionUser } from '@/lib/auth-utils';
 // GET /api/books/[id]/comments — fetch threaded comments
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function GET(req: NextRequest, context: any) {
-    const { id: bookId } = context.params;
+    const { id: bookId } = await context.params;
 
     if (typeof bookId !== 'string') {
         return NextResponse.json({ error: 'Invalid book id' }, { status: 400 });
     }
-    const comments = getCommentsByBookId(bookId);
+    const comments = await getCommentsByBookId(bookId);
     return NextResponse.json({ comments });
 }
 
 // POST /api/books/[id]/comments — add a comment or reply
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function POST(req: NextRequest, context: any) {
-    const { id: bookId } = context.params;
+    const { id: bookId } = await context.params;
 
     if (typeof bookId !== 'string') {
         return NextResponse.json({ error: 'Invalid book id' }, { status: 400 });
@@ -41,6 +41,6 @@ export async function POST(req: NextRequest, context: any) {
         content,
         parentId: parentId || null,
     };
-    const saved = addComment(comment);
+    const saved = await addComment(comment);
     return NextResponse.json({ comment: saved }, { status: 201 });
 }

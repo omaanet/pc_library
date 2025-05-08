@@ -26,7 +26,7 @@ export async function GET() {
             }
 
             // Get user from database - convert string userId to number
-            const user = getUserById(parseInt(sessionData.userId, 10));
+            const user = await getUserById(parseInt(sessionData.userId, 10));
 
             if (!user) {
                 // User not found or no longer valid

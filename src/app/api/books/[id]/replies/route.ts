@@ -3,9 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRepliesByParentId } from '@/lib/db-comments';
 
 // GET /api/books/[id]/replies?parentId=xxx
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function GET(req: NextRequest, context: any) {
-    const { id: bookId } = context.params;
+    const { id: bookId } = await context.params;
     const { searchParams } = new URL(req.url);
     const parentId = searchParams.get('parentId');
 
@@ -14,7 +13,7 @@ export async function GET(req: NextRequest, context: any) {
     }
 
     try {
-        const replies = getRepliesByParentId(bookId, parentId);
+        const replies = await getRepliesByParentId(bookId, parentId);
         return NextResponse.json({ replies });
     } catch (e) {
         return NextResponse.json({ error: 'Failed to fetch replies' }, { status: 500 });

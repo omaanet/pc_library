@@ -3,15 +3,15 @@ import { getAudioBookById, saveAudioBook } from '@/lib/db';
 
 // Audiobook service functions using centralized db logic
 
-export function fetchAudioBook(bookId: string): AudioBook | undefined {
-    return getAudioBookById(bookId);
+export async function fetchAudioBook(bookId: string): Promise<AudioBook | undefined> {
+    return await getAudioBookById(bookId);
 }
 
-export function saveOrUpdateAudioBook(data: {
+export async function saveOrUpdateAudioBook(data: {
     book_id: string;
     media_id: string | null;
     audio_length: number | null;
     publishing_date: string | null;
-}): AudioBook | undefined {
-    return saveAudioBook(data);
+}): Promise<AudioBook | undefined> {
+    return await saveAudioBook(data);
 }

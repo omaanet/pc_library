@@ -29,13 +29,14 @@ export async function getSessionUser(req: any) {
         }
         
         // Get user from database
-        const user = getUserById(Number(sessionData.userId));
+        const user = await getUserById(Number(sessionData.userId));
         if (!user) return null;
-        
+
         return {
             ...user,
             isAdmin: !!user.isAdmin
         };
+
     } catch (error) {
         console.error('Error parsing session:', error);
         return null;

@@ -8,7 +8,7 @@ export async function GET(
 ) {
     try {
         const id = (await params).id;
-        const book = getBookById(id);
+        const book = await getBookById(id);
 
         if (!book) {
             return NextResponse.json(
@@ -38,7 +38,7 @@ export async function PUT(
         const id = (await params).id;
         const book = await request.json();
 
-        const success = updateBook(id, book);
+        const success = await updateBook(id, book);
 
         if (!success) {
             return NextResponse.json(
@@ -47,7 +47,7 @@ export async function PUT(
             );
         }
 
-        const updatedBook = getBookById(id);
+        const updatedBook = await getBookById(id);
         return NextResponse.json(updatedBook);
     } catch (error) {
         console.error('API Error updating book:', error);
@@ -67,7 +67,7 @@ export async function DELETE(
 ) {
     try {
         const id = (await params).id;
-        const success = deleteBook(id);
+        const success = await deleteBook(id);
 
         if (!success) {
             return NextResponse.json(

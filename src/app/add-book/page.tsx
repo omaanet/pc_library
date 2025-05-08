@@ -32,10 +32,11 @@ export default function AddBookPage() {
     const {
         books,
         loading,
+        error,
+        fetchBooks,
         createBook,
         updateBook,
-        deleteBook,
-        fetchBooks
+        deleteBook
     } = useBooks();
 
     // Check if we should show audio tracks tab

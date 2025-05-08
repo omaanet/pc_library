@@ -30,6 +30,9 @@ export async function GET(request: Request) {
 
         // Check if we have a compound sort request via ?sort parameter
         const sortParam = url.searchParams.get('sort');
+
+        // return NextResponse.json({ message: 'GET request not implemented' }, { status: 501 });
+
         // if (sortParam) {
         //     try {
         //         // Parse JSON sort definition from URL parameter
@@ -79,7 +82,7 @@ export async function GET(request: Request) {
 
         // Get books using the optimized function that handles filtering, sorting,
         // and pagination directly in SQL
-        const result = getAllBooksOptimized(queryOptions);
+        const result = await getAllBooksOptimized(queryOptions);
 
         // Return formatted response
         return NextResponse.json({
@@ -113,7 +116,7 @@ export async function POST(request: Request) {
             }
         }
 
-        const newBook = createBook(bookData);
+        const newBook = await createBook(bookData);
 
         return NextResponse.json(newBook, { status: 201 });
     } catch (error) {

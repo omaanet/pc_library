@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         }
 
         // Check if email is already registered
-        if (userExists(email)) {
+        if (await userExists(email)) {
             return NextResponse.json(
                 { error: 'Un utente con questa email esiste già' },
                 { status: 409 }
@@ -34,7 +34,14 @@ export async function POST(request: Request) {
         }
 
         // Create a new user
-        const { userId, verificationToken } = createUser(email, fullName)!;
+        const createResult = await createUser(email, fullName);
+        if (!createResult) {
+            return NextResponse.json(
+                { error: 'Impossibile creare l\'utente. Riprova più tardi.' },
+                { status: 500 }
+            );
+        }
+        const { userId, verificationToken } = createResult;
 
         // console.log('Creating user...');
         // console.log('Sending verification email...');

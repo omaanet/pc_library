@@ -17,7 +17,7 @@ export async function POST(request: Request) {
         }
 
         // Find the user by verification token
-        const user = findUserByVerificationToken(token);
+        const user = await findUserByVerificationToken(token);
         if (!user) {
             // Try to find a user who previously had this token, even if already activated
             // We'll need to check the database for a user with verification_token = NULL and is_activated = 1
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
         }
 
         // Check if already activated
-        const completeUser = getUserById(user.id);
+        const completeUser = await getUserById(user.id);
         if (completeUser && completeUser.isActivated) {
             return NextResponse.json(
                 {
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         const password = markovGen.generatePassword({ minLength: 8, maxLength: 8 });
 
         // Activate the user account
-        const activated = activateUser(user.id, password);
+        const activated = await activateUser(user.id, password);
         if (!activated) {
             return NextResponse.json(
                 { error: 'Impossibile attivare l\'account' },
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         }
 
         // Get the complete user object for the session
-        const updatedUser = getUserById(user.id);
+        const updatedUser = await getUserById(user.id);
         if (!updatedUser) {
             return NextResponse.json(
                 { error: 'Utente non trovato' },

@@ -28,7 +28,7 @@
         "@radix-ui/react-tabs": "^1.1.11",
         "@radix-ui/react-toast": "^1.2.13",
         "@types/nodemailer": "^6.4.17",
-        "better-sqlite3": "^11.9.1",
+
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
@@ -46,7 +46,7 @@
         "react-reader": "^2.0.13",
         "sharp": "^0.33.5",
         "sqlite": "^5.1.1",
-        "sqlite3": "^5.1.7",
+
         "tailwind-merge": "^2.6.0",
         "tailwindcss-animate": "^1.0.7",
         "update": "^0.4.2",
@@ -55,7 +55,7 @@
     },
     "devDependencies": {
         "@shadcn/ui": "^0.0.4",
-        "@types/better-sqlite3": "^7.6.13",
+
         "@types/node": "^20.17.43",
         "@types/react": "^18.3.21",
         "@types/react-dom": "^18.3.7",
@@ -67,16 +67,16 @@
     },
     "pnpm": {
         "ignoredBuiltDependencies": [
-            "better-sqlite3",
+
             "core-js",
             "sqlite3"
         ],
         "onlyBuiltDependencies": [
-            "better-sqlite3",
+
             "core-js",
             "es5-ext",
             "sharp",
-            "sqlite3",
+
             "unrs-resolver"
         ]
     }

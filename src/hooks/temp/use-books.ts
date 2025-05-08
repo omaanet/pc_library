@@ -18,14 +18,16 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
         setError(null);
 
         try {
-            const response = await fetch('/api/books?displayPreviews=-1&isVisible=-1'); // &sortOrder=desc
+            const response = await fetch('/api/books?displayPreviews=-1&sortOrder=desc&isVisible=-1'); // &sortOrder=desc
 
             if (!response.ok) {
                 throw new Error(`Error fetching books: ${response.status}`);
             }
 
             const data = await response.json();
-            setBooks(data.books);
+
+            // New backend returns { data, pagination }
+            setBooks(data.data || []);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch books';
             setError(errorMessage);
@@ -57,7 +59,7 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
                 throw new Error(errorData.error || `Error creating book: ${response.status}`);
             }
 
-            const newBook = await response.json();
+            const { data: newBook } = await response.json();
             setBooks(prev => [...prev, newBook]);
 
             toast({
@@ -98,7 +100,7 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
                 throw new Error(errorData.error || `Error updating book: ${response.status}`);
             }
 
-            const updatedBook = await response.json();
+            const { data: updatedBook } = await response.json();
             setBooks(prev => prev.map(book => book.id === id ? updatedBook : book));
 
             toast({

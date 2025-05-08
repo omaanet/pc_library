@@ -7,7 +7,7 @@ export async function GET(
 ) {
     try {
         const bookId = (await params).book_id;
-        const audiobook = fetchAudioBook(bookId);
+        const audiobook = await fetchAudioBook(bookId);
 
         if (!audiobook) {
             return NextResponse.json({ message: 'Audiobook not found' }, { status: 404 });
@@ -31,7 +31,7 @@ export async function POST(
         const bookId = (await params).book_id;
         const body = await req.json();
 
-        const audiobook = saveOrUpdateAudioBook({
+        const audiobook = await saveOrUpdateAudioBook({
             book_id: bookId,
             media_id: body.media_id,
             audio_length: body.audio_length ? Number(body.audio_length) : null,

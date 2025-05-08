@@ -31,7 +31,7 @@ export function useAudiobook({ bookId }: UseAudiobookProps) {
                 throw new Error(`Failed to fetch audiobook: ${response.statusText}`);
             }
 
-            const data = await response.json();
+            const { data } = await response.json();
             setAudiobook(data);
         } catch (err) {
             console.error('Error fetching audiobook:', err);
@@ -66,7 +66,7 @@ export function useAudiobook({ bookId }: UseAudiobookProps) {
                 throw new Error(`Failed to save audiobook: ${response.statusText}`);
             }
 
-            const savedData = await response.json();
+            const { data: savedData } = await response.json();
             setAudiobook(savedData);
             return savedData;
         } catch (err) {

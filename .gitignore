@@ -59,6 +59,7 @@ pnpm-lock.yaml
 # *.md
 tmp
 db/books - Copy.db3
-db/dump-postgreSQL.sql
-db/dump-REMOVE-postgreSQL.sql
+#db/dump-postgreSQL.sql
 db/dump.sql
+db/dump-REMOVE-postgreSQL.sql
+/public/epub/**/pages

@@ -32,8 +32,8 @@ const AudioBookPlayer = ({ book, autoPlay = false }: AudioBookPlayerProps) => {
 
     if (loading) {
         return (
-            <div className="w-full text-center py-3 px-5 rounded-md mt-2 mb-0 mx-auto">
-                <Skeleton className="h-20 w-full max-w-xl mx-auto rounded-md" />
+            <div className="w-full text-center p-0 rounded-md mt-2 mb-0">
+                <Skeleton className="w-full rounded-md" style={{ minHeight: 120 }} />
             </div>
         );
     }
