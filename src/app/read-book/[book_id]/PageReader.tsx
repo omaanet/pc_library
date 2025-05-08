@@ -12,9 +12,9 @@ interface PageReaderProps {
 export default function PageReader({ book, bookId }: PageReaderProps) {
     // Configuration
     const CONFIG = {
-        viewMode: "double" as "single" | "double", // 'single' or 'double'
+        viewMode: "single" as "single" | "double", // 'single' or 'double'
         zoomLevel: 100, // percentage
-        pageGap: 15, // distance between pages in double view mode (px)
+        pageGap: 5, // distance between pages in double view mode (px)
         sidebarCollapsed: true, // whether sidebar starts collapsed (true) or expanded (false)
         imagePrefix: `read-book/${bookId}/pages/page-`,
         imageExt: "-or8.png",
@@ -43,7 +43,8 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(CONFIG.sidebarCollapsed);
     const [isLoading, setIsLoading] = useState(false);
     const pinchInitialDistance = useRef<number | null>(null);
-    const pinchInitialZoom = useRef<number>(zoomLevel);
+    const pinchInitialZoom = useRef<number>(CONFIG.zoomLevel);
+    const lastTapTime = useRef<number>(0);
 
     // Get total pages from book data
     const totalPages = book.pagesCount || 10; // Default to 10 pages if not specified
@@ -232,33 +233,44 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         setInitialTranslateY(0);
     };
 
-    // Adjust zoom level
-    const adjustZoom = (amount: number, centerX?: number, centerY?: number) => {
-        setZoomLevel((prevZoom) => {
-            const oldZoom = prevZoom;
-            const newZoom = Math.max(10, Math.min(300, oldZoom + amount));
-            if (oldZoom === newZoom) return oldZoom;
+    // Adjust zoom level with smooth transitions
+    const adjustZoom = (amount: number) => {
+        // Add smooth transition when zooming (except on pinch)
+        if (pagesContainerRef.current) {
+            pagesContainerRef.current.style.transition = 'transform 0.2s cubic-bezier(0.2, 0, 0.2, 1)';
+            // Remove transition after animation completes
+            setTimeout(() => {
+                if (pagesContainerRef.current) {
+                    pagesContainerRef.current.style.transition = 'none';
+                }
+            }, 220); // Slightly shorter than animation to ensure it completes
+        }
 
-            // If zooming with a specific center point (e.g., mouse position)
-            if (centerX !== undefined && centerY !== undefined && viewerContainerRef.current) {
-                const viewerRect = viewerContainerRef.current.getBoundingClientRect();
-                const viewerCenterX = viewerRect.width / 2;
-                const viewerCenterY = viewerRect.height / 2;
-                const dx = centerX - viewerCenterX;
-                const dy = centerY - viewerCenterY;
-                setCurrentTranslateX((prevX) => (prevX + dx) * newZoom / oldZoom - dx);
-                setCurrentTranslateY((prevY) => (prevY + dy) * newZoom / oldZoom - dy);
-            }
-
-            return newZoom;
+        setZoomLevel(prevZoom => {
+            return Math.max(10, Math.min(300, prevZoom + amount));
         });
     };
 
-    // Reset zoom to 100%
+    // Reset zoom to 100% and recenter with smooth transition
     const resetZoom = () => {
-        setZoomLevel(100);
-        resetTranslation();
+        // Add smooth transition
+        if (pagesContainerRef.current) {
+            pagesContainerRef.current.style.transition = 'transform 0.3s ease-out';
+            // Remove transition after animation completes
+            setTimeout(() => {
+                if (pagesContainerRef.current) {
+                    pagesContainerRef.current.style.transition = 'none';
+                }
+            }, 350);
+        }
+
+        setZoomLevel(CONFIG.zoomLevel);
+        setCurrentTranslateX(0);
+        setCurrentTranslateY(0);
     };
+
+    // Alias for consistency
+    const resetZoomCenter = resetZoom;
 
     // Toggle sidebar
     const toggleSidebar = () => {
@@ -303,12 +315,16 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const doDrag = (e: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
 
-        // Pinch to zoom
-        if ('touches' in e && e.touches.length >= 2 && pinchInitialDistance.current) {
+        // Pinch to zoom - simplified approach with direct updates for smoother feel
+        if ('touches' in e && e.touches.length >= 2 && pinchInitialDistance.current !== null) {
             const [t1, t2] = [e.touches[0], e.touches[1]];
             const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
             const scale = dist / pinchInitialDistance.current;
-            setZoomLevel(Math.max(50, Math.min(300, pinchInitialZoom.current * scale)));
+
+            // No transition for pinch - should feel responsive and direct
+            setZoomLevel(prevZoom => {
+                return Math.max(10, Math.min(300, pinchInitialZoom.current * scale));
+            });
             return;
         }
 
@@ -341,9 +357,6 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
         setIsDragging(false);
 
-        // Reset pinch distance
-        pinchInitialDistance.current = null;
-
         // Restore the grab cursor
         if (pagesContainerRef.current) {
             pagesContainerRef.current.style.cursor = 'grab';
@@ -353,11 +366,22 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
     // Handle wheel for zooming
     const handleWheel = (e: WheelEvent) => {
-        // Check if CTRL key is pressed (for zoom)
         if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
-            const delta = e.deltaY < 0 ? 10 : -10; // 10% zoom step
-            adjustZoom(delta, e.clientX, e.clientY);
+
+            // Throttle wheel events for smoother zoom
+            if (!isWheelThrottled.current) {
+                isWheelThrottled.current = true;
+
+                // Apply zoom based on wheel direction
+                const delta = e.deltaY < 0 ? 10 : -10; // 10% zoom step
+                adjustZoom(delta);
+
+                // Reset throttle after short delay (60fps = ~16ms)
+                setTimeout(() => {
+                    isWheelThrottled.current = false;
+                }, 16);
+            }
         }
     };
 
@@ -376,8 +400,19 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         }
     };
 
+    // Handle double-tap to reset zoom on touch
+    const handleDoubleTap = (e: React.TouchEvent) => {
+        e.preventDefault();
+        const now = Date.now();
+        if (now - lastTapTime.current < 300) resetZoomCenter();
+        lastTapTime.current = now;
+    };
+
     // No need to fetch page count from API anymore
     // Using book.pagesCount directly
+
+    // Performance optimization for wheel event
+    const isWheelThrottled = useRef<boolean>(false);
 
     // Initialize event listeners and load initial pages
     useEffect(() => {
@@ -415,7 +450,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 viewerContainerRef.current.removeEventListener('wheel', handleViewerContainerWheel);
             }
         };
-    }, [isDragging, currentPage, viewMode]); // Re-run when these values change
+    }, [isDragging, currentPage, viewMode, zoomLevel]); // Re-run when these values change
 
     // Load images when page or view mode changes
     useEffect(() => {
@@ -427,16 +462,16 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         return {
             transform: `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0) scale(${zoomLevel / 100})`,
             transformOrigin: 'center center',
-            transition: 'none',
+            // Transition applied directly in the adjustZoom function when needed
         };
     };
 
     // Get sidebar style based on collapse state
     const getSidebarStyle = () => {
         return {
-            transform: isSidebarCollapsed ? 'translateX(calc(100% - 20px))' : 'translateX(0)',
-            opacity: isSidebarCollapsed ? 0.8 : 1,
-            backgroundColor: isSidebarCollapsed ? 'rgba(255, 255, 255, 0.5)' : '#ffffff',
+            transform: isSidebarCollapsed ? 'translateX(calc(100% - 10px))' : 'translateX(0)',
+            opacity: isSidebarCollapsed ? 0.75 : 1,
+            backgroundColor: isSidebarCollapsed ? 'hsla(0, 0.00%, 100.00%, 0.50)' : '#fff',
             boxShadow: isSidebarCollapsed ? 'none' : '2px 0 5px rgba(0, 0, 0, 0.1)',
             borderLeft: isSidebarCollapsed ? 'none' : '1px solid rgba(0, 0, 0, 0.5)',
         };
@@ -462,7 +497,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             {/* Sidebar Overlay */}
             <div
                 ref={sidebarOverlayRef}
-                className={`fixed top-0 left-0 w-full h-full bg-black/50 z-[9] ${!isSidebarCollapsed && window.innerWidth <= 768 ? 'block' : 'hidden'}`}
+                className={`fixed top-0 left-0 w-full h-full bg-black z-[9] ${!isSidebarCollapsed && window.innerWidth <= 768 ? 'block' : 'hidden'}`}
                 onClick={toggleSidebar}
             ></div>
 
@@ -474,30 +509,30 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             >
                 <button
                     ref={toggleSidebarBtnRef}
-                    className="absolute top-[62px] -left-[12px] w-[22px] h-[22px] rounded-full bg-blue-500/80 hover:bg-blue-500 flex justify-center items-center cursor-pointer shadow-sm border-none text-white p-0 z-[11] transform -translate-y-1/2 transition-colors"
+                    className="absolute top-[62px] -left-[29px] w-[28px] h-[36px] rounded-sm bg-sky-500/50 hover:bg-sky-600 flex justify-center items-center cursor-pointer shadow-sm border-none text-white p-0 z-[11] transform -translate-y-1/2 transition-colors"
                     onClick={toggleSidebar}
                     aria-label="Toggle sidebar"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
-                        className="w-[14px] h-[14px] fill-white transition-transform duration-300 ease-in-out"
+                        className="w-[24px] h-[24px] fill-white transition-transform duration-300 ease-in-out"
                         style={getToggleIconStyle()}
                     >
                         <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z" />
                     </svg>
                 </button>
 
-                <h3 className="mb-5 pb-2.5 border-b border-gray-200">Settings</h3>
+                <h3 className="mb-5 pb-2.5 border-b border-gray-200 text-center font-semibold text-gray-800">Opzioni di lettura</h3>
 
                 <div className="mb-5 w-full">
-                    <h3 className="mb-2.5 text-base">View Mode</h3>
+                    <h3 className="mb-2.5 text-sm text-center text-gray-700">Visualizzazione</h3>
                     <div className="flex justify-center w-full mt-2.5">
                         <div className="grid grid-cols-2 gap-0 w-full">
                             <button
-                                className={`py-3 px-4 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white border-none rounded-l cursor-pointer transition-colors ${viewMode === 'single' ? 'bg-blue-600' : ''}`}
+                                className={`py-3 px-4 flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white border-none rounded-l cursor-pointer transition-colors ${viewMode === 'single' ? 'bg-sky-700' : ''}`}
                                 onClick={() => setViewModeHandler('single')}
-                                title="Single Page View"
+                                title="Una pagina"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
@@ -505,9 +540,9 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                                 </svg>
                             </button>
                             <button
-                                className={`py-3 px-4 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white border-none rounded-r cursor-pointer transition-colors ${viewMode === 'double' ? 'bg-blue-600' : ''}`}
+                                className={`py-3 px-4 flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white border-none rounded-r cursor-pointer transition-colors ${viewMode === 'double' ? 'bg-sky-700' : ''}`}
                                 onClick={() => setViewModeHandler('double')}
-                                title="Two Pages View"
+                                title="Due pagine"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M12 6h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-8" />
@@ -519,13 +554,13 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 </div>
 
                 <div className="mb-5 w-full">
-                    <h3 className="mb-2.5 text-base">Zoom</h3>
+                    <h3 className="mb-2.5 text-sm text-center text-gray-700">Zoom</h3>
                     <div className="flex justify-center w-full mt-2.5">
                         <div className="grid grid-cols-3 gap-0 w-full">
                             <button
-                                className="py-3 px-4 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white border-none rounded-l cursor-pointer transition-colors"
+                                className="py-3 px-4 flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white border-none rounded-l cursor-pointer transition-colors"
                                 onClick={() => adjustZoom(-10)}
-                                title="Zoom Out"
+                                title="Rimpicciolisci"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="11" cy="11" r="8"></circle>
@@ -534,9 +569,9 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                                 </svg>
                             </button>
                             <button
-                                className="py-3 px-4 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white border-none cursor-pointer transition-colors"
+                                className="py-3 px-4 flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white border-none cursor-pointer transition-colors"
                                 onClick={resetZoom}
-                                title="Reset Zoom"
+                                title="Ripristina zoom"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="11" cy="11" r="8"></circle>
@@ -544,9 +579,9 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                                 </svg>
                             </button>
                             <button
-                                className="py-3 px-4 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white border-none rounded-r cursor-pointer transition-colors"
+                                className="py-3 px-4 flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white border-none rounded-r cursor-pointer transition-colors"
                                 onClick={() => adjustZoom(10)}
-                                title="Zoom In"
+                                title="Ingrandisci"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="11" cy="11" r="8"></circle>
@@ -561,13 +596,15 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             </div>
 
             {/* Main content with image viewer - this div takes full screen height */}
-            <div className="h-screen w-full flex flex-col relative bg-gray-100 text-gray-800">
+            <div className="h-screen w-full flex flex-col relative bg-gray-400 text-gray-800">
                 {/* Main Content Area - Centered both horizontally and vertically */}
                 <div
                     ref={viewerContainerRef}
                     className="flex-1 flex justify-center items-center relative overflow-hidden touch-none"
                     onMouseDown={startDrag}
                     onTouchStart={startDrag}
+                    onTouchEnd={handleDoubleTap}
+                    onDoubleClick={resetZoomCenter}
                 >
                     {/* Pages Container - centered horizontally and vertically */}
                     <div
@@ -583,29 +620,30 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                             <div key={pageNum} className="h-full flex justify-center items-center select-none">
                                 <img
                                     src={imagesLoaded[pageNum] || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1.4"%3E%3C/svg%3E'}
-                                    alt={`Page ${pageNum}`}
+                                    alt={`Pagina ${pageNum}`}
                                     className="max-h-full max-w-full object-contain shadow-md bg-white pointer-events-none select-none"
                                     draggable="false"
                                     data-page={pageNum}
+                                    loading="lazy"
                                 />
                             </div>
                         ))}
                     </div>
                     {/* Navigation Buttons - centered vertically */}
-                    <div className="absolute w-full flex justify-between px-5 top-1/2 transform -translate-y-1/2 z-[5] pointer-events-none">
+                    <div className="absolute w-full flex justify-between px-8 top-1/2 transform -translate-y-1/2 z-[5] pointer-events-none">
                         <div
-                            className={`w-[50px] h-[50px] rounded-full bg-white/80 hover:bg-white/90 flex justify-center items-center cursor-pointer shadow-md transition-transform hover:scale-110 opacity-80 pointer-events-auto ${currentPage <= 1 ? 'opacity-50 pointer-events-none' : ''}`}
+                            className={`w-[50px] h-[50px] rounded-full bg-gray-500/80 hover:bg-pink-500 flex justify-center items-center cursor-pointer shadow-md transition-transform hover:scale-110 opacity-80 pointer-events-auto ${currentPage <= 1 ? 'opacity-50 pointer-events-none' : ''}`}
                             onClick={goToPrevPage}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6 fill-gray-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
                                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
                             </svg>
                         </div>
                         <div
-                            className={`w-[50px] h-[50px] rounded-full bg-white/80 hover:bg-white/90 flex justify-center items-center cursor-pointer shadow-md transition-transform hover:scale-110 opacity-80 pointer-events-auto ${currentPage >= totalPages ? 'opacity-50 pointer-events-none' : ''}`}
+                            className={`w-[50px] h-[50px] rounded-full bg-gray-500/80 hover:bg-pink-500 flex justify-center items-center cursor-pointer shadow-md transition-transform hover:scale-110 opacity-80 pointer-events-auto ${currentPage >= totalPages ? 'opacity-50 pointer-events-none' : ''}`}
                             onClick={goToNextPage}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6 fill-gray-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
                                 <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
                             </svg>
                         </div>
@@ -613,7 +651,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 </div>
 
                 {/* Page Info */}
-                <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-white/80 text-gray-800 py-2 px-4 rounded-full shadow-sm z-[5] pointer-events-none">
+                <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-sm text-gray-900 py-1 px-6 rounded-full shadow-sm z-[5] pointer-events-none">
                     {getPageInfoText()}
                 </div>
 

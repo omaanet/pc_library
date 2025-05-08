@@ -12,7 +12,7 @@ export function BackButton() {
     };
 
     return (
-        <button onClick={handleBackClick} className="fixed top-4 left-4 z-20 text-pink-600 hover:text-pink-400 transition-colors">
+        <button onClick={handleBackClick} className="fixed top-4 left-4 z-20 text-gray-700 hover:text-black transition-colors">
             <CornerUpLeft className="h-10 w-10" />
         </button>
     );
