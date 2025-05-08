@@ -103,7 +103,7 @@ export default function BookComments({ bookId, isAuthenticated, userName, onLogi
                 {loading ? <div className="text-muted-foreground">Caricamento commenti...</div>
                     : error ? <div className="text-red-600">{error}</div>
                         : (comments.length === 0 ? (
-                            <div className="text-muted-foreground mt-2 px-2">{isAuthenticated ? 'Lascia un commento!' : 'Accedi per commentare!'}</div>
+                            <div className="text-muted-foreground mt-2 px-2">{isAuthenticated ? 'Lascia un commento!' : 'Lascia un commento!!'}</div>
                         )
                             : <CommentThread
                                 comments={comments}

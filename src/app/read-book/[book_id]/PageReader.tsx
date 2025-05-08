@@ -14,7 +14,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const CONFIG = {
         viewMode: "double" as "single" | "double", // 'single' or 'double'
         zoomLevel: 100, // percentage
-        pageGap: 20, // distance between pages in double view mode (px)
+        pageGap: 15, // distance between pages in double view mode (px)
         sidebarCollapsed: true, // whether sidebar starts collapsed (true) or expanded (false)
         imagePrefix: `read-book/${bookId}/pages/page-`,
         imageExt: "-or8.png",
@@ -42,6 +42,8 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const [dragStartY, setDragStartY] = useState(0);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(CONFIG.sidebarCollapsed);
     const [isLoading, setIsLoading] = useState(false);
+    const pinchInitialDistance = useRef<number | null>(null);
+    const pinchInitialZoom = useRef<number>(zoomLevel);
 
     // Get total pages from book data
     const totalPages = book.pagesCount || 10; // Default to 10 pages if not specified
@@ -265,6 +267,15 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
     // Start drag
     const startDrag = (e: React.MouseEvent | React.TouchEvent) => {
+        // Handle pinch start
+        if ('touches' in e && e.touches.length >= 2) {
+            const [t1, t2] = [e.touches[0], e.touches[1]];
+            const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            pinchInitialDistance.current = dist;
+            pinchInitialZoom.current = zoomLevel;
+            return;
+        }
+
         // Prevent default behavior
         e.preventDefault();
 
@@ -291,6 +302,15 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     // Handle drag
     const doDrag = (e: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
+
+        // Pinch to zoom
+        if ('touches' in e && e.touches.length >= 2 && pinchInitialDistance.current) {
+            const [t1, t2] = [e.touches[0], e.touches[1]];
+            const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            const scale = dist / pinchInitialDistance.current;
+            setZoomLevel(Math.max(50, Math.min(300, pinchInitialZoom.current * scale)));
+            return;
+        }
 
         // Prevent default behavior
         e.preventDefault();
@@ -320,6 +340,9 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         if (!isDragging) return;
 
         setIsDragging(false);
+
+        // Reset pinch distance
+        pinchInitialDistance.current = null;
 
         // Restore the grab cursor
         if (pagesContainerRef.current) {
@@ -549,12 +572,15 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                     {/* Pages Container - centered horizontally and vertically */}
                     <div
                         ref={pagesContainerRef}
-                        className={`flex justify-center items-center h-full cursor-grab transition-none transform-gpu ${viewMode === 'double' ? 'gap-5' : ''}`}
-                        style={getTransformStyle()}
+                        className="flex justify-center items-center h-full cursor-grab transition-none transform-gpu"
+                        style={{
+                            ...getTransformStyle(),
+                            gap: viewMode === 'double' ? CONFIG.pageGap : 0,
+                        }}
                     >
                         {/* Render Pages */}
                         {getVisiblePages().map((pageNum) => (
-                            <div key={pageNum} className="h-full flex justify-center items-center p-5 select-none">
+                            <div key={pageNum} className="h-full flex justify-center items-center select-none">
                                 <img
                                     src={imagesLoaded[pageNum] || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1.4"%3E%3C/svg%3E'}
                                     alt={`Page ${pageNum}`}
