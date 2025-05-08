@@ -137,7 +137,7 @@ class Mailer {
      * Send a welcome email with generated password
      */
     async sendWelcomeEmail(to: string, fullName: string, password: string): Promise<boolean> {
-        const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3005'}/login`;
+        const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL}`;
 
         const html = `<!DOCTYPE html>
             <html lang="it">

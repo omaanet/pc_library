@@ -1,13 +1,10 @@
-For complete details about the project, its components, API routes, database structure, and more, see `Codebase Technical Documentation.md`.
+For complete details about the project, its components, API routes, database structure, and more, see `Project_Tech_Stack.md`.
 Use pnpm, not npm.
 The server is always running and listening for requests, usually with `next dev --turbo -p 3005`, so there is no need to start it manually.
 
 Database: Neon PostgreSQL
 Preferred database library: use async Neon/Postgres client (`@neondatabase/serverless`)
 
-<!-- Database: SQLite stored in `db\books.db3`.
-Preferred database library: `better-sqlite3` (not `sqlite3`).
-Database schema located in `db\schema.sql`. -->
 Type definitions located in `src/types`.
 Ensure compatibility with React Fast Refresh.
 Always verify imports and exports to avoid unnecessary dependencies.
