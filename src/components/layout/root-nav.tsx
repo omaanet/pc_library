@@ -97,7 +97,7 @@ export function RootNav({
                             variant="outline"
                             size="default"
                             onClick={onAuthClick}
-                            className="hidden md:block h-9"
+                            className="h-9"
                         >
                             Accedi
                         </Button>
