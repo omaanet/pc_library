@@ -457,10 +457,10 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
     // Initialize event listeners and load initial pages
     useEffect(() => {
-        const debugDiv = document.getElementById('debug');
-        if (debugDiv) {
-            debugDiv.textContent = `Current page updated: ${currentPage}/${totalPages}`;
-        }
+        // const debugDiv = document.getElementById('debug');
+        // if (debugDiv) {
+        //     debugDiv.textContent = `Current page updated: ${currentPage}/${totalPages}`;
+        // }
 
         // Event listeners for drag handling
         const handleDocumentMouseMove = (e: MouseEvent) => doDrag(e);
@@ -558,7 +558,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
     return (
         <div className="h-full w-full">
-            <div
+            {/* <div
                 id="debug"
                 style={{
                     position: 'fixed',
@@ -575,7 +575,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                     minWidth: '100px',
                     textAlign: 'center',
                 }}
-            >0</div>
+            >0</div> */}
 
             {/* Sidebar Overlay */}
             {/* && window.innerWidth <= 768 */}
