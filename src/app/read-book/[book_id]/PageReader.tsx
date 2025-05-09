@@ -183,7 +183,13 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     };
 
     // Go to previous page
-    const goToPrevPage = () => {
+    const goToPrevPage = (e?: React.MouseEvent | React.TouchEvent) => {
+        // Stop event propagation to prevent panning/zooming
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+
         if (currentPage > 1) {
             // Reset translation when changing page
             // resetTranslation();
@@ -197,7 +203,13 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     };
 
     // Go to next page
-    const goToNextPage = () => {
+    const goToNextPage = (e?: React.MouseEvent | React.TouchEvent) => {
+        // Stop event propagation to prevent panning/zooming
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+
         if (currentPage < totalPages) {
             // Reset translation when changing page
             // resetTranslation();
@@ -272,12 +284,26 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const resetZoomCenter = resetZoom;
 
     // Toggle sidebar
-    const toggleSidebar = () => {
+    const toggleSidebar = (e?: React.MouseEvent | React.TouchEvent) => {
+        // Stop event propagation to prevent panning/zooming
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+
         setIsSidebarCollapsed((prev) => !prev);
     };
 
     // Start drag
     const startDrag = (e: React.MouseEvent | React.TouchEvent) => {
+        // Check if the event originated from a navigation control
+        // If it's coming from a navigation control, don't start dragging
+        const target = e.target as HTMLElement;
+        if (target.closest('.pointer-events-auto')) {
+            // Don't start dragging when clicking navigation controls
+            return;
+        }
+
         // Handle pinch start
         if ('touches' in e && e.touches.length >= 2) {
             const [t1, t2] = [e.touches[0], e.touches[1]];
@@ -313,6 +339,14 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     // Handle drag
     const doDrag = (e: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
+
+        // Check if the event originated from a navigation control
+        const target = e.target as HTMLElement;
+        if (target.closest('.pointer-events-auto')) {
+            // Don't continue dragging when interacting with navigation controls
+            endDrag();
+            return;
+        }
 
         // Pinch to zoom - simplified approach with direct updates for smoother feel
         if ('touches' in e && e.touches.length >= 2 && pinchInitialDistance.current !== null) {
@@ -386,16 +420,24 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
     // Handle keyboard navigation
     const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'ArrowLeft') {
-            goToPrevPage();
-        } else if (e.key === 'ArrowRight') {
-            goToNextPage();
-        } else if (e.key === '+' || e.key === '=') {
-            adjustZoom(10);
-        } else if (e.key === '-') {
-            adjustZoom(-10);
-        } else if (e.key === '0') {
-            resetZoom();
+        // Don't handle events when text inputs are focused
+        const activeElement = document.activeElement as HTMLElement;
+        if (
+            activeElement &&
+            (activeElement.tagName === 'INPUT' ||
+                activeElement.tagName === 'TEXTAREA' ||
+                activeElement.isContentEditable)
+        ) {
+            return;
+        }
+
+        // Give navigation priority by stopping propagation and preventing default
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            e.stopPropagation();
+            e.preventDefault();
+
+            if (e.key === 'ArrowLeft') goToPrevPage();
+            else if (e.key === 'ArrowRight') goToNextPage();
         }
     };
 
@@ -501,19 +543,18 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         direction: 'prev' | 'next',
         totalPages: number
     ): string => {
-        const baseClasses = 'w-[50px] h-[50px] rounded-full flex justify-center items-center shadow-md transition-transform';
+        const baseClasses = 'w-[40px] h-[40px] sm:w-[50px] sm:h-[50px] rounded-full flex justify-center items-center shadow-md transition-transform';
 
         const isDisabled =
             (direction === 'prev' && currentPage <= 1) ||
             (direction === 'next' && currentPage >= totalPages);
 
         if (isDisabled) {
-            return `${baseClasses} opacity-50 pointer-events-none bg-transparent`;
+            return `${baseClasses} opacity-0 pointer-events-none bg-transparent`;
         }
 
         return `${baseClasses} bg-gray-500/80 hover:bg-pink-500 hover:scale-110 cursor-pointer opacity-80 pointer-events-auto`;
     };
-
 
     return (
         <div className="h-full w-full">
@@ -553,7 +594,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 <button
                     ref={toggleSidebarBtnRef}
                     className="absolute top-[62px] -left-[29px] w-[28px] h-[36px] rounded-sm bg-sky-500/50 hover:bg-sky-600 flex justify-center items-center cursor-pointer shadow-sm border-none text-white p-0 z-[11] transform -translate-y-1/2 transition-colors"
-                    onClick={toggleSidebar}
+                    onClick={(e) => toggleSidebar(e)}
                     aria-label="Toggle sidebar"
                 >
                     <svg
@@ -673,10 +714,10 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                         ))}
                     </div>
                     {/* Navigation Buttons - centered vertically */}
-                    <div className="absolute w-full flex justify-between px-8 top-1/2 transform -translate-y-1/2 z-[5] pointer-events-none">
+                    <div className="absolute w-full flex justify-between px-4 top-1/2 transform -translate-y-1/2 z-[5] pointer-events-none">
                         <div
                             className={getButtonClassName(currentPage, 'prev', totalPages)}
-                            onClick={goToPrevPage}
+                            onClick={(e) => goToPrevPage(e)}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
                                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
@@ -684,7 +725,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                         </div>
                         <div
                             className={getButtonClassName(currentPage, 'next', totalPages)}
-                            onClick={goToNextPage}
+                            onClick={(e) => goToNextPage(e)}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
                                 <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
