@@ -186,8 +186,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const goToPrevPage = () => {
         if (currentPage > 1) {
             // Reset translation when changing page
-            resetTranslation();
-
+            // resetTranslation();
             if (viewMode === "single") {
                 setCurrentPage((prev) => prev - 1);
             } else {
@@ -201,7 +200,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const goToNextPage = () => {
         if (currentPage < totalPages) {
             // Reset translation when changing page
-            resetTranslation();
+            // resetTranslation();
 
             if (viewMode === "single") {
                 setCurrentPage((prev) => prev + 1);
@@ -416,6 +415,11 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
     // Initialize event listeners and load initial pages
     useEffect(() => {
+        const debugDiv = document.getElementById('debug');
+        if (debugDiv) {
+            debugDiv.textContent = `Current page updated: ${currentPage}/${totalPages}`;
+        }
+
         // Event listeners for drag handling
         const handleDocumentMouseMove = (e: MouseEvent) => doDrag(e);
         const handleDocumentTouchMove = (e: TouchEvent) => doDrag(e);
@@ -488,16 +492,55 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const getPageInfoText = () => {
         const visiblePages = getVisiblePages();
         return viewMode === 'single'
-            ? `Page ${visiblePages[0]} of ${totalPages}`
-            : `Pages ${visiblePages.join('-')} of ${totalPages}`;
+            ? `Pagina ${visiblePages[0]} di ${totalPages}`
+            : `Pagine ${visiblePages.join('-')} di ${totalPages}`;
     };
+
+    const getButtonClassName = (
+        currentPage: number,
+        direction: 'prev' | 'next',
+        totalPages: number
+    ): string => {
+        const baseClasses = 'w-[50px] h-[50px] rounded-full flex justify-center items-center shadow-md transition-transform';
+
+        const isDisabled =
+            (direction === 'prev' && currentPage <= 1) ||
+            (direction === 'next' && currentPage >= totalPages);
+
+        if (isDisabled) {
+            return `${baseClasses} opacity-50 pointer-events-none bg-transparent`;
+        }
+
+        return `${baseClasses} bg-gray-500/80 hover:bg-pink-500 hover:scale-110 cursor-pointer opacity-80 pointer-events-auto`;
+    };
+
 
     return (
         <div className="h-full w-full">
+            <div
+                id="debug"
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    borderRadius: '0 0 8px 8px',
+                    color: 'white',
+                    padding: '8px 16px',
+                    zIndex: 9999,
+                    fontSize: '14px',
+                    pointerEvents: 'none',
+                    minWidth: '100px',
+                    textAlign: 'center',
+                }}
+            >0</div>
+
             {/* Sidebar Overlay */}
+            {/* && window.innerWidth <= 768 */}
             <div
                 ref={sidebarOverlayRef}
-                className={`fixed top-0 left-0 w-full h-full bg-black z-[9] ${!isSidebarCollapsed && window.innerWidth <= 768 ? 'block' : 'hidden'}`}
+                className={`fixed top-0 left-0 w-full h-full bg-neutral-500/50 z-[9] ${!isSidebarCollapsed ? 'block' : 'hidden'}`}
                 onClick={toggleSidebar}
             ></div>
 
@@ -632,7 +675,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                     {/* Navigation Buttons - centered vertically */}
                     <div className="absolute w-full flex justify-between px-8 top-1/2 transform -translate-y-1/2 z-[5] pointer-events-none">
                         <div
-                            className={`w-[50px] h-[50px] rounded-full bg-gray-500/80 hover:bg-pink-500 flex justify-center items-center cursor-pointer shadow-md transition-transform hover:scale-110 opacity-80 pointer-events-auto ${currentPage <= 1 ? 'opacity-50 pointer-events-none' : ''}`}
+                            className={getButtonClassName(currentPage, 'prev', totalPages)}
                             onClick={goToPrevPage}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
@@ -640,7 +683,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                             </svg>
                         </div>
                         <div
-                            className={`w-[50px] h-[50px] rounded-full bg-gray-500/80 hover:bg-pink-500 flex justify-center items-center cursor-pointer shadow-md transition-transform hover:scale-110 opacity-80 pointer-events-auto ${currentPage >= totalPages ? 'opacity-50 pointer-events-none' : ''}`}
+                            className={getButtonClassName(currentPage, 'next', totalPages)}
                             onClick={goToNextPage}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
@@ -658,7 +701,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 {/* Loading Indicator */}
                 {isLoading && (
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white py-4 px-5 rounded z-[100]">
-                        Loading...
+                        Caricamento...
                     </div>
                 )}
             </div>
