@@ -694,13 +694,13 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 </div>
 
                 {/* Page Info */}
-                <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-sm text-gray-900 py-1 px-6 rounded-full shadow-sm z-[5] pointer-events-none">
+                <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-sm text-gray-900 py-1 px-6 rounded-full shadow-sm z-[15] pointer-events-none">
                     {getPageInfoText()}
                 </div>
 
                 {/* Loading Indicator */}
                 {isLoading && (
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white py-4 px-5 rounded z-[100]">
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white py-4 px-5 rounded z-[500]">
                         Caricamento...
                     </div>
                 )}
