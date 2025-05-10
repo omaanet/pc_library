@@ -14,9 +14,11 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const CONFIG = {
         viewMode: "single" as "single" | "double", // 'single' or 'double'
         zoomLevel: 100, // percentage
+        pageStart: 1,
         pageGap: 5, // distance between pages in double view mode (px)
         sidebarCollapsed: true, // whether sidebar starts collapsed (true) or expanded (false)
-        imagePrefix: `read-book/${bookId}/pages/page-`,
+        //imagePrefix: `read-book/${bookId}/pages/page-`,
+        imagePrefix: `/epub/${bookId}/pages/page-`,
         imageExt: "-or8.png",
         preloadBuffer: 3, // Number of pages to preload ahead and behind
     };
@@ -29,7 +31,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const toggleSidebarBtnRef = useRef<HTMLButtonElement>(null);
 
     // State variables
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(CONFIG.pageStart);
     const [viewMode, setViewMode] = useState<"single" | "double">(CONFIG.viewMode);
     const [zoomLevel, setZoomLevel] = useState(CONFIG.zoomLevel);
     const [imagesLoaded, setImagesLoaded] = useState<Record<number, string>>({});
@@ -61,7 +63,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
     // Get image path for a specific page
     const getImagePath = (pageNum: number) => {
-        return `/epub/${bookId}/pages/page-${formatPageNumber(pageNum)}${CONFIG.imageExt}`;
+        return `${CONFIG.imagePrefix}${formatPageNumber(pageNum)}${CONFIG.imageExt}`;
     };
 
     // Get visible pages based on current view mode and page number

@@ -157,33 +157,35 @@ export function BookDialog({
 
                                     <div className="relative w-full h-full flex flex-col sm:flex-col items-center justify-center rounded-lg bg-muted/30 px-3 py-2 space-y-1">
 
-                                        <div>
-                                            <div className="relative w-fu2ll h-auto m2ax-h-full">
-                                                {/* Responsive image wrapper for mobile */}
+                                        <div className="">
+                                            <div>
+                                                {/* Responsive image wrapper for mobile: w-fu2ll h-auto m2ax-h-full | !imageLoaded */}
                                                 {!imageLoaded && (
                                                     <Skeleton className="absolute inset-0 rounded-lg" />
                                                 )}
-                                                <Image
-                                                    src={getCoverImageUrl(
-                                                        book.coverImage,
-                                                        'detail',
-                                                        { bookId: book.coverImage === IMAGE_CONFIG.placeholder.token ? book.id : undefined }
-                                                    )}
-                                                    alt={`Cover of ${book.title}`}
-                                                    width={DEFAULT_COVER_SIZES.detail.width}
-                                                    height={DEFAULT_COVER_SIZES.detail.height}
-                                                    className={cn(
-                                                        "w-full h-auto max-w-[70vw] max-h-[25vw] sm:max-w-full sm:max-h-[60vh] object-contain transition-opacity duration-400",
-                                                        imageLoaded ? "opacity-100" : "opacity-0"
-                                                    )}
-                                                    sizes="(max-width: 640px) 70vw, (min-width: 768px) 33vw, 100vw"
-                                                    priority={true}
-                                                    quality={90}
-                                                    onLoad={() => setImageLoaded(true)}
-                                                    onError={() => setImageLoaded(true)}
-                                                    unoptimized
-                                                />
-                                                {renderAudioBadge(book, imageLoaded)}
+                                                <div>
+                                                    <Image
+                                                        src={getCoverImageUrl(
+                                                            book.coverImage,
+                                                            'detail',
+                                                            { bookId: book.coverImage === IMAGE_CONFIG.placeholder.token ? book.id : undefined }
+                                                        )}
+                                                        alt={`Cover of ${book.title}`}
+                                                        width={DEFAULT_COVER_SIZES.detail.width}
+                                                        height={DEFAULT_COVER_SIZES.detail.height}
+                                                        className={cn(
+                                                            "w-full h-auto max-w-[70vw] max-h-[25vw] sm:max-w-full sm:max-h-[60vh] object-contain transition-opacity duration-400",
+                                                            imageLoaded ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                        sizes="(max-width: 640px) 70vw, (min-width: 768px) 33vw, 100vw"
+                                                        priority={true}
+                                                        quality={90}
+                                                        onLoad={() => setImageLoaded(true)}
+                                                        onError={() => setImageLoaded(true)}
+                                                        unoptimized
+                                                    />
+                                                    {renderAudioBadge(book, imageLoaded)}
+                                                </div>
                                             </div>
 
                                             {isAuthenticated /*&& !book.hasAudio*/ && (

@@ -127,7 +127,7 @@ export default function BookComments({ bookId, isAuthenticated, userName, onLogi
                         <Button type="button" variant="link" size="sm" className="ml-2 p-0 text-red-600" onClick={() => setReplyingTo(null)}>Annulla</Button>
                     </div>}
                     <Textarea
-                        placeholder={replyingTo ? 'Scrivi una risposta...' : 'Scrivi un commento...'}
+                        placeholder={replyingTo ? 'Scrivi una risposta...' : 'Scrivi il tuo commento qui...'}
                         value={newComment}
                         onChange={e => setNewComment(e.target.value)}
                     />
@@ -178,7 +178,7 @@ function CommentThread({ comments, expanded, replies, loadingReplies, onToggleEx
                             </Button>}
                         </div>
                         {expanded[comment.id] && (
-                            <div className="ml-6 mt-3 border-l-2 pl-4">
+                            <div className="ml-0 mt-3 border-l-2 pl-4">
                                 {loadingReplies[comment.id]
                                     ? <div className="text-xs text-muted-foreground">Caricamento risposte...</div>
                                     : <CommentThread

@@ -18,6 +18,7 @@ import {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     Book,
     Library,
+    Mail,
     Menu,
     UserCircle,
 } from 'lucide-react';
@@ -58,6 +59,8 @@ export function RootNav({
 
                 {/* Actions */}
                 <div className="flex items-center space-x-4">
+                    <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Mail className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" /> <span className="align-middle">racconti@pierocarbonetti.it</span></div>
+
                     <ThemeSwitcher />
 
                     {/* User Menu or Auth Button */}
