@@ -195,7 +195,14 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             e.preventDefault();
         }
 
+        console.log("prev");
+
         if (currentPage > 1) {
+            // Play a subtle haptic feedback on mobile if available
+            if (navigator.vibrate) {
+                navigator.vibrate(40);
+            }
+
             // Reset translation when changing page
             // resetTranslation();
             if (viewMode === "single") {
@@ -215,7 +222,14 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             e.preventDefault();
         }
 
+        console.log("next");
+
         if (currentPage < totalPages) {
+            // Play a subtle haptic feedback on mobile if available
+            if (navigator.vibrate) {
+                navigator.vibrate(40);
+            }
+
             // Reset translation when changing page
             // resetTranslation();
 
@@ -319,7 +333,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         }
 
         // Prevent default behavior
-        e.preventDefault();
+        // e.preventDefault();
 
         // Get initial position
         if ('clientX' in e) {
@@ -367,7 +381,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         }
 
         // Prevent default behavior
-        e.preventDefault();
+        // e.preventDefault();
 
         let clientX: number, clientY: number;
 
@@ -548,17 +562,18 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         direction: 'prev' | 'next',
         totalPages: number
     ): string => {
-        const baseClasses = 'w-[40px] h-[40px] sm:w-[50px] sm:h-[50px] rounded-full flex justify-center items-center shadow-md transition-transform';
+        // Increased touch target size and better visibility
+        const baseClasses = 'w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] rounded-full flex justify-center items-center shadow-lg transition-transform pointer-events-auto';
 
         const isDisabled =
             (direction === 'prev' && currentPage <= 1) ||
             (direction === 'next' && currentPage >= totalPages);
 
         if (isDisabled) {
-            return `${baseClasses} opacity-0 bg-transparent pointer-events-none user-select-none`;
+            return `${baseClasses} opacity-0 pointer-events-none bg-transparent`;
         }
 
-        return `${baseClasses} bg-gray-500/80 hover:bg-pink-500 hover:scale-110 cursor-pointer opacity-90 pointer-events-auto user-select-none`;
+        return `${baseClasses} bg-gray-500/90 hover:bg-pink-500 active:bg-pink-600 hover:scale-110 cursor-pointer`;
     };
 
     return (
@@ -718,24 +733,33 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                             </div>
                         ))}
                     </div>
-                    {/* Navigation Buttons - centered vertically */}
-                    <div className="fixed w-full flex justify-between px-4 top-1/2 transform -translate-y-1/2 z-[5]">
-                        <div
-                            className={getButtonClassName(currentPage, 'prev', totalPages)}
-                            onClick={(e) => goToPrevPage(e)}
+                    {/* Navigation Buttons are now placed outside the viewer container for better touch handling */}
+
+                </div>
+
+                {/* Navigation Buttons - positioned absolutely with improved touch target */}
+                <div className="fixed inset-0 pointer-events-none z-[25]">
+                    <div className="absolute w-full flex justify-between px-2 top-1/2 transform -translate-y-1/2">
+                        <button
+                            className={`${getButtonClassName(currentPage, 'prev', totalPages)} touch-manipulation`}
+                            onClick={goToPrevPage}
+                            onTouchEnd={goToPrevPage}
+                            aria-label="Previous page"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white pointer-events-none user-select-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
                                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
                             </svg>
-                        </div>
-                        <div
-                            className={getButtonClassName(currentPage, 'next', totalPages)}
-                            onClick={(e) => goToNextPage(e)}
+                        </button>
+                        <button
+                            className={`${getButtonClassName(currentPage, 'next', totalPages)} touch-manipulation`}
+                            onClick={goToNextPage}
+                            onTouchEnd={goToNextPage}
+                            aria-label="Next page"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white pointer-events-none user-select-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
                                 <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
                             </svg>
-                        </div>
+                        </button>
                     </div>
                 </div>
 
