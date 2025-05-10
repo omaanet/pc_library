@@ -46,66 +46,6 @@ export function BookDialog({
         setImageLoaded(false);
     }, [book, open]);
 
-    // Memoize cover image to prevent unnecessary re-renders
-    // const coverImage = React.useMemo(() => {
-    //     if (!book?.coverImage) return null;
-
-    //     const { width, height } = DEFAULT_COVER_SIZES.detail;
-    //     // const aspectRatio = width / height;
-    //     const isPlaceholder = book.coverImage === IMAGE_CONFIG.placeholder.token;
-    //     const imageUrl = getCoverImageUrl(
-    //         book.coverImage,
-    //         'detail',
-    //         { bookId: isPlaceholder ? book.id : undefined }
-    //     );
-
-    //     return (
-    //         <div className="relative w-2/3 md:w-1/3 shrink-0">
-    //             <div
-    //                 className="relative w-full rounded-lg bg-muted/30"
-
-    //             >
-    //                 {/* Loading skeleton - shown only during loading */}
-    //                 {!imageLoaded && (
-    //                     <Skeleton className="absolute inset-0 rounded-lg" />
-    //                 )}
-
-    //                 {/* Main image container */}
-    //                 <div className="relative w-full h-full flex items-center justify-center">
-    //                     <Image
-    //                         src={imageUrl}
-    //                         alt={`Cover of ${book.title}`}
-    //                         width={width}
-    //                         height={height}
-    //                         className={cn(
-    //                             "max-w-full max-h-full object-contain transition-opacity duration-400",
-    //                             // `aspect-[${width}/${height}]`,
-    //                             imageLoaded ? "opacity-100" : "opacity-0"
-    //                         )}
-    //                         sizes="(min-width: 768px) 33vw, 100vw"
-    //                         priority={true}
-    //                         quality={90}
-    //                         onLoad={() => setImageLoaded(true)}
-    //                         onError={() => setImageLoaded(true)}
-    //                         unoptimized
-    //                     />
-
-    //                     {/* Audio badge */}
-    //                     {book.hasAudio && (
-    //                         <div className={cn(
-    //                             "absolute top-2 right-2 rounded-full bg-yellow-600/80 p-1.5",
-    //                             "backdrop-blur-sm transition-opacity duration-200",
-    //                             imageLoaded ? "opacity-100" : "opacity-0"
-    //                         )}>
-    //                             <Headphones className="h-6 w-6" />
-    //                         </div>
-    //                     )}
-    //                 </div>
-    //             </div>
-    //         </div>
-    //     );
-    // }, [book, imageLoaded]);
-
     // Audio badge to show on the book cover if the book has audio
     const renderAudioBadge = (book: Book | null, visible: boolean) => {
         if (!book?.hasAudio) return null;

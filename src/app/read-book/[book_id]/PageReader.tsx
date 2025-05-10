@@ -64,7 +64,9 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
     // Get image path for a specific page
     const getImagePath = (pageNum: number) => {
-        return `${CONFIG.sourceCDN ?? CONFIG.imagePrefix}${formatPageNumber(pageNum)}${CONFIG.imageExt}`;
+        // Add anti-cache query param using current time (updates on every request)
+        const antiCache = `?t=${Date.now()}`;
+        return `${CONFIG.sourceCDN ?? CONFIG.imagePrefix}${formatPageNumber(pageNum)}${CONFIG.imageExt}${antiCache}`;
     };
 
     // Get visible pages based on current view mode and page number
