@@ -99,7 +99,7 @@ export default function BookComments({ bookId, isAuthenticated, userName, onLogi
 
     return (
         <div className="flex flex-col h-full min-h-0">
-            <div className="flex-1 overflow-auto" ref={listRef}>
+            <div className="flex-1 overflow-auto min-h-[100px]" ref={listRef}>
                 {loading ? <div className="text-muted-foreground">Caricamento commenti...</div>
                     : error ? <div className="text-red-600">{error}</div>
                         : (comments.length === 0 ? (

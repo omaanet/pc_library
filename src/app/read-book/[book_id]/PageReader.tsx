@@ -18,8 +18,9 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         pageGap: 5, // distance between pages in double view mode (px)
         sidebarCollapsed: true, // whether sidebar starts collapsed (true) or expanded (false)
         //imagePrefix: `read-book/${bookId}/pages/page-`,
+        // imagePrefix: `/epub/${bookId}/pages/page-`,
+        imagePrefix: undefined,
         sourceCDN: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/bookshelf/${bookId}/pages/page-`,
-        imagePrefix: `/epub/${bookId}/pages/page-`,
         imageExt: "-or8.png",
         preloadBuffer: 2, // Number of pages to preload ahead and behind
     };
@@ -32,7 +33,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const toggleSidebarBtnRef = useRef<HTMLButtonElement>(null);
 
     // State variables
-    const [currentPage, setCurrentPage] = useState(CONFIG.pageStart);
+    const [currentPage, setCurrentPage] = useState(Math.max(1, CONFIG.pageStart ?? 1));
     const [viewMode, setViewMode] = useState<"single" | "double">(CONFIG.viewMode);
     const [zoomLevel, setZoomLevel] = useState(CONFIG.zoomLevel);
     const [imagesLoaded, setImagesLoaded] = useState<Record<number, string>>({});
@@ -410,6 +411,13 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
         setIsDragging(false);
 
+        // On pinch end, we want to maintain the zoom level but reset the pinch tracking
+        if (pinchInitialDistance.current !== null) {
+            // Save the current zoom level that was achieved during pinch
+            // by doing nothing here, we maintain the last zoom level set during pinch
+            pinchInitialDistance.current = null;
+        }
+
         // Restore the grab cursor
         if (pagesContainerRef.current) {
             pagesContainerRef.current.style.cursor = 'grab';
@@ -438,7 +446,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         }
     };
 
-    // Handle keyboard navigation
+    // Handle keyboard navigation and zoom controls
     const handleKeyDown = (e: KeyboardEvent) => {
         // Don't handle events when text inputs are focused
         const activeElement = document.activeElement as HTMLElement;
@@ -448,6 +456,25 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 activeElement.tagName === 'TEXTAREA' ||
                 activeElement.isContentEditable)
         ) {
+            return;
+        }
+
+        // Handle keyboard zoom controls (+ and - keys with or without CTRL)
+        if (e.key === '+' || (e.key === 'ArrowUp' && e.ctrlKey)) {
+            e.preventDefault();
+            adjustZoom(10); // Zoom in by 10%
+            return;
+        }
+
+        if (e.key === '-' || (e.key === 'ArrowDown' && e.ctrlKey)) {
+            e.preventDefault();
+            adjustZoom(-10); // Zoom out by 10%
+            return;
+        }
+
+        if (e.key === '0' || (e.key === '0' && e.ctrlKey)) {
+            e.preventDefault();
+            resetZoom(); // Reset zoom to 100%
             return;
         }
 
