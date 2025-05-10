@@ -49,6 +49,8 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const pinchInitialDistance = useRef<number | null>(null);
     const pinchInitialZoom = useRef<number>(CONFIG.zoomLevel);
     const lastTapTime = useRef<number>(0);
+    const pinchInitialMidpoint = useRef<{ x: number; y: number } | null>(null);
+    const pinchInitialTranslate = useRef<{ x: number; y: number } | null>(null);
 
     // Get total pages from book data
     const totalPages = book.pagesCount || 10; // Default to 10 pages if not specified
@@ -331,13 +333,21 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
             pinchInitialDistance.current = dist;
             pinchInitialZoom.current = zoomLevel;
-            return;
+
+            // Calculate and store initial midpoint and translation for pinch origin
+            const initialMidX = (t1.clientX + t2.clientX) / 2;
+            const initialMidY = (t1.clientY + t2.clientY) / 2;
+            pinchInitialMidpoint.current = { x: initialMidX, y: initialMidY };
+            pinchInitialTranslate.current = { x: currentTranslateX, y: currentTranslateY };
+
+            setIsDragging(true); // Enable doDrag for pinch
+            return; // Prevent single-touch drag logic
         }
 
-        // Prevent default behavior
-        // e.preventDefault();
+        // Prevent default behavior for single touch/mouse drag start if needed
+        // e.preventDefault(); // Currently commented, evaluate if needed
 
-        // Get initial position
+        // Get initial position for single touch/mouse drag
         if ('clientX' in e) {
             setDragStartX(e.clientX);
             setDragStartY(e.clientY);
@@ -369,35 +379,48 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             return;
         }
 
-        // Pinch to zoom - simplified approach with direct updates for smoother feel
-        if ('touches' in e && e.touches.length >= 2 && pinchInitialDistance.current !== null) {
+        // Pinch to zoom
+        if ('touches' in e && e.touches.length >= 2 && pinchInitialDistance.current !== null && pinchInitialMidpoint.current && pinchInitialTranslate.current && pinchInitialZoom.current !== null) {
+            e.preventDefault(); // Prevent browser default actions during pinch
             const [t1, t2] = [e.touches[0], e.touches[1]];
-            const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-            const scale = dist / pinchInitialDistance.current;
+            const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            const scaleFactor = currentDist / pinchInitialDistance.current;
 
-            // No transition for pinch - should feel responsive and direct
-            setZoomLevel(prevZoom => {
-                return Math.max(10, Math.min(300, pinchInitialZoom.current * scale));
-            });
-            return;
+            const newZoomLevel = Math.max(10, Math.min(300, pinchInitialZoom.current * scaleFactor));
+            setZoomLevel(newZoomLevel);
+
+            // Calculate current midpoint
+            const currentMidX = (t1.clientX + t2.clientX) / 2;
+            const currentMidY = (t1.clientY + t2.clientY) / 2;
+
+            // Adjust translation to keep content under pinch midpoint stable
+            const zoomRatio = newZoomLevel / pinchInitialZoom.current;
+            const newTranslateX = currentMidX - (pinchInitialMidpoint.current.x - pinchInitialTranslate.current.x) * zoomRatio;
+            const newTranslateY = currentMidY - (pinchInitialMidpoint.current.y - pinchInitialTranslate.current.y) * zoomRatio;
+
+            setCurrentTranslateX(newTranslateX);
+            setCurrentTranslateY(newTranslateY);
+            return; // Pinch handled
         }
 
-        // Prevent default behavior
-        // e.preventDefault();
+        // Panning logic (single touch or mouse)
+        if ('touches' in e) {
+            e.preventDefault(); // Prevent browser default actions during touch pan
+        }
 
         let clientX: number, clientY: number;
 
         if ('clientX' in e) {
             clientX = e.clientX;
             clientY = e.clientY;
-        } else if (e.touches && e.touches.length > 0) {
+        } else if (e.touches && e.touches.length > 0) { // Should be 1 touch if it reaches here
             clientX = e.touches[0].clientX;
             clientY = e.touches[0].clientY;
         } else {
-            return;
+            return; // No relevant event data / or more than 1 touch but not pinch-ready
         }
 
-        // Calculate new position
+        // Calculate new position for panning
         const deltaX = clientX - dragStartX;
         const deltaY = clientY - dragStartY;
 
@@ -408,17 +431,15 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     // End drag
     const endDrag = () => {
         if (!isDragging) return;
-
         setIsDragging(false);
 
-        // On pinch end, we want to maintain the zoom level but reset the pinch tracking
-        if (pinchInitialDistance.current !== null) {
-            // Save the current zoom level that was achieved during pinch
-            // by doing nothing here, we maintain the last zoom level set during pinch
-            pinchInitialDistance.current = null;
-        }
+        // Reset pinch-specific states
+        pinchInitialDistance.current = null;
+        // pinchInitialZoom.current is the new base zoom, no need to reset to CONFIG default here.
+        pinchInitialMidpoint.current = null;
+        pinchInitialTranslate.current = null;
 
-        // Restore the grab cursor
+        // Update cursor style
         if (pagesContainerRef.current) {
             pagesContainerRef.current.style.cursor = 'grab';
         }

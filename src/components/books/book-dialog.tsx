@@ -166,7 +166,7 @@ export function BookDialog({
                                     {/* Comments section: header, scrollable list, posting form at bottom */}
                                     <div className="flex-1 flex flex-col min-h-0 bg-muted/40 rounded px-4 py-2">
                                         <h3 className="text-md sm:text-lg font-medium mb-2 text-cyan-400">Commenti</h3>
-                                        <div className="flex-1 min-h-0 pr-0">
+                                        <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                                             <BookComments
                                                 bookId={book.id}
                                                 isAuthenticated={isAuthenticated}
