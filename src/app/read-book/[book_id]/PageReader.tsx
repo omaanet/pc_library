@@ -719,7 +719,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                         ))}
                     </div>
                     {/* Navigation Buttons - centered vertically */}
-                    <div className="fixed w-full flex justify-between px-4 top-1/2 transform -translate-y-1/2 z-[5] pointer-events-none">
+                    <div className="fixed w-full flex justify-between px-4 top-1/2 transform -translate-y-1/2 z-[5]">
                         <div
                             className={getButtonClassName(currentPage, 'prev', totalPages)}
                             onClick={(e) => goToPrevPage(e)}
@@ -740,7 +740,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 </div>
 
                 {/* Page Info */}
-                <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-sm text-gray-900 py-1 px-6 rounded-full shadow-sm z-[15] pointer-events-none">
+                <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-sm sm:text-lg text-gray-900 py-1 px-6 rounded-full shadow-sm z-[15] pointer-events-none user-select-none">
                     {getPageInfoText()}
                 </div>
 
