@@ -64,4 +64,4 @@ db/dump.sql
 db/dump-REMOVE-postgreSQL.sql
 
 to_implement.md
-public/epub
+public/_epub
