@@ -18,9 +18,10 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         pageGap: 5, // distance between pages in double view mode (px)
         sidebarCollapsed: true, // whether sidebar starts collapsed (true) or expanded (false)
         //imagePrefix: `read-book/${bookId}/pages/page-`,
+        sourceCDN: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/bookshelf/${bookId}/pages/page-`,
         imagePrefix: `/epub/${bookId}/pages/page-`,
         imageExt: "-or8.png",
-        preloadBuffer: 3, // Number of pages to preload ahead and behind
+        preloadBuffer: 2, // Number of pages to preload ahead and behind
     };
 
     // References to DOM elements
@@ -63,7 +64,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
     // Get image path for a specific page
     const getImagePath = (pageNum: number) => {
-        return `${CONFIG.imagePrefix}${formatPageNumber(pageNum)}${CONFIG.imageExt}`;
+        return `${CONFIG.sourceCDN ?? CONFIG.imagePrefix}${formatPageNumber(pageNum)}${CONFIG.imageExt}`;
     };
 
     // Get visible pages based on current view mode and page number
@@ -559,7 +560,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     };
 
     return (
-        <div className="h-full w-full">
+        <div className="relative h-full w-full">
             {/* <div
                 id="debug"
                 style={{
@@ -716,7 +717,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                         ))}
                     </div>
                     {/* Navigation Buttons - centered vertically */}
-                    <div className="absolute w-full flex justify-between px-4 top-1/2 transform -translate-y-1/2 z-[5] pointer-events-none">
+                    <div className="fixed w-full flex justify-between px-4 top-1/2 transform -translate-y-1/2 z-[5] pointer-events-none">
                         <div
                             className={getButtonClassName(currentPage, 'prev', totalPages)}
                             onClick={(e) => goToPrevPage(e)}
@@ -737,7 +738,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 </div>
 
                 {/* Page Info */}
-                <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-sm text-gray-900 py-1 px-6 rounded-full shadow-sm z-[15] pointer-events-none">
+                <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-sm text-gray-900 py-1 px-6 rounded-full shadow-sm z-[15] pointer-events-none">
                     {getPageInfoText()}
                 </div>
 
