@@ -59,7 +59,16 @@ export function RootNav({
 
                 {/* Actions */}
                 <div className="flex items-center space-x-4">
-                    <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Mail className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" /> <span className="align-middle">racconti@pierocarbonetti.it</span></div>
+                    <div className="inline-flex items-center text-xs sm:text-sm text-muted-foreground">
+                        <a
+                            href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#114;&#97;&#99;&#99;&#111;&#110;&#116;&#105;&#64;&#112;&#105;&#101;&#114;&#111;&#99;&#97;&#114;&#98;&#111;&#110;&#101;&#116;&#116;&#105;&#46;&#105;&#116;"
+                            className="flex items-center gap-1.5 align-middle hover:text-yellow-400 transition-colors"
+                            rel="nofollow"
+                        >
+                            <Mail className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                            <span className="whitespace-nowrap">&#114;&#97;&#99;&#99;&#111;&#110;&#116;&#105;&#64;&#112;&#105;&#101;&#114;&#111;&#99;&#97;&#114;&#98;&#111;&#110;&#101;&#116;&#116;&#105;&#46;&#105;&#116;</span>
+                        </a>
+                    </div>
 
                     <ThemeSwitcher />
 
@@ -67,9 +76,9 @@ export function RootNav({
                     {isAuthenticated ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-3">
+                                <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-3 text-xs sm:text-sm">
                                     <UserCircle className="h-5 w-5" />
-                                    <span className="font-medium text-sm">{state.user?.name || 'Utente'}</span>
+                                    <span className="font-medium">{state.user?.name || 'Utente'}</span>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -100,7 +109,7 @@ export function RootNav({
                             variant="outline"
                             size="default"
                             onClick={onAuthClick}
-                            className="h-9"
+                            className="h-9 text-xs sm:text-sm"
                         >
                             Accedi
                         </Button>
