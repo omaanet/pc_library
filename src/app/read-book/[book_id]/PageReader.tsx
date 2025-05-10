@@ -195,8 +195,6 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             e.preventDefault();
         }
 
-        console.log("prev");
-
         if (currentPage > 1) {
             // Play a subtle haptic feedback on mobile if available
             if (navigator.vibrate) {
@@ -221,8 +219,6 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             e.stopPropagation();
             e.preventDefault();
         }
-
-        console.log("next");
 
         if (currentPage < totalPages) {
             // Play a subtle haptic feedback on mobile if available
@@ -308,6 +304,11 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         if (e) {
             e.stopPropagation();
             e.preventDefault();
+        }
+
+        // Play a subtle haptic feedback on mobile if available
+        if (navigator.vibrate) {
+            navigator.vibrate(40);
         }
 
         setIsSidebarCollapsed((prev) => !prev);
@@ -563,7 +564,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         totalPages: number
     ): string => {
         // Increased touch target size and better visibility
-        const baseClasses = 'w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] rounded-full flex justify-center items-center shadow-lg transition-transform pointer-events-auto';
+        const baseClasses = 'w-[30px] h-[45px] sm:w-[45px] sm:h-[45px] rounded-full flex justify-center items-center shadow-lg transition-transform pointer-events-auto';
 
         const isDisabled =
             (direction === 'prev' && currentPage <= 1) ||
@@ -739,14 +740,14 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
                 {/* Navigation Buttons - positioned absolutely with improved touch target */}
                 <div className="fixed inset-0 pointer-events-none z-[25]">
-                    <div className="absolute w-full flex justify-between px-2 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute w-full flex justify-between px-1 sm:px-4 top-1/2 transform -translate-y-1/2">
                         <button
                             className={`${getButtonClassName(currentPage, 'prev', totalPages)} touch-manipulation`}
                             onClick={goToPrevPage}
                             onTouchEnd={goToPrevPage}
                             aria-label="Previous page"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6 sm:w-7 sm:h-7 fill-gray-100 hover:fill-white">
                                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
                             </svg>
                         </button>
@@ -756,7 +757,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                             onTouchEnd={goToNextPage}
                             aria-label="Next page"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6 sm:w-7 sm:h-7 fill-gray-100 hover:fill-white">
                                 <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
                             </svg>
                         </button>
@@ -764,7 +765,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 </div>
 
                 {/* Page Info */}
-                <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-sm sm:text-lg text-gray-900 py-1 px-6 rounded-full shadow-sm z-[15] pointer-events-none user-select-none">
+                <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-xs sm:text-sm text-gray-900 py-1 px-4 sm:py-1 sm:px-5 rounded-full shadow-sm z-[15] pointer-events-none user-select-none">
                     {getPageInfoText()}
                 </div>
 

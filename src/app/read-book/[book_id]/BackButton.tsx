@@ -8,6 +8,10 @@ export function BackButton() {
     const router = useRouter();
 
     const handleBackClick = () => {
+        // Play a subtle haptic feedback on mobile if available
+        if (navigator.vibrate) {
+            navigator.vibrate(40);
+        }
         router.back();
     };
 
