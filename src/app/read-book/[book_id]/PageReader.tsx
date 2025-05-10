@@ -555,10 +555,10 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             (direction === 'next' && currentPage >= totalPages);
 
         if (isDisabled) {
-            return `${baseClasses} opacity-0 pointer-events-none bg-transparent`;
+            return `${baseClasses} opacity-0 bg-transparent pointer-events-none user-select-none`;
         }
 
-        return `${baseClasses} bg-gray-500/80 hover:bg-pink-500 hover:scale-110 cursor-pointer opacity-80 pointer-events-auto`;
+        return `${baseClasses} bg-gray-500/80 hover:bg-pink-500 hover:scale-110 cursor-pointer opacity-90 pointer-events-auto user-select-none`;
     };
 
     return (
@@ -598,7 +598,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             >
                 <button
                     ref={toggleSidebarBtnRef}
-                    className="absolute top-[62px] -left-[29px] w-[28px] h-[36px] rounded-sm bg-sky-500/50 hover:bg-sky-600 flex justify-center items-center cursor-pointer shadow-sm border-none text-white p-0 z-[11] transform -translate-y-1/2 transition-colors"
+                    className="absolute top-[62px] -left-[29px] w-[28px] h-[36px] rounded-sm bg-sky-500/50 hover:bg-sky-600 flex justify-center items-center cursor-pointer shadow-sm border-none text-white p-0 z-[11] transform -translate-y-1/2 transition-colors user-select-none"
                     onClick={(e) => toggleSidebar(e)}
                     aria-label="Toggle sidebar"
                 >
@@ -724,7 +724,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                             className={getButtonClassName(currentPage, 'prev', totalPages)}
                             onClick={(e) => goToPrevPage(e)}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white pointer-events-none user-select-none">
                                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
                             </svg>
                         </div>
@@ -732,7 +732,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                             className={getButtonClassName(currentPage, 'next', totalPages)}
                             onClick={(e) => goToNextPage(e)}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-7 h-7 fill-gray-100 hover:fill-white pointer-events-none user-select-none">
                                 <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
                             </svg>
                         </div>
