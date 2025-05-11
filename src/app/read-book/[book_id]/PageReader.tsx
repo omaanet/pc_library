@@ -12,7 +12,7 @@ interface PageReaderProps {
 export default function PageReader({ book, bookId }: PageReaderProps) {
     // Configuration
     const CONFIG = {
-        viewMode: "single" as "single" | "double", // 'single' or 'double'
+        viewMode: "double" as "single" | "double", // 'single' or 'double'
         zoomLevel: 100, // percentage
         pageStart: 1,
         pageGap: 5, // distance between pages in double view mode (px)
@@ -198,9 +198,9 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
         if (currentPage > 1) {
             // Play a subtle haptic feedback on mobile if available
-            if (navigator.vibrate) {
-                navigator.vibrate(40);
-            }
+            // if (navigator.vibrate) {
+            //     navigator.vibrate(40);
+            // }
 
             // Reset translation when changing page
             // resetTranslation();
@@ -223,9 +223,9 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
 
         if (currentPage < totalPages) {
             // Play a subtle haptic feedback on mobile if available
-            if (navigator.vibrate) {
-                navigator.vibrate(40);
-            }
+            // if (navigator.vibrate) {
+            //     navigator.vibrate(40);
+            // }
 
             // Reset translation when changing page
             // resetTranslation();
