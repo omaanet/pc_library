@@ -364,42 +364,49 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
     }
     if (book.audioLength !== undefined) {
         updates.push('audio_length = $' + (updates.length + 1));
-        values.push(book.audioLength || null);
+        values.push(book.audioLength);
     }
     if (book.extract !== undefined) {
         updates.push('extract = $' + (updates.length + 1));
-        values.push(book.extract || null);
+        values.push(book.extract);
     }
     if (book.rating !== undefined) {
         updates.push('rating = $' + (updates.length + 1));
-        values.push(book.rating || null);
+        values.push(book.rating);
     }
     if (book.isPreview !== undefined) {
         updates.push('is_preview = $' + (updates.length + 1));
-        values.push(book.isPreview ? 1 : null);
+        values.push(book.isPreview ? 1 : 0);
     }
     if (book.isVisible !== undefined) {
         updates.push('is_visible = $' + (updates.length + 1));
-        values.push(book.isVisible || null);
+        values.push(book.isVisible ? 1 : 0);
     }
     if (book.displayOrder !== undefined) {
         updates.push('display_order = $' + (updates.length + 1));
-        values.push(book.displayOrder || null);
+        values.push(book.displayOrder);
     }
     if (book.pagesCount !== undefined) {
         updates.push('pages_count = $' + (updates.length + 1));
-        values.push(book.pagesCount || null);
+        values.push(book.pagesCount);
     }
-    // Add updated_at timestamp
-    updates.push('updated_at = NOW()');
     if (updates.length === 0) {
         return false; // Nothing to update
     }
+    // Add updated_at timestamp
+    updates.push('updated_at = NOW()');
     // Add the id to the values array
     values.push(id);
-    const sql = `UPDATE books SET ${updates.join(', ')} WHERE id = $${values.length}`;
-    const res = await client.query(sql, values);
-    return res.rowCount > 0;
+    // Build SQL with RETURNING to get affected rows
+    const sql = `UPDATE books SET ${updates.join(', ')} WHERE id = $${values.length} RETURNING id`;
+    // console.log('[updateBook] id:', id);
+    // console.log('[updateBook] updates clauses:', updates);
+    // console.log('[updateBook] SQL:', sql);
+    // console.log('[updateBook] values:', values);
+    // Neon serverless client returns an array of rows
+    const rows = await client.query(sql, values);
+    // console.log('[updateBook] result rows:', rows);
+    return rows.length > 0;
 }
 
 /**

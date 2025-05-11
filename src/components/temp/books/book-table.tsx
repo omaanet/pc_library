@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Pencil,
     Trash2,
@@ -11,10 +11,7 @@ import {
     Search,
     RefreshCw,
     Eye,
-    EyeOff,
-    Check,
-    Upload,
-    Loader2
+    EyeOff
 } from 'lucide-react';
 import { formatDate, formatAudioLength } from '@/lib/utils';
 import { getCoverImageUrl } from '@/lib/image-utils';
@@ -46,45 +43,58 @@ interface BookTableProps {
     onDelete: (id: string) => Promise<boolean>;
     onRefresh: () => void;
     isLoading: boolean;
+
+    // Props for external filter/sort state
+    searchTerm?: string;
+    setSearchTerm?: (term: string) => void;
+    showAudioOnly?: boolean;
+    setShowAudioOnly?: (show: boolean) => void;
+    sortField?: SortField;
+    setSortField?: (field: SortField) => void;
+    sortDirection?: SortDirection;
+    setSortDirection?: (direction: SortDirection) => void;
 }
 
-type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'book_id' | 'epub' | 'displayOrder' | 'isVisible';
+type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'book_id' | 'displayOrder' | 'isVisible';
 type SortDirection = 'asc' | 'desc';
 
-export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: BookTableProps) {
-    const [epubExists, setEpubExists] = useState<{ [bookId: string]: boolean }>({});
-    const [epubLoading, setEpubLoading] = useState<{ [bookId: string]: boolean }>({});
-    const [docxDialogBook, setDocxDialogBook] = useState<Book | null>(null);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [uploading, setUploading] = useState(false);
+export function BookTable({
+    books,
+    onEdit,
+    onDelete,
+    onRefresh,
+    isLoading,
+    searchTerm: externalSearchTerm,
+    setSearchTerm: externalSetSearchTerm,
+    showAudioOnly: externalShowAudioOnly,
+    setShowAudioOnly: externalSetShowAudioOnly,
+    sortField: externalSortField,
+    setSortField: externalSetSortField,
+    sortDirection: externalSortDirection,
+    setSortDirection: externalSetSortDirection
+}: BookTableProps) {
+    // Use local state when external state is not provided
+    const [localSearchTerm, setLocalSearchTerm] = useState('');
+    const [localShowAudioOnly, setLocalShowAudioOnly] = useState(false);
+    const [localSortField, setLocalSortField] = useState<SortField>('title');
+    const [localSortDirection, setLocalSortDirection] = useState<SortDirection>('asc');
 
-    useEffect(() => {
-        books.forEach(book => {
-            setEpubLoading(prev => ({ ...prev, [book.id]: true }));
-        });
-    }, [books]);
-
-    // useEffect(() => {
-    //     books.forEach(book => {
-    //         if (/*!book.hasAudio &&*/ epubExists[book.id] === undefined && !epubLoading[book.id]) {
-    //             setEpubLoading(prev => ({ ...prev, [book.id]: true }));
-    //             /*
-    //             fetch(`/epub/${book.id}/output.epub`, { method: 'HEAD' })
-    //                 .then(res => setEpubExists(prev => ({ ...prev, [book.id]: res.ok })))
-    //                 .catch(() => setEpubExists(prev => ({ ...prev, [book.id]: false })))
-    //                 .finally(() => setEpubLoading(prev => ({ ...prev, [book.id]: false })));
-    //             */
-    //         }
-    //     });
-    // }, [books, epubExists, epubLoading]);
-
-    const [searchTerm, setSearchTerm] = useState('');
-    const [showAudioOnly, setShowAudioOnly] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [sortField, setSortField] = useState<SortField>('title');
-    const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+    // Use external state if provided, otherwise use local state
+    const searchTerm = externalSetSearchTerm ? (externalSearchTerm ?? '') : localSearchTerm;
+    const setSearchTerm = externalSetSearchTerm || setLocalSearchTerm;
+
+    const showAudioOnly = externalSetShowAudioOnly ? (externalShowAudioOnly ?? false) : localShowAudioOnly;
+    const setShowAudioOnly = externalSetShowAudioOnly || setLocalShowAudioOnly;
+
+    const sortField = externalSetSortField ? (externalSortField ?? 'title') : localSortField;
+    const setSortField = externalSetSortField || setLocalSortField;
+
+    const sortDirection = externalSetSortDirection ? (externalSortDirection ?? 'asc') : localSortDirection;
+    const setSortDirection = externalSetSortDirection || setLocalSortDirection;
 
     // Handle sorting
     const handleSort = (field: SortField) => {
@@ -135,12 +145,7 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
                 return sortDirection === 'asc'
                     ? a.id.localeCompare(b.id)
                     : b.id.localeCompare(a.id);
-            } else if (sortField === 'epub') {
-                const aEpub = !!epubExists[a.id];
-                const bEpub = !!epubExists[b.id];
-                return sortDirection === 'asc'
-                    ? (aEpub === bEpub ? 0 : aEpub ? 1 : -1)
-                    : (aEpub === bEpub ? 0 : aEpub ? -1 : 1);
+
             } else if (sortField === 'displayOrder') {
                 return sortDirection === 'asc'
                     ? ((a.displayOrder ?? 0) - (b.displayOrder ?? 0))
@@ -250,9 +255,7 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
                                     Preview {getSortIcon('isPreview')}
                                 </Button>
                             </TableHead>
-                            <TableHead className="w-20 cursor-pointer select-none" onClick={() => handleSort('epub')}>
-                                EPUB {getSortIcon('epub')}
-                            </TableHead>
+
                             <TableHead className="text-xs text-muted-foreground text-center cursor-pointer select-none" onClick={() => handleSort('displayOrder')}>
                                 Display order {getSortIcon('displayOrder')}
                             </TableHead>
@@ -265,7 +268,7 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
                     <TableBody>
                         {filteredBooks.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={9} className="h-24 text-center">
+                                <TableCell colSpan={8} className="h-24 text-center">
                                     {isLoading ? 'Loading books...' : 'No books found.'}
                                 </TableCell>
                             </TableRow>
@@ -286,26 +289,12 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
                                             <Eye className="h-4 w-4 text-muted-foreground mx-auto" />
                                         ) : null}
                                     </TableCell>
-                                    <TableCell className="text-center">
-                                        {epubLoading[book.id] ? (
-                                            <span className="text-muted-foreground">...</span>
-                                        ) : epubExists[book.id] ? (
-                                            <Check className="h-5 w-5 text-green-600" aria-label="EPUB present" />
-                                        ) : null}
-                                    </TableCell>
                                     <TableCell className="text-xs whitespace-nowrap text-center">{book.displayOrder}</TableCell>
                                     <TableCell className="text-xs whitespace-nowrap text-center">
                                         {book.isVisible ? null : <EyeOff className="h-4 w-4 text-muted-foreground mx-auto" aria-label="Hidden" />}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2 items-center">
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={() => setDocxDialogBook(book)}
-                                            >
-                                                <Upload className="h-4 w-4" />
-                                            </Button>
                                             <Button
                                                 variant="outline"
                                                 size="icon"
@@ -352,65 +341,6 @@ export function BookTable({ books, onEdit, onDelete, onRefresh, isLoading }: Boo
                             disabled={isDeleting}
                         >
                             {isDeleting ? 'Deleting...' : 'Delete'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={!!docxDialogBook} onOpenChange={() => { setDocxDialogBook(null); setSelectedFile(null); }}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-semibold text-cyan-600">Upload DOCX</DialogTitle>
-                        <DialogDescription>{docxDialogBook?.title}</DialogDescription>
-                    </DialogHeader>
-                    <div className="flex justify-center px-2">
-                        <input
-                            className="file:border-0 file:bg-teal-600 file:text-white file:font-medium file:text-sm file:px-3 file:py-2 file:rounded-md file:cursor-pointer"
-                            type="file"
-                            accept=".docx"
-                            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                            disabled={uploading}
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => { setDocxDialogBook(null); setSelectedFile(null); }} disabled={uploading}>
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="default"
-                            className="bg-pink-500 text-white hover:bg-pink-400 disabled:bg-pink-700/70 disabled:text-gray-200"
-                            onClick={async () => {
-                                if (!selectedFile || !docxDialogBook) return;
-                                setUploading(true);
-                                const formData = new FormData();
-                                formData.append('file', selectedFile);
-                                formData.append('title', docxDialogBook.title);
-                                try {
-                                    const res = await fetch(`/api/docx-to-epub/${docxDialogBook.id}`, { method: 'POST', body: formData });
-                                    const data = await res.json();
-                                    if (data.success) {
-                                        // Use API response to update EPUB existence
-                                        setEpubExists(prev => ({ ...prev, [docxDialogBook.id!]: data.exists }));
-                                    } else {
-                                        console.error(data.error);
-                                    }
-                                } catch (err) {
-                                    console.error(err);
-                                } finally {
-                                    setUploading(false);
-                                    setDocxDialogBook(null);
-                                    setSelectedFile(null);
-                                }
-                            }}
-                            disabled={!selectedFile || uploading}
-                        >
-                            <span className="inline-block w-[90px] text-center">
-                                {uploading ? (
-                                    <Loader2 className="mx-auto h-5 w-5 animate-spin" aria-label="Uploading..." />
-                                ) : (
-                                    'Upload'
-                                )}
-                            </span>
                         </Button>
                     </DialogFooter>
                 </DialogContent>

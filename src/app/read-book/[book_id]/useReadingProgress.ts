@@ -1,25 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 
 /**
- * Hook for managing reading progress (location for EPUB, timestamp for audio) in localStorage.
+ * Hook for managing audio reading progress (timestamp) in localStorage.
  * @param bookId string
- * @param format 'epub' | 'audio'
  */
-export function useReadingProgress(bookId: string, format: 'epub' | 'audio') {
-    const key = `read-progress:${bookId}:${format}`;
-    const [progress, setProgress] = useState<string | number | undefined>(undefined);
+export function useReadingProgress(bookId: string) {
+    const key = `read-progress:${bookId}:audio`;
+    const [progress, setProgress] = useState<number | undefined>(undefined);
 
     // Load progress from localStorage
     useEffect(() => {
         const stored = localStorage.getItem(key);
         if (stored) {
-            setProgress(format === 'audio' ? Number(stored) : stored);
+            setProgress(Number(stored));
         }
-    }, [key, format]);
+    }, [key]);
 
     // Save progress to localStorage
     const saveProgress = useCallback(
-        (value: string | number) => {
+        (value: number) => {
             setProgress(value);
             localStorage.setItem(key, String(value));
         },

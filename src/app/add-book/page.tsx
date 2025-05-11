@@ -22,6 +22,13 @@ export default function AddBookPage() {
     const [editingBook, setEditingBook] = useState<Book | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showAudioTracks, setShowAudioTracks] = useState(false);
+    
+    // Filter and sorting state
+    const [searchTerm, setSearchTerm] = useState('');
+    const [showAudioOnly, setShowAudioOnly] = useState(false);
+    const [sortField, setSortField] = useState<'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'book_id' | 'displayOrder' | 'isVisible'>('title');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    
     // Test mail and env state
     const [envVars, setEnvVars] = useState<Record<string, string | undefined>>({});
     const [to, setTo] = useState('oscar@omaa.it');
@@ -94,6 +101,7 @@ export default function AddBookPage() {
     const handleEdit = (book: Book) => {
         setEditingBook(book);
         setActiveTab('add');
+        // Preserve filter/sort state
     };
 
     // Handle cancel button click
@@ -152,6 +160,14 @@ export default function AddBookPage() {
                                 onDelete={deleteBook}
                                 onRefresh={fetchBooks}
                                 isLoading={loading}
+                                searchTerm={searchTerm}
+                                setSearchTerm={setSearchTerm}
+                                showAudioOnly={showAudioOnly}
+                                setShowAudioOnly={setShowAudioOnly}
+                                sortField={sortField}
+                                setSortField={setSortField}
+                                sortDirection={sortDirection}
+                                setSortDirection={setSortDirection}
                             />
                         </CardContent>
                     </Card>

@@ -17,8 +17,6 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         pageStart: 1,
         pageGap: 5, // distance between pages in double view mode (px)
         sidebarCollapsed: true, // whether sidebar starts collapsed (true) or expanded (false)
-        //imagePrefix: `read-book/${bookId}/pages/page-`,
-        // imagePrefix: `/epub/${bookId}/pages/page-`,
         imagePrefix: undefined,
         sourceCDN: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/bookshelf/${bookId}/pages/page-`,
         imageExt: "-or8.png",

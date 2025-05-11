@@ -6,23 +6,23 @@ import { useAuth } from '@/context/auth-context';
 import { BookGridCard } from './book-grid-card';
 import { BookListCard } from './book-list-card';
 import { BookDialog } from './book-dialog';
-import { ViewSwitcher } from '@/components/shared/view-switcher';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+// import { ViewSwitcher } from '@/components/shared/view-switcher';
+// import {
+//     Select,
+//     SelectContent,
+//     SelectItem,
+//     SelectTrigger,
+//     SelectValue,
+// } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, AlertCircle, BookOpen } from 'lucide-react';
+import { Loader2, AlertCircle, BookOpen, Headphones } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BookGridSkeleton, BookListSkeleton } from '@/components/ui/loading-placeholder';
-import { DEFAULT_COVER_SIZES } from '@/types/images';
+// import { DEFAULT_COVER_SIZES } from '@/types/images';
 import type { LibrarySort } from '@/types/context';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 import { AuthModal } from '@/components/auth/auth-modal';
@@ -463,14 +463,14 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                         disabled={showLoadingState}
                     />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-row flex-nowrap items-center gap-2 hover:text-yellow-400 cursor-pointer">
                     <Switch
                         id="audioFilter"
                         checked={filters.hasAudio}
                         onCheckedChange={handleAudioFilterChange}
                         disabled={showLoadingState}
                     />
-                    <Label htmlFor="audioFilter">Audio Racconti</Label>
+                    <Label htmlFor="audioFilter" className="flex flex-row items-center gap-2"><Headphones className="h-4 w-4" />solo Audio Racconti</Label>
                 </div>
             </div>
 
@@ -529,7 +529,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                         </>
                     ) : (
                         <div className="text-center py-8 text-muted-foreground">
-                            No books found. Try adjusting your search or filters.
+                            Nessun libro trovato. Prova a modificare la ricerca o i filtri.
                         </div>
                     )}
                 </div>

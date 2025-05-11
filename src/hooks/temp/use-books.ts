@@ -25,8 +25,7 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
             }
 
             const data = await response.json();
-
-            console.debug(data);
+            // console.debug(data);
 
             // New backend returns { data, pagination }
             setBooks(data.books || []);
