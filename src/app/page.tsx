@@ -12,18 +12,28 @@ import { useAuth } from '@/context/auth-context';
 // import { Button } from '@/components/ui/button';
 import { Book as BookIcon, Headphones } from 'lucide-react';
 // import { cn } from '@/lib/utils';
+import { DEFAULT_COVER_SIZES } from '@/types/images';
+import { CopyrightFooter } from '@/components/shared/copyright-footer';
+// import { useLogger } from '@/lib/logging.client';
 
 import dynamic from 'next/dynamic';
 const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), { ssr: false });
-import { DEFAULT_COVER_SIZES } from '@/types/images';
-import { CopyrightFooter } from '@/components/shared/copyright-footer';
 
 export default function HomePage() {
+    // const source = 'HomePage';
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const { state: { isAuthenticated, user } } = useAuth();
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
+
+    /*
+    const { info } = useLogger(source);
+
+    useEffect(() => {
+        info('TEST');
+    }, []);
+    */
 
     useEffect(() => {
         async function fetchPreviewBooks() {

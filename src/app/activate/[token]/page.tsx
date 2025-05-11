@@ -6,6 +6,7 @@ import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { useLogger } from '@/lib/logging';
 
 export default function ActivationPage() {
     const router = useRouter();
@@ -13,10 +14,13 @@ export default function ActivationPage() {
     const { state, dispatch } = useAuth();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('Attivazione del tuo account...');
+    const logger = useLogger('ActivationPage');
 
     useEffect(() => {
         const activateAccount = async () => {
             try {
+                logger.info('Starting account activation process', { tokenExists: !!token });
+
                 const response = await fetch('/api/auth/activate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -28,9 +32,11 @@ export default function ActivationPage() {
 
                 if (response.ok) {
                     if (data.alreadyActivated) {
+                        logger.info('Account already activated', { userId: data.user?.id });
                         setStatus('success');
                         setMessage(data.message || 'Il tuo account è già stato attivato. Puoi effettuare il login.');
                     } else {
+                        logger.info('Account successfully activated', { userId: data.user?.id });
                         setStatus('success');
                         setMessage('Il tuo account è stato attivato con successo! Verrai reindirizzato alla pagina iniziale.');
                         dispatch({ type: 'SET_USER', payload: data.user });
@@ -42,19 +48,36 @@ export default function ActivationPage() {
                         }, 3000);
                     }
                 } else {
+                    // Log specific API errors
+                    logger.error('Account activation API error', {
+                        statusCode: response.status,
+                        statusText: response.statusText,
+                        errorMessage: data.error,
+                        token: token.substring(0, 4) + '...' // Log partial token for debugging
+                    });
+
                     setStatus('error');
                     setMessage(data.error || 'Impossibile attivare l\'account. Riprova o contatta il supporto.');
                 }
             } catch (error) {
+                // Log unexpected errors with full details
+                logger.error('Unexpected error during account activation', error, {
+                    token: token.substring(0, 4) + '...', // Log partial token for debugging
+                    step: 'activateAccount'
+                });
+
                 setStatus('error');
                 setMessage('Si è verificato un errore imprevisto. Riprova più tardi o contatta il supporto.');
-                console.error('Activation error:', error);
             }
         };
 
         if (!state.isAuthenticated) {
             activateAccount();
         } else {
+            logger.warning('Attempted activation while already authenticated', {
+                isAuthenticated: state.isAuthenticated,
+                userId: state.user?.id
+            });
             setStatus('error');
             setMessage('Sei già autenticato. Disconnettiti prima di attivare un nuovo account.');
         }
