@@ -3,6 +3,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
-import type { LoginCredentials, RegisterCredentials } from '@/types/context';
+import type { LoginCredentials, RegisterCredentials, RegisterResponse } from '@/types/context';
+import { USE_NEW_AUTH_FLOW } from '@/config/auth-config';
 
 interface AuthModalProps {
     open: boolean;
@@ -40,12 +42,17 @@ export function AuthModal({
         fullName: '',
     });
 
+    // For redirection countdown after registration with new auth flow
+    const [redirectCountdown, setRedirectCountdown] = React.useState<number | null>(null);
+    const router = useRouter();
+
     // Reset state when modal closes
     React.useEffect(() => {
         if (!open) {
             setLoginData({ email: '', password: '' });
             setRegisterData({ email: '', fullName: '' });
             setMessage(null);
+            setRedirectCountdown(null);
             dispatch({ type: 'SET_ERROR', payload: null });
         }
     }, [open]);
@@ -53,18 +60,38 @@ export function AuthModal({
     // Clear all errors on open/close
     React.useEffect(() => {
         setMessage(null);
+        setRedirectCountdown(null);
         dispatch({ type: 'SET_ERROR', payload: null });
     }, [open]);
+
+    // Handle countdown for redirect
+    React.useEffect(() => {
+        if (redirectCountdown !== null && redirectCountdown > 0) {
+            const timer = setTimeout(() => {
+                setRedirectCountdown(redirectCountdown - 1);
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        } else if (redirectCountdown === 0) {
+            router.push('/');
+            onOpenChange(false);
+        }
+    }, [redirectCountdown, router, onOpenChange]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage(null);
 
         try {
-            await login(loginData);
+            // If using new auth flow, we only need email
+            if (USE_NEW_AUTH_FLOW) {
+                await login({ email: loginData.email });
+            } else {
+                await login(loginData);
+            }
             onOpenChange(false);
         } catch (error_catched) {
-            setMessage({ text: error_catched instanceof Error ? error_catched.message : 'Login fallito', type: 'error', tab: 'login' });
+            setMessage({ text: error_catched instanceof Error ? error_catched.message : 'Accesso fallito', type: 'error', tab: 'login' });
         }
     };
 
@@ -73,8 +100,25 @@ export function AuthModal({
         setMessage(null);
 
         try {
-            await register(registerData);
-            setMessage({ text: 'Registrazione effettuata con successo! Controlla la tua email per attivare il tuo account.', type: 'success', tab: 'register' });
+            const response = await register(registerData);
+
+            // Handle different behavior for new auth flow
+            if (USE_NEW_AUTH_FLOW && response.redirectAfterSeconds) {
+                // For new auth flow, start countdown for redirection
+                setRedirectCountdown(response.redirectAfterSeconds);
+                setMessage({
+                    text: 'Registrazione effettuata con successo! Sarai reindirizzato alla home page.',
+                    type: 'success',
+                    tab: 'register'
+                });
+            } else {
+                // For old auth flow, show standard success message
+                setMessage({
+                    text: 'Registrazione effettuata con successo! Controlla la tua email per attivare il tuo account.',
+                    type: 'success',
+                    tab: 'register'
+                });
+            }
         } catch (error_catched) {
             setMessage({ text: error_catched instanceof Error ? error_catched.message : 'Registrazione fallita', type: 'error', tab: 'register' });
         }
@@ -132,18 +176,21 @@ export function AuthModal({
                                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="login-password">Password</Label>
-                                <Input
-                                    id="login-password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    required
-                                    disabled={isLoading}
-                                    value={loginData.password}
-                                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                                />
-                            </div>
+                            {/* Only show password field for old auth flow */}
+                            {!USE_NEW_AUTH_FLOW && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="login-password">Password</Label>
+                                    <Input
+                                        id="login-password"
+                                        type="password"
+                                        autoComplete="current-password"
+                                        required
+                                        disabled={isLoading}
+                                        value={loginData.password}
+                                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                                    />
+                                </div>
+                            )}
                             <Button type="submit" className="w-full" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Accedi
@@ -161,6 +208,13 @@ export function AuthModal({
                             >
                                 <AlertDescription>{message.text}</AlertDescription>
                             </Alert>
+                        )}
+
+                        {/* Redirect countdown for new auth flow */}
+                        {redirectCountdown !== null && redirectCountdown > 0 && (
+                            <div className="bg-green-100 text-green-800 text-sm p-3 rounded-md mb-4">
+                                Sarai reindirizzato alla home page tra {redirectCountdown} secondi
+                            </div>
                         )}
                         <form onSubmit={handleRegister} className="space-y-4">
                             <div className="space-y-2">
@@ -186,7 +240,11 @@ export function AuthModal({
                                     onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
                                 />
                             </div>
-                            <Button type="submit" className="w-full" disabled={isLoading}>
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={isLoading || redirectCountdown !== null}
+                            >
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Registrati
                             </Button>

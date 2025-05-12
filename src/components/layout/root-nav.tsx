@@ -85,9 +85,9 @@ export function RootNav({
                                 <DropdownMenuItem asChild>
                                     <Link href="/settings">Impostazioni</Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem asChild disabled={true}>
+                                {/* <DropdownMenuItem asChild disabled={true}>
                                     <Link href="/my-books">La mia libreria</Link>
-                                </DropdownMenuItem>
+                                </DropdownMenuItem> */}
                                 <DropdownMenuSeparator />
 
                                 {state.user?.isAdmin && (

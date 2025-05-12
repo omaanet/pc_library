@@ -69,7 +69,7 @@ export type AuthAction =
 
 export interface LoginCredentials {
     email: string;
-    password: string;
+    password?: string; // Optional for new auth flow
 }
 
 export interface RegisterCredentials {
@@ -77,11 +77,17 @@ export interface RegisterCredentials {
     fullName: string;
 }
 
+export interface RegisterResponse {
+    success: boolean;
+    message: string;
+    redirectAfterSeconds?: number;
+}
+
 export interface AuthContextType {
     state: AuthState;
     dispatch: React.Dispatch<AuthAction>;
     login: (credentials: LoginCredentials) => Promise<void>;
-    register: (credentials: RegisterCredentials) => Promise<void>;
+    register: (credentials: RegisterCredentials) => Promise<RegisterResponse>;
     logout: () => Promise<void>;
     updatePreferences: (preferences: Partial<UserPreferences>) => Promise<void>;
 }

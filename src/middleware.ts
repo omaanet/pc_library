@@ -7,7 +7,6 @@ const COVERS_PATH = '/api/covers';
 const PROTECTED_ROUTES = [
     '/profile',
     '/settings',
-    '/library/my-books',
 ];
 
 // Auth routes (don't redirect to login page)
@@ -122,7 +121,7 @@ export async function middleware(request: NextRequest) {
 
 // Helper to check if a route needs authentication
 function isProtectedRoute(pathname: string): boolean {
-    return PROTECTED_ROUTES.some(route => 
+    return PROTECTED_ROUTES.some(route =>
         pathname === route || pathname.startsWith(`${route}/`)
     );
 }
@@ -139,16 +138,13 @@ export const config = {
         // Cover image routes
         '/api/covers/:path*',
         // Auth routes
-        '/login',
-        '/register',
         '/activate/:path*',
         // Protected routes
         '/profile/:path*',
         '/settings/:path*',
-        '/library/my-books/:path*',
+        // '/library/my-books/:path*',
         // Specific protected routes
         '/profile',
         '/settings',
-        '/library/my-books',
     ],
 };

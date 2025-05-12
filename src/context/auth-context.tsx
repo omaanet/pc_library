@@ -9,8 +9,10 @@ import type {
     AuthContextType,
     LoginCredentials,
     RegisterCredentials,
+    RegisterResponse,
 } from '@/types/context';
 import type { UserPreferences } from '@/types';
+import { USE_NEW_AUTH_FLOW } from '@/config/auth-config';
 
 const initialState: AuthState = {
     user: null,
@@ -80,11 +82,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.message || 'Login fallito');
+                throw new Error(error.error || 'Accesso fallito');
             }
 
             const data = await response.json();
             dispatch({ type: 'SET_USER', payload: data.user });
+            dispatch({ type: 'SET_AUTHENTICATED', payload: true });
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error as Error });
             throw error;
@@ -93,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
-    const register = useCallback(async (credentials: RegisterCredentials) => {
+    const register = useCallback(async (credentials: RegisterCredentials): Promise<RegisterResponse> => {
         dispatch({ type: 'SET_LOADING', payload: true });
         dispatch({ type: 'SET_ERROR', payload: null });
         dispatch({ type: 'SET_AUTHENTICATED', payload: false });
@@ -110,8 +113,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 throw new Error(error_response.error || 'Registrazione fallita');
             }
 
-            const data = await response.json();
-            // Don't set user here as they need to verify email first
+            const data = await response.json() as RegisterResponse;
+            
+            // If using new auth flow, user is immediately authenticated
+            if (USE_NEW_AUTH_FLOW) {
+                // Refresh auth state to get the user data
+                const userResponse = await fetch('/api/auth/session');
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    if (userData.user) {
+                        dispatch({ type: 'SET_USER', payload: userData.user });
+                        dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+                    }
+                }
+            }
+            // For old auth flow, don't set user here as they need to verify email first
+            
             return data;
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error as Error });
