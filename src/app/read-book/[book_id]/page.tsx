@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
-import { getBookById, getAudioBookById } from '@/lib/db';
-import ClientReadBookPage from './ClientReadBookPage'; // OptionsSidebar used in client page
+import { getBookById /*, getAudioBookById */ } from '@/lib/db';
+import ClientReadBookPage from './ClientReadBookPage';
 
 export default async function ReadBookPage({ params }: { params: Promise<{ book_id: string }> }) {
     const resolvedParams = await params;

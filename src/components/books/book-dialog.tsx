@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Headphones, X, BookOpen } from 'lucide-react';
+import { Headphones, X, BookOpen, Download } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -129,14 +129,26 @@ export function BookDialog({
                                             </div>
 
                                             {isAuthenticated /*&& !book.hasAudio*/ && (
-                                                <div className="text-center">
-                                                    <Link href={`/read-book/${book.id}`} passHref legacyBehavior>
-                                                        <Button asChild variant="outline" className="bg-cyan-600/30 hover:bg-cyan-600 border-cyan-700 mt-1 sm:mt-0 h-8 sm:h-auto mt-1">
-                                                            <a rel="noopener noreferrer">
-                                                                <BookOpen className="mr-2 h-3 w-3" /> Leggi
-                                                            </a>
-                                                        </Button>
-                                                    </Link>
+                                                <div className="flex flex-row justify-between items-center gap-2">
+                                                    <div className="text-center">
+                                                        <Link href={`/read-book/${book.id}`} passHref legacyBehavior>
+                                                            <Button asChild variant="outline" className="bg-cyan-600/30 hover:bg-cyan-600 border-cyan-700 mt-1 sm:mt-0 h-8 sm:h-auto mt-1 font-light">
+                                                                <a rel="noopener noreferrer">
+                                                                    <BookOpen className="h-3 w-3 mr-0" /> Leggi
+                                                                </a>
+                                                            </Button>
+                                                        </Link>
+                                                    </div>
+
+                                                    <div className="text-center">
+                                                        <Link href={`/api/download-book/${book.id}`} passHref legacyBehavior>
+                                                            <Button asChild variant="outline" className="bg-red-700/30 hover:bg-red-800 border-red-900 mt-1 sm:mt-0 h-8 sm:h-auto mt-1 font-light">
+                                                                <a rel="noopener noreferrer">
+                                                                    <Download className="h-3 w-3 mr-0" /> Scarica PDF
+                                                                </a>
+                                                            </Button>
+                                                        </Link>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
