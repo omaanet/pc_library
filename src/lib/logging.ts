@@ -93,10 +93,7 @@ export class Logger {
             const detailsJson = details ? JSON.stringify(details) : null;
 
             // Insert the log entry into the database
-            await client.query(
-                `INSERT INTO system_logs (
-          level, source, message, details, user_id, ip_address, request_path, stack_trace
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            await client.query(`INSERT INTO system_logs (level, source, message, details, user_id, ip_address, request_path, stack_trace) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                 [
                     level,
                     source,
