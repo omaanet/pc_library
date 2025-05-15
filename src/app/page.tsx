@@ -80,7 +80,7 @@ export default function HomePage() {
                             </h1>
 
                             <p className="mx-auto max-w-5xl text-lg tracking-tight text-sky-400 dark:text-sky-500">
-                                Una variegata raccolta narrativa di fantasia. Novelle in libera lettura a scopo benefico.
+                                Una variegata raccolta narrativa di fantasia. Novelle in libera lettura.
                             </p>
 
                             <p className="mx-auto max-w-5xl text-lg tracking-tight md:tracking-normal text-sky-500 dark:text-sky-300">

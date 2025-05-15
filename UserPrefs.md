@@ -40,7 +40,7 @@ interface UserStats {
 CREATE TABLE "user_preferences" (
   user_id INTEGER PRIMARY KEY REFERENCES users(id),
   theme TEXT NOT NULL DEFAULT 'system',
-  view_mode TEXT NOT NULL DEFAULT 'single',
+  view_mode TEXT NOT NULL DEFAULT 'double',
   zoom_level INTEGER NOT NULL DEFAULT 100
 );
 
@@ -50,6 +50,27 @@ CREATE TABLE "user_stats" (
   last_read_date TEXT,
   total_audiobooks_listened INTEGER DEFAULT 0,
   last_listened_date TEXT
+);
+
+-- Existing tables used for tracking user reading/listening activity
+CREATE TABLE "reading_sessions" (
+  id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  book_id TEXT NOT NULL,
+  start_page INTEGER NOT NULL,
+  end_page INTEGER NOT NULL,
+  duration INTEGER NOT NULL,
+  date TEXT NOT NULL
+);
+
+CREATE TABLE "audio_sessions" (
+  id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  book_id TEXT NOT NULL,
+  start_time INTEGER NOT NULL,
+  end_time INTEGER NOT NULL,
+  duration INTEGER NOT NULL,
+  date TEXT NOT NULL
 );
 ```
 
@@ -97,31 +118,32 @@ graph TD
     B -->|contains| E[ViewMode]
 ```
 
-4. **Usage Examples**
+4. **Component Dependencies**
 
-```typescript
-// Getting user data
-const userName = user.fullName;
-const userTheme = user.preferences.theme;
+```mermaid
+flowchart TD
+    %% Core Components
+    DB[(Database)] <-->|CRUD| API[API Endpoints]
+    API <-->|data| Hook[useUserPreferences Hook]
+    Hook -->|provides data to| Settings[Settings Page]
+    Hook -->|provides data to| Reader[PageReader]
+    Theme[Theme Provider] -->|affects| Reader
+    Theme -->|affects| UI[Website UI]
 
-// Updating preferences
-await updatePreferences({
-    theme: 'dark',
-    reading: {
-        viewMode: 'single',
-        zoomLevel: 110,
-    },
-});
+    %% Data Flow
+    userPrefTable[(user_preferences)] -->|provides| Preferences[User Preferences]
+    userStatsTable[(user_stats)] -->|provides| Stats[User Statistics]
+    readingSessions[(reading_sessions)] -->|updates| userStatsTable
+    audioSessions[(audio_sessions)] -->|updates| userStatsTable
 
-// Checking stats
-if (user.stats) {
-    console.log(`Books read: ${user.stats.totalBooksRead}`);
-}
+    %% Feature Dependencies
+    Settings -->|updates| Preferences
+    Reader -->|updates| Preferences
+    readerOptions[OptionsSidebar] <-->|syncs with| Settings
 
-// Type guards
-function hasReadingStats(user: User): user is User & { stats: UserStats } {
-    return user.stats !== undefined;
-}
+    %% UI Components
+    readerOptions -->|controls| Reader
+    Settings -->|shows| Stats
 ```
 
 5. **Implementation Notes**
@@ -129,11 +151,66 @@ function hasReadingStats(user: User): user is User & { stats: UserStats } {
 -   Preferences are persisted via PATCH to `/api/user/preferences`
 -   Stats are read-only and updated by backend services
 -   All dates use ISO 8601 format (YYYY-MM-DD)
--   Zoom level persists across sessions via localStorage
+-   Zoom level and view mode (single or double page) persist across sessions via localStorage
+
+6. **Reading Preferences Synchronization**
+
+-   "Zoom Level" exists in both settings page (`src/app/settings/page.tsx`) and PageReader (`OptionsSidebar.tsx`)
+-   "View Mode" exists in PageReader (`OptionsSidebar.tsx`)
+-   Settings page (`src/app/settings/page.tsx`) "Lettura" tab must be updated to:
+    1. Add "View Mode" and "Zoom Level" controls just before "Dimensione carattere"
+    2. Keep but disable the "Dimensione carattere" controls
+-   Both pages (settings and OptionsSidebar) must share the same settings (changes on one page must be reflected on the other)
+-   Changes should be synchronized through the `useUserPreferences` hook
+
+7. **Theme Synchronization**
+
+-   Currently, theme settings (light/dark/system) only affect the website but not the PageReader
+-   The `theme-provider.tsx` component needs to be updated to ensure theme changes are applied to both the website and PageReader
+-   Theme preferences should be persisted in both localStorage and database (user_preferences table)
+-   The PageReader component needs to be modified to respond to theme changes from the `useTheme` hook
+-   Implement a consistent theme application mechanism across all components
+
+8. **User Statistics Tracking**
+
+-   Two existing tables are used to track user activity: `reading_sessions` and `audio_sessions`
+-   These tables track which books/audiobooks a user has opened
+-   Implementation approach:
+    1. When a user opens a book/audiobook, check if a record exists in the respective table for that user_id/book_id pair
+    2. If no record exists (first time opening):
+        - Increment the counter in `user_stats` table (total_books_read or total_audiobooks_listened)
+        - Add a new row in `reading_sessions` or `audio_sessions`
+    3. If a record exists, just update the relevant statistics (e.g., date)
+-   Simplified implementation: Some columns won't be used initially
+    -   For `reading_sessions`: start_page, end_page, duration
+    -   For `audio_sessions`: start_time, end_time, duration
+-   This approach allows tracking unique books read/listened by each user
 
 ---
 
-## Current System (Legacy Implementation)
+## Replacement Strategy
+
+### Clean Cut-Over Approach
+
+- The new simplified system will **completely replace** the previous implementation
+- No migration or transition period is required as:
+  - No existing user data needs to be preserved
+  - System is not yet in production
+  - Direct replacement is the simplest approach
+- All components from the old system should be removed immediately
+
+### Code Cleanup Guidelines
+
+1. **Identify Deprecated Files:**
+   - Use the inactive files list below to identify components for removal
+   - Remove all references to these files throughout the codebase
+
+2. **Clean Implementation:**
+   - Implement the new system without backward compatibility concerns
+   - Remove old code as part of the implementation, not as a separate phase
+   - Ensure all new type definitions accurately reflect the new structures
+
+## Current System (Legacy Implementation: to be removed)
 
 ### Overview
 
@@ -220,6 +297,7 @@ export interface UserPreferences {
 
 5.  **Theme Management** (`theme-provider.tsx`)
     -   Handles theme switching
+    -   _Note: Currently only affects website UI, not PageReader (needs to be updated)_
 
 ### Inactive Components
 
