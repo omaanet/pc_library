@@ -21,8 +21,8 @@ const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), { ssr: false })
 
 export default function HomePage() {
     // const source = 'HomePage';
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const { state: { isAuthenticated, user } } = useAuth();
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
@@ -109,14 +109,14 @@ export default function HomePage() {
                 </section>
 
                 {/* Collection Section */}
-                <section id="collection" className="py-12 sm:py-16">
-                    <div className="container">
+                <section id="collection" className="w-full py-12 sm:py-16">
+                    <div className="w-full container">
                         <BookCollectionWrapper displayPreviews={0} />
                     </div>
                 </section>
 
                 {/* Previews Collection Section */}
-                <div className="grid grid-cols-1 gap-6 py-8">
+                <div className="w-full grid grid-cols-1 gap-6 py-8">
                     <div className="rounded-xl border bg-card p-6">
                         <div className="flex flex-row items-center justify-center mb-8">
                             <BookIcon className="h-10 w-10 mx-2" />
@@ -170,7 +170,7 @@ export default function HomePage() {
             </main>
 
             {/* Footer */}
-            <footer className="border-t mt-10 py-6 md:py-0">
+            <footer className="w-full  border-t mt-10 py-6 md:py-0">
                 <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row mx-auto">
                     <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
                         <CopyrightFooter lang="it" detailed />

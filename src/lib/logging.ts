@@ -1,5 +1,14 @@
 // src/lib/logging.ts
-import { getNeonClient } from './db';
+// Use dynamic import for db to avoid client-side import issues
+let getNeonClient: () => any;
+
+// Only import database module on the server side
+if (typeof window === 'undefined') {
+    // We're on the server
+    import('./db').then(db => {
+        getNeonClient = db.getNeonClient;
+    });
+}
 
 export type LogLevel = 'error' | 'warning' | 'info';
 
@@ -78,9 +87,7 @@ export class Logger {
         options?: Partial<Omit<LogEntry, 'level' | 'source' | 'message' | 'details'>>
     ): Promise<void> {
         try {
-            const client = getNeonClient();
-
-            // Also log to console in development for debugging
+            // Always log to console in development for debugging
             if (process.env.NODE_ENV !== 'production') {
                 console[level === 'error' ? 'error' : level === 'warning' ? 'warn' : 'info'](
                     `[${level.toUpperCase()}][${source}] ${message}`,
@@ -89,26 +96,35 @@ export class Logger {
                 );
             }
 
-            // Prepare the details as JSON
-            const detailsJson = details ? JSON.stringify(details) : null;
+            // Only attempt database logging on the server side
+            if (typeof window === 'undefined' && getNeonClient) {
+                try {
+                    const client = getNeonClient();
 
-            // Insert the log entry into the database
-            await client.query(`INSERT INTO system_logs (level, source, message, details, user_id, ip_address, request_path, stack_trace) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-                [
-                    level,
-                    source,
-                    message,
-                    detailsJson,
-                    options?.userId || null,
-                    options?.ipAddress || null,
-                    options?.requestPath || null,
-                    options?.stackTrace || null
-                ]
-            );
+                    // Prepare the details as JSON
+                    const detailsJson = details ? JSON.stringify(details) : null;
+
+                    // Insert the log entry into the database
+                    await client.query(`INSERT INTO system_logs (level, source, message, details, user_id, ip_address, request_path, stack_trace) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                        [
+                            level,
+                            source,
+                            message,
+                            detailsJson,
+                            options?.userId || null,
+                            options?.ipAddress || null,
+                            options?.requestPath || null,
+                            options?.stackTrace || null
+                        ]
+                    );
+                } catch (dbErr) {
+                    console.error('[Logger] Failed to write log to database:', dbErr);
+                }
+            }
         } catch (err) {
-            // Fallback to console logging if database logging fails
+            // Fallback to console logging if logging fails
             // This prevents logging failures from breaking application flow
-            console.error('[Logger] Failed to write log to database:', err);
+            console.error('[Logger] Failed to log:', err);
             console.error(`[${level.toUpperCase()}][${source}] ${message}`, details || '');
         }
     }
@@ -151,6 +167,63 @@ export class Logger {
  * Can be used in any component that needs to log errors
  */
 export function useLogger(source: string) {
+    // Helper function to extract userId and clean details
+    const prepareDetailsAndHeaders = (details?: Record<string, any>) => {
+        // Extract userId from details if available
+        const userId = details?.userId;
+
+        // Create a clean details object without userId to avoid duplication
+        let cleanDetails: Record<string, any> | undefined = undefined;
+
+        if (details) {
+            // Use object destructuring to remove userId and create a new object
+            const { userId: _, ...restDetails } = details;
+            cleanDetails = Object.keys(restDetails).length > 0 ? restDetails : undefined;
+        }
+
+        // Prepare headers with the content type
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+        // Add user ID to headers if available
+        if (userId) {
+            headers['x-user-id'] = userId.toString();
+        }
+
+        return { headers, cleanDetails };
+    };
+
+    // Helper to get base URL for API endpoint
+    const getBaseUrl = () => {
+        return typeof window !== 'undefined'
+            ? `${window.location.protocol}//${window.location.host}`
+            : '';
+    };
+
+    // Helper to send log to server
+    const sendLogToServer = async (
+        level: LogLevel,
+        message: string,
+        details?: Record<string, any>
+    ) => {
+        try {
+            const baseUrl = getBaseUrl();
+            const { headers, cleanDetails } = prepareDetailsAndHeaders(details);
+
+            await fetch(`${baseUrl}/api/system/log`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    level,
+                    source,
+                    message,
+                    details: cleanDetails
+                })
+            });
+        } catch (e) {
+            console.error(`[useLogger] Failed to send ${level} to server:`, e);
+        }
+    };
+
     const logClientError = async (
         message: string,
         error?: unknown,
@@ -164,27 +237,7 @@ export function useLogger(source: string) {
             ...(additionalDetails || {})
         };
 
-        try {
-            // Get the base URL for the API endpoint (window.location gives us the current host)
-            const baseUrl = typeof window !== 'undefined'
-                ? `${window.location.protocol}//${window.location.host}`
-                : '';
-
-            // Log to server with absolute URL
-            await fetch(`${baseUrl}/api/system/log`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    level: 'error',
-                    source,
-                    message,
-                    details
-                })
-            });
-        } catch (e) {
-            // Fallback to console if API call fails
-            console.error('[useLogger] Failed to send log to server:', e);
-        }
+        await sendLogToServer('error', message, details);
     };
 
     const logClientWarning = async (
@@ -192,26 +245,7 @@ export function useLogger(source: string) {
         details?: Record<string, any>
     ) => {
         console.warn(`[${source}] ${message}`, details);
-
-        try {
-            // Get the base URL for the API endpoint
-            const baseUrl = typeof window !== 'undefined'
-                ? `${window.location.protocol}//${window.location.host}`
-                : '';
-
-            await fetch(`${baseUrl}/api/system/log`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    level: 'warning',
-                    source,
-                    message,
-                    details
-                })
-            });
-        } catch (e) {
-            console.error('[useLogger] Failed to send warning to server:', e);
-        }
+        await sendLogToServer('warning', message, details);
     };
 
     const logClientInfo = async (
@@ -222,25 +256,7 @@ export function useLogger(source: string) {
             console.info(`[${source}] ${message}`, details);
         }
 
-        try {
-            // Get the base URL for the API endpoint
-            const baseUrl = typeof window !== 'undefined'
-                ? `${window.location.protocol}//${window.location.host}`
-                : '';
-
-            await fetch(`${baseUrl}/api/system/log`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    level: 'info',
-                    source,
-                    message,
-                    details
-                })
-            });
-        } catch (e) {
-            console.error('[useLogger] Failed to send info to server:', e);
-        }
+        await sendLogToServer('info', message, details);
     };
 
     return {

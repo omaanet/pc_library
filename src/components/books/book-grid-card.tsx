@@ -38,7 +38,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
     const coverImage = React.useMemo(() => (
         // style={{ minHeight: height }}
         <div
-            className="relative w-full h-auto flex justify-center items-center cursor-pointer pt-4 pb-0 px-0"
+            className="relative w-full h-auto flex justify-center items-center cursor-pointer pt-4 pb-0 px-0 select-none"
             onClick={() => onSelect(book)}
         >
             {/* Loading skeleton */}
@@ -115,7 +115,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
 
                     <Button
                         variant="secondary"
-                        className="w-full"
+                        className="w-full select-none"
                         onClick={() => onSelect(book)}
                         size="lg"
                     >

@@ -5,6 +5,14 @@ import { neon } from '@neondatabase/serverless';
 
 import { AudioBook, Book } from '@/types';
 
+// Get current environment
+// const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// if (NODE_ENV === 'development') {
+//     // Load environment variables from .env files
+//     require('dotenv').config();
+// }
+
 // Neon connection string from environment variable
 const connectionString = process.env.DATABASE_URL as string;
 if (!connectionString) {
@@ -102,6 +110,7 @@ export function extractRows<T = any>(res: any): T[] {
 }
 
 export async function getAllBooksOptimized(options: BookQueryOptions = {}): Promise<PaginatedResult<Book>> {
+    // console.log('getAllBooksOptimized');
     const client = getNeonClient();
     const {
         search,

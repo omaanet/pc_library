@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Headphones, X, BookOpen, Download } from 'lucide-react';
 import {
     Dialog,
@@ -13,8 +12,8 @@ import {
     DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+// import { ScrollArea } from '@/components/ui/scroll-area';
+// import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatAudioLength, cn } from '@/lib/utils';
 import { DEFAULT_COVER_SIZES } from '@/types/images';
@@ -23,6 +22,7 @@ import type { Book, AudioBook } from '@/types';
 import BookComments from './book-comments';
 import { BookExtract } from './book-extract';
 import AudioBookPlayer from '../shared/AudioBookPlayer';
+import { LinkButton } from '@/components/ui/LinkButton';
 
 interface BookDialogProps {
     book: Book | null;
@@ -104,50 +104,40 @@ export function BookDialog({
                                                     <Skeleton className="absolute inset-0 rounded-lg" />
                                                 )}
                                                 <div>
-                                                    <Image
+                                                    <img
                                                         src={getCoverImageUrl(
                                                             book.coverImage,
                                                             'detail',
                                                             { bookId: book.coverImage === IMAGE_CONFIG.placeholder.token ? book.id : undefined }
                                                         )}
                                                         alt={`Cover of ${book.title}`}
-                                                        width={DEFAULT_COVER_SIZES.detail.width}
-                                                        height={DEFAULT_COVER_SIZES.detail.height}
                                                         className={cn(
                                                             "w-full h-auto max-w-[70vw] max-h-[25vw] sm:max-w-full sm:max-h-[60vh] object-contain transition-opacity duration-400",
                                                             imageLoaded ? "opacity-100" : "opacity-0"
                                                         )}
                                                         sizes="(max-width: 640px) 70vw, (min-width: 768px) 33vw, 100vw"
-                                                        priority={true}
-                                                        quality={90}
+                                                        // priority={true}
+                                                        // quality={90}
                                                         onLoad={() => setImageLoaded(true)}
                                                         onError={() => setImageLoaded(true)}
-                                                        unoptimized
+                                                        // unoptimized
                                                     />
                                                     {renderAudioBadge(book, imageLoaded)}
                                                 </div>
-                                            </div>
+                                            </div> 
 
                                             {isAuthenticated /*&& !book.hasAudio*/ && (
                                                 <div className="flex flex-row justify-between items-center gap-2">
-                                                    <div className="text-center">
-                                                        <Link href={`/read-book/${book.id}`} passHref legacyBehavior>
-                                                            <Button asChild variant="outline" className="bg-cyan-600/30 hover:bg-cyan-600 border-cyan-700 mt-1 sm:mt-0 h-8 sm:h-auto mt-1 font-light">
-                                                                <a rel="noopener noreferrer">
-                                                                    <BookOpen className="h-3 w-3 mr-0" /> Leggi
-                                                                </a>
-                                                            </Button>
-                                                        </Link>
+                                                    <div className="text-center ">
+                                                        <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} className="text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 mt-1 sm:mt-0 h-8 sm:h-auto mt-1 font-light shadow select-none">
+                                                            Leggi
+                                                        </LinkButton>
                                                     </div>
 
                                                     <div className="text-center">
-                                                        <Link href={`/api/download-book/${book.id}`} passHref legacyBehavior>
-                                                            <Button asChild variant="outline" className="bg-red-700/30 hover:bg-red-800 border-red-900 mt-1 sm:mt-0 h-8 sm:h-auto mt-1 font-light">
-                                                                <a rel="noopener noreferrer">
-                                                                    <Download className="h-3 w-3 mr-0" /> Scarica PDF
-                                                                </a>
-                                                            </Button>
-                                                        </Link>
+                                                        <LinkButton url={`/api/download-book/${book.id}`} icon={Download} className="text-dark hover:text-white bg-red-700/30 hover:bg-red-800 border border-red-900 mt-1 sm:mt-0 h-8 sm:h-auto mt-1 font-light shadow select-none">
+                                                            Scarica PDF
+                                                        </LinkButton>
                                                     </div>
                                                 </div>
                                             )}
@@ -170,8 +160,6 @@ export function BookDialog({
                                                 <AudioBookPlayer book={book} />
                                             </>
                                         )}
-
-                                        {/* ZZ */}
 
                                     </div>
 

@@ -3,13 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Book } from "@/types";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
+import { User } from "@/types";
+import { useLogger } from '@/lib/logging';
 
 interface PageReaderProps {
     book: Book;
     bookId: string;
+    user: User;
 }
 
-export default function PageReader({ book, bookId }: PageReaderProps) {
+export default function PageReader({ book, bookId, user }: PageReaderProps) {
+    const source = 'PageReader';
+    const logger = useLogger(source);
     // Configuration
     const CONFIG = {
         viewMode: "double" as "single" | "double", // 'single' or 'double'
@@ -50,11 +55,11 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
     const pinchInitialMidpoint = useRef<{ x: number; y: number } | null>(null);
     const pinchInitialTranslate = useRef<{ x: number; y: number } | null>(null);
 
-    // Get total pages from book data
-    const totalPages = book.pagesCount || 10; // Default to 10 pages if not specified
-
     // User preferences
     const { preferences } = useUserPreferences();
+
+    // Get total pages from book data
+    const totalPages = book.pagesCount || 10; // Default to 10 pages if not specified
 
     // Format page number with leading zeros based on total pages
     const formatPageNumber = (num: number) => {
@@ -623,6 +628,20 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
         return `${baseClasses} bg-gray-500/90 hover:bg-pink-500 active:bg-pink-600 hover:scale-110 cursor-pointer`;
     };
 
+
+    // Log reader usage only once when component mounts and only if starting from the first page
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (currentPage === 1) {
+            logger.info('[read-book]', {
+                userMail: user.email,
+                bookTitle: book.title,
+                userId: user.id,
+                bookId: bookId,
+            });
+        }
+    }, []);  // Empty dependency array ensures this runs only once when component mounts
+
     return (
         <div className="relative h-full w-full">
             {/* <div
@@ -660,7 +679,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             >
                 <button
                     ref={toggleSidebarBtnRef}
-                    className="absolute top-[62px] -left-[29px] w-[28px] h-[36px] rounded-sm bg-sky-500/50 hover:bg-sky-600 flex justify-center items-center cursor-pointer shadow-sm border-none text-white p-0 z-[11] transform -translate-y-1/2 transition-colors user-select-none"
+                    className="absolute top-[62px] -left-[29px] w-[28px] h-[36px] rounded-sm bg-sky-500/50 hover:bg-sky-600 flex justify-center items-center cursor-pointer shadow-sm border-none text-white p-0 z-[11] transform -translate-y-1/2 transition-colors select-none"
                     onClick={(e) => toggleSidebar(e)}
                     aria-label="Toggle sidebar"
                 >
@@ -747,7 +766,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
             </div>
 
             {/* Main content with image viewer - this div takes full screen height */}
-            <div className="h-screen w-full flex flex-col relative bg-gray-400 text-gray-800">
+            <div className="h-screen w-full flex flex-col relative bg-gray-600 text-gray-800">
                 {/* Main Content Area - Centered both horizontally and vertically */}
                 <div
                     ref={viewerContainerRef}
@@ -811,7 +830,7 @@ export default function PageReader({ book, bookId }: PageReaderProps) {
                 </div>
 
                 {/* Page Info */}
-                <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-xs sm:text-sm text-gray-900 py-1 px-4 sm:py-1 sm:px-5 rounded-full shadow-sm z-[15] pointer-events-none user-select-none">
+                <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-xs sm:text-sm text-gray-900 py-1 px-4 sm:py-1 sm:px-5 rounded-full shadow-sm z-[15] pointer-events-none select-none">
                     {getPageInfoText()}
                 </div>
 

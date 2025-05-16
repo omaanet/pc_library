@@ -66,3 +66,4 @@ db/dump-REMOVE-postgreSQL.sql
 to_implement.md
 public/_epub
 db
+scripts/check-env.js

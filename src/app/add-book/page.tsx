@@ -15,9 +15,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+// import { useAuth } from '@/context/auth-context';
 
 export default function AddBookPage() {
     // const router = useRouter();
+    // const { state, dispatch } = useAuth();
     const [activeTab, setActiveTab] = useState('manage');
     const [editingBook, setEditingBook] = useState<Book | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);

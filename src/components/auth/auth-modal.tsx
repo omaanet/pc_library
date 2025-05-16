@@ -169,11 +169,12 @@ export function AuthModal({
                                 <Input
                                     id="login-email"
                                     type="email"
-                                    autoComplete="username"
+                                    autoComplete="email"
                                     required
                                     disabled={isLoading}
                                     value={loginData.email}
                                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                                    autoFocus
                                 />
                             </div>
                             {/* Only show password field for old auth flow */}
@@ -227,6 +228,7 @@ export function AuthModal({
                                     disabled={isLoading}
                                     value={registerData.email}
                                     onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                                    autoFocus
                                 />
                             </div>
                             <div className="space-y-2">
@@ -234,6 +236,7 @@ export function AuthModal({
                                 <Input
                                     id="register-name"
                                     type="text"
+                                    autoComplete="name"
                                     required
                                     disabled={isLoading}
                                     value={registerData.fullName}

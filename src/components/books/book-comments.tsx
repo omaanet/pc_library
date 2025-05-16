@@ -131,7 +131,7 @@ export default function BookComments({ bookId, isAuthenticated, userName, onLogi
                         value={newComment}
                         onChange={e => setNewComment(e.target.value)}
                     />
-                    <Button type="submit" disabled={!newComment.trim()}>Invia commento</Button>
+                    <Button type="submit" disabled={!newComment.trim()} className="select-none">Invia commento</Button>
                 </form>
             )}
         </div>

@@ -7,6 +7,7 @@ const COVERS_PATH = '/api/covers';
 const PROTECTED_ROUTES = [
     '/profile',
     '/settings',
+    '/read-book',
 ];
 
 // Auth routes (don't redirect to login page)
@@ -142,9 +143,11 @@ export const config = {
         // Protected routes
         '/profile/:path*',
         '/settings/:path*',
+        '/read-book/:path*',
         // '/library/my-books/:path*',
         // Specific protected routes
         '/profile',
         '/settings',
+        '/read-book',
     ],
 };
