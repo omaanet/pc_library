@@ -14,7 +14,7 @@ export interface Book {
     displayOrder?: number;
     isVisible?: number;
 
-    pages_count?: number;
+    // pages_count?: number;
     pagesCount?: number;
 
     // Application-specific fields

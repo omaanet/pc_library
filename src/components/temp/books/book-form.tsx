@@ -30,15 +30,18 @@ import {
 } from '@/components/ui/form';
 import { Book } from '@/types';
 import { IMAGE_CONFIG } from '@/lib/image-utils';
+import ThemedButton from '@/components/ThemedButton';
 
 // Form validation schema
 const bookFormSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     coverImage: z.string().default(IMAGE_CONFIG.placeholder.token),
+    pagesCount: z.number().int().min(1, 'Page count must be at least 1').optional(),
     publishingDate: z.date({
         required_error: 'Publishing date is required',
     }),
-    summary: z.string().min(1, 'Summary is required'),
+    // summary: z.string().min(1, 'Summary is required'),
+    summary: z.string().optional(),
     hasAudio: z.boolean().default(false),
     audioLength: z.number().min(1).optional(),
     extract: z.string().optional(),
@@ -62,6 +65,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
     const defaultValues: Partial<BookFormValues> = {
         title: book?.title || '',
         coverImage: book?.coverImage || IMAGE_CONFIG.placeholder.token,
+        pagesCount: book?.pagesCount,
         publishingDate: book?.publishingDate ? new Date(book.publishingDate) : new Date(),
         summary: book?.summary || '',
         hasAudio: book?.hasAudio || false,
@@ -104,6 +108,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     handleSubmit(formData);
                 }}
                 noValidate
+                lang="it"
             >
                 <FormField
                     control={form.control}
@@ -166,12 +171,16 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     name="summary"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Summary</FormLabel>
+                            <FormLabel>Summary <span className="text-muted-foreground">(optional)</span></FormLabel>
                             <FormControl>
                                 <Textarea
                                     placeholder="Book summary"
-                                    className="min-h-[120px]"
+                                    className="min-h-0 focus:min-h-[120px]"
                                     {...field}
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    autoComplete="off"
+                                    spellCheck="false"
                                 />
                             </FormControl>
                             <FormMessage />
@@ -184,13 +193,17 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     name="extract"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Extract (Optional)</FormLabel>
+                            <FormLabel>Extract <span className="text-muted-foreground">(optional)</span></FormLabel>
                             <FormControl>
                                 <Textarea
                                     placeholder="Book extract"
-                                    className="min-h-[120px]"
+                                    className="focus:min-h-[120px]"
                                     {...field}
                                     value={field.value || ''}
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    autoComplete="off"
+                                    spellCheck="false"
                                 />
                             </FormControl>
                             <FormDescription>
@@ -206,7 +219,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     name="coverImage"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Cover Image</FormLabel>
+                            <FormLabel>Cover Image <span className="text-muted-foreground">(optional)</span></FormLabel>
                             <FormControl>
                                 <Input
                                     placeholder="Cover image path"
@@ -224,77 +237,77 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
 
                 <FormField
                     control={form.control}
-                    name="hasAudio"
+                    name="pagesCount"
                     render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <FormLabel className="text-base">Audio Version</FormLabel>
-                                <FormDescription>
-                                    Does this book have an audio version?
-                                </FormDescription>
-                            </div>
+                        <FormItem>
+                            <FormLabel>Page Count <span className="text-muted-foreground">(optional)</span></FormLabel>
                             <FormControl>
-                                <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    placeholder="Number of pages"
+                                    value={field.value || ''}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        field.onChange(value ? parseInt(value, 10) : undefined);
+                                    }}
+                                    className="w-auto"
                                 />
                             </FormControl>
+                            <FormMessage />
                         </FormItem>
                     )}
                 />
 
-                {showAudioLength && (
-                    <FormField
-                        control={form.control}
-                        name="audioLength"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Audio Length (minutes)</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        type="number"
-                                        placeholder="Audio length in minutes"
-                                        {...field}
-                                        value={field.value || ''}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            field.onChange(value ? parseInt(value, 10) : undefined);
-                                        }}
-                                    />
-                                </FormControl>
-                                <FormDescription>
-                                    The length of the audio version in minutes
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                )}
-
                 <FormField
                     control={form.control}
-                    name="rating"
+                    name="hasAudio"
                     render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Rating (Optional)</FormLabel>
-                            <FormControl>
-                                <Input
-                                    type="number"
-                                    placeholder="Rating (1-5)"
-                                    min={1}
-                                    max={5}
-                                    {...field}
-                                    value={field.value === undefined || field.value === null ? '' : field.value}
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        field.onChange(value === '' ? null : parseInt(value, 10));
-                                    }}
-                                />
-                            </FormControl>
-                            <FormDescription>
-                                Rating from 1 to 5 stars
-                            </FormDescription>
-                            <FormMessage />
+                        <FormItem className={`space-y-4 rounded-lg border-2 p-4 transition-colors ${field.value ? 'border-primary/50' : 'border-border'}`}>
+                            <div className="flex flex-row items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-base">Audio Version</FormLabel>
+                                    <FormDescription>
+                                        Does this book have an audio version?
+                                    </FormDescription>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </div>
+
+                            {field.value && (
+                                <div className="ms-10">
+                                    <FormField
+                                        control={form.control}
+                                        name="audioLength"
+                                        render={({ field: audioField }) => (
+                                            <FormItem>
+                                                <FormLabel>Audio Length <span className="text-muted-foreground">(seconds)</span></FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="Audio length in seconds"
+                                                        value={audioField.value || ''}
+                                                        onChange={(e) => {
+                                                            const value = e.target.value;
+                                                            audioField.onChange(value ? parseInt(value, 10) : undefined);
+                                                        }}
+                                                        className="w-auto"
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    The length of the audio version in seconds
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            )}
                         </FormItem>
                     )}
                 />
@@ -320,16 +333,45 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     )}
                 />
 
+                <FormField
+                    control={form.control}
+                    name="rating"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Rating <span className="text-muted-foreground">(optional)</span></FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="number"
+                                    placeholder="Rating (1-5)"
+                                    min={1}
+                                    max={5}
+                                    {...field}
+                                    value={field.value === undefined || field.value === null ? '' : field.value}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        field.onChange(value === '' ? null : parseInt(value, 10));
+                                    }}
+                                />
+                            </FormControl>
+                            <FormDescription>
+                                Rating from 1 to 5 stars
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
                 <div className="flex justify-end space-x-4">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={onCancel}
                         disabled={isSubmitting}
+                        className="select-none"
                     >
                         Cancel
                     </Button>
-                    <Button
+                    {/* <Button
                         type="button"
                         disabled={isSubmitting}
                         onClick={() => {
@@ -340,11 +382,61 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                             }
                             handleSubmit(formData);
                         }}
+                        className="select-none"
                     >
                         {isSubmitting ? 'Saving...' : book ? 'Update Book' : 'Add Book'}
-                    </Button>
+                    </Button> */}
+                    <ThemedButton
+                        type="button"
+                        disabled={isSubmitting}
+                        color="green"
+                        onClick={() => {
+                            const formData = form.getValues();
+                            console.log("Button clicked, submitting with values:", formData);
+                            if (Object.keys(form.formState.errors).length > 0) {
+                                console.log("Form validation errors:", form.formState.errors);
+                            }
+                            handleSubmit(formData);
+                        }}
+                        className="select-none"
+                    >
+                        {isSubmitting ? 'Saving...' : book ? 'Update Book' : 'Add Book'}
+                    </ThemedButton>
                 </div>
             </form>
+
+            {/* <div className="p-6 space-y-6">
+                <h2 className="text-lg font-bold">Theme Colors</h2>
+                <div className="flex flex-wrap gap-3">
+                    <ThemedButton color="#ef4444">Red</ThemedButton>
+                    <ThemedButton color="#3b82f6">Blue</ThemedButton>
+                    <ThemedButton color="#10b981">Green</ThemedButton>
+                    <ThemedButton color="#f59e0b">Orange</ThemedButton>
+                    <ThemedButton color="#8b5cf6">Purple</ThemedButton>
+                </div>
+
+                <h2 className="text-lg font-bold">Variants</h2>
+                <div className="flex flex-wrap gap-3">
+                    <ThemedButton color="#ef4444">Solid</ThemedButton>
+                    <ThemedButton color="#ef4444" variant="outline">Outline</ThemedButton>
+                    <ThemedButton color="#ef4444" variant="ghost">Ghost</ThemedButton>
+                </div>
+
+                <h2 className="text-lg font-bold">Sizes</h2>
+                <div className="flex flex-wrap gap-3 items-center">
+                    <ThemedButton color="#3b82f6" size="sm">Small</ThemedButton>
+                    <ThemedButton color="#3b82f6" size="md">Medium</ThemedButton>
+                    <ThemedButton color="#3b82f6" size="lg">Large</ThemedButton>
+                </div>
+
+                <h2 className="text-lg font-bold">Disabled State</h2>
+                <div className="flex flex-wrap gap-3">
+                    <ThemedButton color="#10b981" disabled>Disabled</ThemedButton>
+                    <ThemedButton color="#10b981" variant="outline" disabled>Disabled Outline</ThemedButton>
+                    <ThemedButton color="#10b981" variant="ghost" disabled>Disabled Ghost</ThemedButton>
+                </div>
+            </div> */}
+
         </Form>
     );
 }

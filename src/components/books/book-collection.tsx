@@ -463,7 +463,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                         disabled={showLoadingState}
                     />
                 </div>
-                <div className="flex flex-row flex-nowrap items-center gap-2 hover:text-yellow-400 cursor-pointer">
+                <div className="flex flex-row flex-nowrap items-center gap-2 hover:text-yellow-400 cursor-pointer select-none">
                     <Switch
                         id="audioFilter"
                         checked={filters.hasAudio}

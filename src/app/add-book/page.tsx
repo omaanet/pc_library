@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BookForm } from '@/components/temp/books/book-form';
 import { BookTable } from '@/components/temp/books/book-table';
 import { AudioTrackForm } from '@/components/temp/books/audio-track-form';
+import { UsersTable } from '@/components/admin/users-table';
 import { useBooks } from '@/hooks/temp/use-books';
 import { Book } from '@/types';
 import { z } from 'zod';
@@ -15,7 +16,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-// import { useAuth } from '@/context/auth-context';
 
 export default function AddBookPage() {
     // const router = useRouter();
@@ -24,13 +24,13 @@ export default function AddBookPage() {
     const [editingBook, setEditingBook] = useState<Book | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showAudioTracks, setShowAudioTracks] = useState(false);
-    
+
     // Filter and sorting state
     const [searchTerm, setSearchTerm] = useState('');
     const [showAudioOnly, setShowAudioOnly] = useState(false);
     const [sortField, setSortField] = useState<'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'book_id' | 'displayOrder' | 'isVisible'>('title');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-    
+
     // Test mail and env state
     const [envVars, setEnvVars] = useState<Record<string, string | undefined>>({});
     const [to, setTo] = useState('oscar@omaa.it');
@@ -125,33 +125,53 @@ export default function AddBookPage() {
     return (
         <div className="container mx-auto p-10">
             <div className="mb-8 flex justify-between items-center">
-                <h1 className="text-3xl font-bold tracking-tight">Book Management</h1>
+                <h1 className="text-3xl font-bold tracking-tight select-none">Book Management</h1>
                 <Button asChild variant="outline">
-                    <Link href="/">
+                    <Link href="/" className="select-none">
                         Go Back to Home
                     </Link>
                 </Button>
             </div>
 
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 select-none">
                 Add, edit, and manage books in the library.
             </p>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="manage">Manage Books</TabsTrigger>
-                    <TabsTrigger value="add">{editingBook ? 'Edit Book' : 'Add Book'}</TabsTrigger>
-                    {showAudioTracks && editingBook && (
-                        <TabsTrigger value="audio-tracks">Audio Tracks</TabsTrigger>
-                    )}
-                    <TabsTrigger value="test">Test</TabsTrigger>
+                <TabsList className="relative">
+                    {/* Group 1: Main Tabs */}
+                    <div className="inline-flex items-center rounded-md bg-muted p-1">
+                        <TabsTrigger value="manage" className="select-none">Manage Books</TabsTrigger>
+                        <TabsTrigger value="add" className="select-none">
+                            {editingBook ? 'Edit Book' : 'Add Book'}
+                        </TabsTrigger>
+                        {showAudioTracks && editingBook && (
+                            <TabsTrigger value="audio-tracks" className="select-none">Audio Tracks</TabsTrigger>
+                        )}
+                    </div>
+
+                    {/* Group 2: Admin Tabs - visually separated */}
+                    <div className="ml-2 inline-flex items-center rounded-md bg-amber-100 dark:bg-amber-900/30 p-1">
+                        <TabsTrigger
+                            value="users"
+                            className="select-none data-[state=active]:bg-amber-200 dark:data-[state=active]:bg-amber-800/50"
+                        >
+                            Registered Users
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="test"
+                            className="ml-5 select-none data-[state=active]:bg-amber-200 dark:data-[state=active]:bg-amber-800/50"
+                        >
+                            Test
+                        </TabsTrigger>
+                    </div>
                 </TabsList>
 
                 <TabsContent value="manage" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Books Library</CardTitle>
-                            <CardDescription>
+                            <CardTitle className="select-none">Books Library</CardTitle>
+                            <CardDescription className="select-none">
                                 View and manage all books in the database.
                             </CardDescription>
                         </CardHeader>
@@ -175,11 +195,25 @@ export default function AddBookPage() {
                     </Card>
                 </TabsContent>
 
+                <TabsContent value="users" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="select-none">Registered Users</CardTitle>
+                            <CardDescription className="select-none">
+                                View and manage all registered users.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <UsersTable />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 <TabsContent value="add" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>{editingBook ? 'Edit Book' : 'Add New Book'}</CardTitle>
-                            <CardDescription>
+                            <CardTitle className="select-none">{editingBook ? 'Edit Book' : 'Add New Book'}</CardTitle>
+                            <CardDescription className="select-none">
                                 {editingBook
                                     ? `Edit details for "${editingBook.title}"`
                                     : 'Fill in the details to add a new book to the library.'}
@@ -200,8 +234,8 @@ export default function AddBookPage() {
                     <TabsContent value="audio-tracks" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Audio Tracks for "{editingBook.title}"</CardTitle>
-                                <CardDescription>
+                                <CardTitle className="select-none">Audio Tracks for "{editingBook.title}"</CardTitle>
+                                <CardDescription className="select-none">
                                     Manage audio tracks for this book.
                                 </CardDescription>
                             </CardHeader>
@@ -218,8 +252,8 @@ export default function AddBookPage() {
                 <TabsContent value="test" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Environment Variables</CardTitle>
-                            <CardDescription>All environment variables</CardDescription>
+                            <CardTitle className="select-none">Environment Variables</CardTitle>
+                            <CardDescription className="select-none">All environment variables</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <pre className="text-sm">{JSON.stringify(envVars, null, 2)}</pre>
@@ -227,7 +261,7 @@ export default function AddBookPage() {
                     </Card>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Send Test Email</CardTitle>
+                            <CardTitle className="select-none">Send Test Email</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={e => {

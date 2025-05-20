@@ -13,8 +13,8 @@ import {
     Eye,
     EyeOff
 } from 'lucide-react';
-import { formatDate, formatAudioLength } from '@/lib/utils';
-import { getCoverImageUrl } from '@/lib/image-utils';
+import { formatDate } from '@/lib/utils';
+// import { getCoverImageUrl } from '@/lib/image-utils';
 import { Book } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -185,20 +185,21 @@ export function BookTable({
                 <div className="relative flex-1">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search books..."
+                        placeholder="Cerca racconti..."
                         className="pl-8"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        lang="it"
                     />
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 select-none">
                         <Switch
                             id="audio-filter"
                             checked={showAudioOnly}
                             onCheckedChange={setShowAudioOnly}
                         />
-                        <Label htmlFor="audio-filter">Audio books only</Label>
+                        <Label htmlFor="audio-filter">Solo audio raconti</Label>
                     </div>
                     <Button
                         variant="outline"
