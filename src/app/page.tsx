@@ -79,12 +79,14 @@ export default function HomePage() {
                                 Racconti in Voce e Caratteri<br />Espressioni di Scrittura Creativa
                             </h1>
 
-                            <p className="mx-auto max-w-5xl text-lg tracking-tight text-sky-400 dark:text-sky-500">
-                                Una variegata raccolta narrativa di fantasia. Novelle in libera lettura.
-                            </p>
+                            {/*<p className="mx-auto max-w-5xl text-lg tracking-tight text-sky-400 dark:text-sky-500">
+                                Una variegata raccolta narrativa di fantasia.  Novelle in libera lettura.
+                            </p> */}
 
                             <p className="mx-auto max-w-5xl text-lg tracking-tight md:tracking-normal text-sky-500 dark:text-sky-300">
-                                Sito web dedicato alla lettura a scopo benefico
+                                <span className="inline-block mt-4">Una variegata raccolta narrativa di fantasia.</span><br />
+                                <span className="inline-block">Sito web dedicato alla lettura a scopo benefico.</span><br />
+                                <span className="inline-block mt-4 text-emerald-600 dark:text-emerald-400">Un libero contributo da destinarsi a scelta del lettore a favore di:<br />Organizzazioni Non Profit, Associazioni di Volontariato, Fondazioni o a cause specifiche.</span>
                             </p>
                         </div>
 
