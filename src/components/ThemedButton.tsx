@@ -165,13 +165,21 @@ const ThemedButton = ({
             onClick={onClick}
             type={type}
             aria-label={ariaLabel}
-            onMouseEnter={() => !disabled && setIsHovered(true)}
-            onMouseLeave={() => {
-                !disabled && setIsHovered(false);
-                !disabled && setIsActive(false);
+            onMouseEnter={() => {
+                if (!disabled) setIsHovered(true);
             }}
-            onMouseDown={() => !disabled && setIsActive(true)}
-            onMouseUp={() => !disabled && setIsActive(false)}
+            onMouseLeave={() => {
+                if (!disabled) {
+                    setIsHovered(false);
+                    setIsActive(false);
+                }
+            }}
+            onMouseDown={() => {
+                if (!disabled) setIsActive(true);
+            }}
+            onMouseUp={() => {
+                if (!disabled) setIsActive(false);
+            }}
             {...props}
         >
             {children}

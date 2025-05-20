@@ -85,11 +85,13 @@ export function UsersTable() {
     };
 
     const SortIcon = useMemo(() => {
-        return ({ column }: { column: keyof User }) => (
+        const SortIconComponent = ({ column }: { column: keyof User }) => (
             <span className="ml-1">
                 {sortBy === column ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
             </span>
         );
+        SortIconComponent.displayName = 'SortIcon';
+        return SortIconComponent;
     }, [sortBy, sortOrder]);
 
     // Get users and pagination data with defaults
@@ -196,16 +198,16 @@ export function UsersTable() {
                                     <TableCell>{user.fullName}</TableCell>
                                     <TableCell className="text-center">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.isActivated
-                                                ? 'bg-green-200 text-green-900'
-                                                : 'bg-gray-100 text-gray-800'
+                                            ? 'bg-green-200 text-green-900'
+                                            : 'bg-gray-100 text-gray-800'
                                             }`}>
                                             {user.isActivated ? 'Active' : 'Inactive'}
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-center">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.isAdmin
-                                                ? 'bg-purple-400 text-purple-950'
-                                                : 'bg-slate-400 text-slate-950'
+                                            ? 'bg-purple-400 text-purple-950'
+                                            : 'bg-slate-400 text-slate-950'
                                             }`}>
                                             {user.isAdmin ? 'Admin' : 'User'}
                                         </span>
