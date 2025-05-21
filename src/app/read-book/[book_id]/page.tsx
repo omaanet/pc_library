@@ -12,5 +12,5 @@ export default async function ReadBookPage({ params }: { params: Promise<{ book_
     }
 
     const book = await getBookById(book_id);
-    return <ClientReadBookPage bookId={book_id} book={book} />;
+    return <ClientReadBookPage book={book} bookId={book_id} />;
 } 

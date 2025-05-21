@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Minimize, /*Minimize2,*/ ChevronLeft, ChevronRight, Fullscreen } from "lucide-react";
 import { Book } from "@/types";
-import { useUserPreferences } from "@/hooks/use-user-preferences";
+// import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { User } from "@/types";
 import { useLogger } from '@/lib/logging';
 
@@ -25,7 +26,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
         imagePrefix: undefined,
         sourceCDN: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/bookshelf/${bookId}/pages/page-`,
         imageExt: "-or8.png",
-        preloadBuffer: 2, // Number of pages to preload ahead and behind
+        preloadBuffer: 4, // Number of pages to preload ahead and behind
     };
 
     // References to DOM elements
@@ -39,6 +40,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const [currentPage, setCurrentPage] = useState(Math.max(1, CONFIG.pageStart ?? 1));
     const [viewMode, setViewMode] = useState<"single" | "double">(CONFIG.viewMode);
     const [zoomLevel, setZoomLevel] = useState(CONFIG.zoomLevel);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const [imagesLoaded, setImagesLoaded] = useState<Record<number, string>>({});
     const [isDragging, setIsDragging] = useState(false);
     const [initialTranslateX, setInitialTranslateX] = useState(0);
@@ -48,7 +50,8 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const [dragStartX, setDragStartX] = useState(0);
     const [dragStartY, setDragStartY] = useState(0);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(CONFIG.sidebarCollapsed);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [visiblePages, setVisiblePages] = useState<number[]>([]);
     const pinchInitialDistance = useRef<number | null>(null);
     const pinchInitialZoom = useRef<number>(CONFIG.zoomLevel);
     const lastTapTime = useRef<number>(0);
@@ -56,7 +59,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const pinchInitialTranslate = useRef<{ x: number; y: number } | null>(null);
 
     // User preferences
-    const { preferences } = useUserPreferences();
+    // const { preferences } = useUserPreferences();
 
     // Get total pages from book data
     const totalPages = book.pagesCount || 10; // Default to 10 pages if not specified
@@ -149,7 +152,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
 
     // Lazy load images
     const lazyLoadImages = async () => {
-        const visiblePages = getVisiblePages();
+        const newVisiblePages = getVisiblePages();
         const pagesToPreload = getPagesToPreload();
 
         // Show loading indicator
@@ -157,15 +160,18 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
 
         try {
             // Load all visible pages in parallel
-            await Promise.all(visiblePages.map((pageNum) => loadImage(pageNum)));
+            await Promise.all(newVisiblePages.map((pageNum) => loadImage(pageNum)));
 
-            // Update display
-            setIsLoading(false);
+            // Update visible pages only after all images are loaded
+            setVisiblePages(newVisiblePages);
 
             // Preload additional pages in the background
             preloadImages(pagesToPreload);
         } catch (error) {
             console.error("Error loading visible images:", error);
+            // Still show pages even if there was an error loading some
+            setVisiblePages(newVisiblePages);
+        } finally {
             setIsLoading(false);
         }
     };
@@ -201,21 +207,28 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             e.preventDefault();
         }
 
-        if (currentPage > 1) {
-            // Play a subtle haptic feedback on mobile if available
-            // if (navigator.vibrate) {
-            //     navigator.vibrate(40);
-            // }
+        if (currentPage <= 1) return; // Already at first page
 
-            // Reset translation when changing page
-            // resetTranslation();
+        // Add page transition effect
+        if (pagesContainerRef.current) {
+            pagesContainerRef.current.style.transition = 'transform 0.3s ease-in-out';
+            // Reset transition after animation completes
+            setTimeout(() => {
+                if (pagesContainerRef.current) {
+                    pagesContainerRef.current.style.transition = 'none';
+                }
+            }, 300);
+        }
+
+        // Update page after a small delay to allow for animation
+        setTimeout(() => {
             if (viewMode === "single") {
                 setCurrentPage((prev) => prev - 1);
             } else {
                 // In double page mode, go back by 2 pages
                 setCurrentPage((prev) => Math.max(1, prev - 2));
             }
-        }
+        }, 10);
     };
 
     // Go to next page
@@ -226,22 +239,28 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             e.preventDefault();
         }
 
-        if (currentPage < totalPages) {
-            // Play a subtle haptic feedback on mobile if available
-            // if (navigator.vibrate) {
-            //     navigator.vibrate(40);
-            // }
+        if (currentPage >= totalPages) return; // Already at last page
 
-            // Reset translation when changing page
-            // resetTranslation();
+        // Add page transition effect
+        if (pagesContainerRef.current) {
+            pagesContainerRef.current.style.transition = 'transform 0.3s ease-in-out';
+            // Reset transition after animation completes
+            setTimeout(() => {
+                if (pagesContainerRef.current) {
+                    pagesContainerRef.current.style.transition = 'none';
+                }
+            }, 300);
+        }
 
+        // Update page after a small delay to allow for animation
+        setTimeout(() => {
             if (viewMode === "single") {
                 setCurrentPage((prev) => prev + 1);
             } else {
                 // In double page mode, advance by 2 pages
                 setCurrentPage((prev) => Math.min(totalPages, prev + 2));
             }
-        }
+        }, 10);
     };
 
     // Set view mode (single or double)
@@ -303,6 +322,31 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
 
     // Alias for consistency
     const resetZoomCenter = resetZoom;
+
+    // Toggle fullscreen
+    const toggleFullscreen = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+            setIsFullscreen(true);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        }
+
+        // Haptic feedback on mobile
+        if (navigator.vibrate) {
+            navigator.vibrate(20);
+        }
+    }, []);
 
     // Toggle sidebar
     const toggleSidebar = (e?: React.MouseEvent | React.TouchEvent) => {
@@ -628,19 +672,20 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
         return `${baseClasses} bg-gray-500/90 hover:bg-pink-500 active:bg-pink-600 hover:scale-110 cursor-pointer`;
     };
 
-
-    // Log reader usage only once when component mounts and only if starting from the first page
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Log reader usage only once per session when the book is first opened
     useEffect(() => {
-        if (currentPage === 1) {
+        const logKey = `book-opened-${bookId}-${user.id}`;
+
+        if (!sessionStorage.getItem(logKey) && currentPage === 1) {
             logger.info('[read-book]', {
                 userMail: user.email,
                 bookTitle: book.title,
                 userId: user.id,
                 bookId: bookId,
             });
+            sessionStorage.setItem(logKey, 'true');
         }
-    }, []);  // Empty dependency array ensures this runs only once when component mounts
+    }, [bookId, user.id, user.email, book.title, currentPage]);
 
     return (
         <div className="relative h-full w-full">
@@ -679,7 +724,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             >
                 <button
                     ref={toggleSidebarBtnRef}
-                    className="absolute top-[62px] -left-[29px] w-[28px] h-[36px] rounded-sm bg-sky-500/50 hover:bg-sky-600 flex justify-center items-center cursor-pointer shadow-sm border-none text-white p-0 z-[11] transform -translate-y-1/2 transition-colors select-none"
+                    className="absolute top-[150px] -left-[29px] w-[28px] h-[36px] rounded-sm bg-sky-500/50 hover:bg-sky-600 flex justify-center items-center cursor-pointer shadow-sm border-none text-white p-0 z-[11] transform -translate-y-1/2 transition-colors select-none"
                     onClick={(e) => toggleSidebar(e)}
                     aria-label="Toggle sidebar"
                 >
@@ -771,22 +816,15 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 <div
                     ref={viewerContainerRef}
                     className="flex-1 flex justify-center items-center relative overflow-hidden touch-none"
-                    onMouseDown={startDrag}
-                    onTouchStart={startDrag}
-                    onTouchEnd={handleDoubleTap}
-                    onDoubleClick={resetZoomCenter}
                 >
-                    {/* Pages Container - centered horizontally and vertically */}
+                    {/* Render Pages */}
                     <div
-                        ref={pagesContainerRef}
-                        className="flex justify-center items-center h-full cursor-grab transition-none transform-gpu"
+                        className={`flex h-full justify-center items-center ${isLoading ? 'invisible' : ''}`}
                         style={{
-                            ...getTransformStyle(),
-                            gap: viewMode === 'double' ? CONFIG.pageGap : 0,
+                            gap: viewMode === 'double' ? `${CONFIG.pageGap}px` : '0'
                         }}
                     >
-                        {/* Render Pages */}
-                        {getVisiblePages().map((pageNum) => (
+                        {visiblePages.map((pageNum) => (
                             <div key={pageNum} className="h-full flex justify-center items-center select-none">
                                 <img
                                     src={imagesLoaded[pageNum] || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1.4"%3E%3C/svg%3E'}
@@ -794,16 +832,23 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                                     className="max-h-full max-w-full object-contain shadow-md bg-white pointer-events-none select-none"
                                     draggable="false"
                                     data-page={pageNum}
-                                    loading="lazy"
+                                    loading="eager"
+                                    onLoad={() => {
+                                        // When an image loads, ensure it's marked as loaded in our state
+                                        if (!imagesLoaded[pageNum]) {
+                                            setImagesLoaded(prev => ({
+                                                ...prev,
+                                                [pageNum]: getImagePath(pageNum)
+                                            }));
+                                        }
+                                    }}
                                 />
                             </div>
                         ))}
                     </div>
-                    {/* Navigation Buttons are now placed outside the viewer container for better touch handling */}
-
                 </div>
 
-                {/* Navigation Buttons - positioned absolutely with improved touch target */}
+                {/* Navigation Buttons are now placed outside the viewer container for better touch handling */}
                 <div className="fixed inset-0 pointer-events-none z-[25]">
                     <div className="absolute w-full flex justify-between px-1 sm:px-4 top-1/2 transform -translate-y-1/2">
                         <button
@@ -812,9 +857,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                             onTouchEnd={goToPrevPage}
                             aria-label="Previous page"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6 sm:w-7 sm:h-7 fill-gray-100 hover:fill-white">
-                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-                            </svg>
+                            <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7 text-gray-100 hover:text-white" />
                         </button>
                         <button
                             className={`${getButtonClassName(currentPage, 'next', totalPages)} touch-manipulation`}
@@ -822,11 +865,25 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                             onTouchEnd={goToNextPage}
                             aria-label="Next page"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-6 h-6 sm:w-7 sm:h-7 fill-gray-100 hover:fill-white">
-                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-                            </svg>
+                            <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7 text-gray-100 hover:text-white" />
                         </button>
                     </div>
+                </div>
+
+                {/* Fullscreen Button - Top Right */}
+                <div className="fixed top-4 right-5 z-[25] pointer-events-none">
+                    <button
+                        className="p-2 bg-black/40 hover:bg-black/60 rounded-full pointer-events-auto touch-manipulation transition-colors backdrop-blur-sm"
+                        onClick={toggleFullscreen}
+                        onTouchEnd={toggleFullscreen}
+                        aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                    >
+                        {isFullscreen ? (
+                            <Minimize className="w-5 h-5 sm:w-6 sm:h-6 text-gray-100 hover:text-white" />
+                        ) : (
+                            <Fullscreen className="w-5 h-5 sm:w-6 sm:h-6 text-gray-100 hover:text-white" />
+                        )}
+                    </button>
                 </div>
 
                 {/* Page Info */}
@@ -834,10 +891,10 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                     {getPageInfoText()}
                 </div>
 
-                {/* Loading Indicator */}
+                {/* Loading Indicator - Only show when pages are loading */}
                 {isLoading && (
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white py-4 px-5 rounded z-[500]">
-                        Caricamento...
+                    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/70 text-white py-4 px-5 rounded z-[500] flex items-center justify-center">
+                        <div className="animate-pulse">Caricamento in corso...</div>
                     </div>
                 )}
             </div>

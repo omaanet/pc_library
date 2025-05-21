@@ -5,7 +5,7 @@ import { useLibrary } from '@/context/library-context';
 import { useAuth } from '@/context/auth-context';
 import { BookGridCard } from './book-grid-card';
 import { BookListCard } from './book-list-card';
-import { BookDialog } from './book-dialog';
+import { BookDialog, BookDialogSimple } from './book-dialog';
 // import { ViewSwitcher } from '@/components/shared/view-switcher';
 // import {
 //     Select,
@@ -536,7 +536,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
             )}
 
             {/* Book Dialog */}
-            <BookDialog
+            <BookDialogSimple
                 book={selectedBook}
                 open={!!selectedBook}
                 onOpenChange={(open) => !open && selectBook(null)}
@@ -546,6 +546,15 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                     setIsAuthModalOpen(true);
                 }}
             />
+            {/* <BookDialog
+                book={selectedBook}
+                open={!!selectedBook}
+                onOpenChange={(open) => !open && selectBook(null)}
+                isAuthenticated={isAuthenticated}
+                onLoginClick={() => {
+                    setIsAuthModalOpen(true);
+                }}
+            /> */}
 
             {/* Auth Modal */}
             <AuthModal

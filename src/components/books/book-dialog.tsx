@@ -1,8 +1,8 @@
 'use client';
 
-import * as React from 'react';
-import Image from 'next/image';
-import { Headphones, X, BookOpen, Download } from 'lucide-react';
+import { useEffect, useState } from 'react';
+// import Image from 'next/image';
+import { Headphones, X, BookOpen, Download, MailOpen, Loader2 } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -16,13 +16,14 @@ import { Button } from '@/components/ui/button';
 // import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatAudioLength, cn } from '@/lib/utils';
-import { DEFAULT_COVER_SIZES } from '@/types/images';
+// import { DEFAULT_COVER_SIZES } from '@/types/images';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
-import type { Book, AudioBook } from '@/types';
+import type { Book /*, AudioBook */ } from '@/types';
 import BookComments from './book-comments';
 import { BookExtract } from './book-extract';
 import AudioBookPlayer from '../shared/AudioBookPlayer';
 import { LinkButton } from '@/components/ui/LinkButton';
+import { useToast } from '@/components/ui/use-toast';
 
 interface BookDialogProps {
     book: Book | null;
@@ -32,6 +33,188 @@ interface BookDialogProps {
     onLoginClick?: () => void;
 }
 
+// Audio badge to show on the book cover if the book has audio
+const renderAudioBadge = (book: Book | null, visible: boolean) => {
+    if (!book?.hasAudio) return null;
+
+    return (
+        <div className={cn(
+            "absolute -top-2 right-0 sm:top-0 sm:-right-2 rounded-full bg-yellow-600/80 p-1.5",
+            "backdrop-blur-sm transition-opacity duration-200",
+            visible ? "opacity-100" : "opacity-0"
+        )}>
+            <Headphones className="h-4 w-4 sm:h-6 sm:w-6" />
+        </div>
+    );
+};
+
+export function BookDialogSimple({
+    book,
+    open,
+    onOpenChange,
+    isAuthenticated = true,
+    onLoginClick,
+}: BookDialogProps) {
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [isPdfRequesting, setIsPdfRequesting] = useState(false);
+    const { toast } = useToast();
+
+    // Reset image loaded state when dialog opens/closes or book changes
+    useEffect(() => {
+        setImageLoaded(false);
+    }, [book, open]);
+
+    // Function to handle PDF request
+    const handleRequestPdf = async () => {
+        if (!book) return;
+
+        setIsPdfRequesting(true);
+
+        try {
+            const response = await fetch(`/api/request-book/${book.id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Si è verificato un errore durante l\'invio della richiesta');
+            }
+
+            toast({
+                title: 'Richiesta inviata',
+                description: 'La richiesta per il PDF è stata inviata con successo.',
+                variant: 'default',
+                className: 'bg-green-100 border-green-500 text-green-800'
+            });
+
+        } catch (error) {
+            console.error('Errore nella richiesta del PDF:', error);
+            toast({
+                title: 'Errore',
+                description: error instanceof Error ? error.message : 'Si è verificato un errore durante l\'invio della richiesta',
+                variant: 'destructive',
+                className: 'bg-orange-100 border-red-600 text-red-700'
+            });
+        } finally {
+            setIsPdfRequesting(false);
+        }
+    };
+
+    if (!book) return null;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="p-4 overflow-hidden !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0">
+                {/* Header with Title and Audio Length */}
+                <DialogHeader className="space-y-0 p-0 sm:p-0 sm:pb-0">
+                    <DialogTitle className="text-lg font-medium text-cyan-300 line-clamp-2">
+                        {book.title}
+                    </DialogTitle>
+                    {book.hasAudio && book.audioLength && (
+                        <DialogDescription className="text-xs text-muted-foreground flex items-center justify-center">
+                            <Headphones className="h-3 w-3 mr-1" />
+                            {formatAudioLength(book.audioLength)}
+                        </DialogDescription>
+                    )}
+                </DialogHeader>
+
+                {/* Scrollable Content */}
+                <div className="flex flex-col overflow-y-auto max-h-[85vh]">
+                    {/* Book Cover with container similar to BookDialog */}
+                    <div className="flex justify-center">
+                        <div className="relative w-full flex flex-col items-center rounded-lg bg-muted/30 px-3 py-3">
+                            <div className="flex flex-col items-center">
+
+                                <div className="relative w-48 sm:w-56 md:w-64 aspect-[3/4] max-h-[60vh]">
+                                    {!imageLoaded && (
+                                        <Skeleton className="absolute inset-0 rounded-lg" />
+                                    )}
+
+                                    <img
+                                        src={getCoverImageUrl(
+                                            book.coverImage,
+                                            'detail',
+                                            { bookId: book.coverImage === IMAGE_CONFIG.placeholder.token ? book.id : undefined }
+                                        )}
+                                        alt={`Cover of ${book.title}`}
+                                        className={cn(
+                                            "w-full h-auto max-w-[70vw] max-h-[25vw] sm:max-w-full sm:max-h-[60vh] object-contain transition-opacity duration-400",
+                                            imageLoaded ? "opacity-100" : "opacity-0"
+                                        )}
+                                        sizes="(max-width: 640px) 70vw, (min-width: 768px) 33vw, 100vw"
+                                        onLoad={() => setImageLoaded(true)}
+                                        onError={() => setImageLoaded(true)}
+                                    />
+                                    {renderAudioBadge(book, imageLoaded)}
+                                </div>
+
+                                {/* Actions positioned like in BookDialog */}
+                                {isAuthenticated /*&& !book.hasAudio*/ && (
+                                    <div className="flex flex-row justify-between items-center gap-4 my-1">
+                                        <div className="text-center ">
+                                            <LinkButton url={`/read-book/${book.id}`}
+                                                icon={BookOpen}
+                                                className="p-5 text-base text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 mt-1 sm:mt-0 shadow select-none">
+                                                Leggi Racconto on-line
+                                            </LinkButton>
+                                        </div>
+
+                                        <div className="text-center">
+                                            <Button
+                                                onClick={handleRequestPdf}
+                                                disabled={isPdfRequesting}
+                                                className="p-5 text-base text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 mt-1 sm:mt-0 shadow select-none">
+                                                {isPdfRequesting ? (
+                                                    <>
+                                                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                                                        Invio in corso...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <MailOpen className="h-8 w-8 mr-2" />
+                                                        Richiedi il PDF del Racconto
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col-reverse">
+                        <div className="px-0 flex flex-col items-end">
+                            {isAuthenticated && book.hasAudio ? (
+                                <AudioBookPlayer book={book} />
+                            ) : !isAuthenticated && (
+                                <Button
+                                    onClick={onLoginClick}
+                                    size="lg"
+                                    className="mt-3 px-5 text-base bg-cyan-800 hover:bg-emerald-900 text-cyan-50"
+                                >
+                                    {book.hasAudio ? 'Accedi per ascoltare' : 'Accedi per leggere'}
+                                </Button>
+                            )}
+                        </div>
+
+                        {/* Book Extract - Auto height with scrolling when needed */}
+                        <div className="overflow-y-auto mt-2 px-0" style={{ maxHeight: 'min(25vh, 20ch)' }}>
+                            <BookExtract extract={book.extract} />
+                        </div>
+                    </div>
+
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export function BookDialog({
     book,
     open,
@@ -39,27 +222,12 @@ export function BookDialog({
     isAuthenticated = true,
     onLoginClick,
 }: BookDialogProps) {
-    const [imageLoaded, setImageLoaded] = React.useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
 
     // Reset image loaded state when dialog opens/closes or book changes
-    React.useEffect(() => {
+    useEffect(() => {
         setImageLoaded(false);
     }, [book, open]);
-
-    // Audio badge to show on the book cover if the book has audio
-    const renderAudioBadge = (book: Book | null, visible: boolean) => {
-        if (!book?.hasAudio) return null;
-
-        return (
-            <div className={cn(
-                "absolute -top-2 right-0 sm:top-0 sm:-right-2 rounded-full bg-yellow-600/80 p-1.5",
-                "backdrop-blur-sm transition-opacity duration-200",
-                visible ? "opacity-100" : "opacity-0"
-            )}>
-                <Headphones className="h-4 w-4 sm:h-6 sm:w-6" />
-            </div>
-        );
-    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,22 +288,22 @@ export function BookDialog({
                                                         // quality={90}
                                                         onLoad={() => setImageLoaded(true)}
                                                         onError={() => setImageLoaded(true)}
-                                                        // unoptimized
+                                                    // unoptimized
                                                     />
                                                     {renderAudioBadge(book, imageLoaded)}
                                                 </div>
-                                            </div> 
+                                            </div>
 
                                             {isAuthenticated /*&& !book.hasAudio*/ && (
                                                 <div className="flex flex-row justify-between items-center gap-2">
                                                     <div className="text-center ">
-                                                        <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} className="text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 mt-1 sm:mt-0 h-8 sm:h-auto mt-1 font-light shadow select-none">
+                                                        <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} className="text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 mt-1 sm:mt-0 h-8 sm:h-auto font-light shadow select-none">
                                                             Leggi
                                                         </LinkButton>
                                                     </div>
 
                                                     <div className="text-center">
-                                                        <LinkButton url={`/api/download-book/${book.id}`} icon={Download} className="text-dark hover:text-white bg-red-700/30 hover:bg-red-800 border border-red-900 mt-1 sm:mt-0 h-8 sm:h-auto mt-1 font-light shadow select-none">
+                                                        <LinkButton url={`/api/download-book/${book.id}`} icon={Download} className="text-dark hover:text-white bg-red-700/30 hover:bg-red-800 border border-red-900 mt-1 sm:mt-0 h-8 sm:h-auto font-light shadow select-none">
                                                             Scarica PDF
                                                         </LinkButton>
                                                     </div>

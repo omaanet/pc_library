@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import type { Book } from '@/types';
 import { BackButton } from './BackButton';
-import dynamic from 'next/dynamic';
 import { useAuth } from '@/context/auth-context';
-import { AuthModal } from '@/components/auth/auth-modal';
+import dynamic from 'next/dynamic';
+// import { AuthModal } from '@/components/auth/auth-modal';
 
 interface ClientReadBookPageProps {
     bookId: string;
@@ -19,24 +19,27 @@ export default function ClientReadBookPage({ bookId, book }: ClientReadBookPageP
     const { state } = useAuth();
     const { user, isLoading } = state;
 
-    // While auth state is still loading or if user is not available, show a loading indicator
+    // Show loading state while checking authentication
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="text-center font-light text-xl text-gray-300">Caricamento...</div>
-            </div>
+            <>
+                {/* <div className="flex items-center justify-center h-screen">
+                    <div className="text-center font-light text-xl text-gray-300">Caricamento...</div>
+                </div> */}
+            </>
         );
     }
 
-    // The middleware should handle authentication, but we add this as a safeguard
-    // This ensures the PageReader component never receives a null user
+    // After loading is complete, check if user is authenticated
     if (!user || !user.id) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="text-center font-light text-2xl text-gray-300">
-                    Reindirizzamento alla pagina di login...
-                </div>
-            </div>
+            <>
+                {/* <div className="flex items-center justify-center h-screen">
+                    <div className="text-center font-light text-2xl text-gray-300">
+                        Reindirizzamento alla pagina di login...
+                    </div>
+                </div> */}
+            </>
         );
     }
 
@@ -52,7 +55,9 @@ export default function ClientReadBookPage({ bookId, book }: ClientReadBookPageP
                         <p>Racconto non trovato.</p>
                     </div>
                 ) : (
-                    <PageReader book={book} bookId={bookId} user={user} />
+                    <>
+                        <PageReader book={book} bookId={bookId} user={user} />
+                    </>
                 )}
             </div>
         </div>
