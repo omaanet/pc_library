@@ -49,6 +49,12 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const [currentTranslateY, setCurrentTranslateY] = useState(0);
     const [dragStartX, setDragStartX] = useState(0);
     const [dragStartY, setDragStartY] = useState(0);
+    const [swipeStartX, setSwipeStartX] = useState(0);
+    const [swipeStartY, setSwipeStartY] = useState(0);
+    const [isSwipe, setIsSwipe] = useState(false);
+    const swipeThreshold = 75; // Minimum distance required to trigger a page change
+    const swipeTimeThreshold = 300; // Maximum time in ms for a swipe to be considered valid
+    const swipeStartTime = useRef<number>(0);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(CONFIG.sidebarCollapsed);
     const [isLoading, setIsLoading] = useState(true);
     const [visiblePages, setVisiblePages] = useState<number[]>([]);
@@ -364,7 +370,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
         setIsSidebarCollapsed((prev) => !prev);
     };
 
-    // Start drag
+    // Start drag or swipe
     const startDrag = (e: React.MouseEvent | React.TouchEvent) => {
         // Check if the event originated from a navigation control
         // If it's coming from a navigation control, don't start dragging
@@ -399,8 +405,14 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             setDragStartX(e.clientX);
             setDragStartY(e.clientY);
         } else if (e.touches && e.touches.length > 0) {
-            setDragStartX(e.touches[0].clientX);
-            setDragStartY(e.touches[0].clientY);
+            // Initialize swipe detection for touch events
+            const touch = e.touches[0];
+            setDragStartX(touch.clientX);
+            setDragStartY(touch.clientY);
+            setSwipeStartX(touch.clientX);
+            setSwipeStartY(touch.clientY);
+            setIsSwipe(false); // Reset swipe state
+            swipeStartTime.current = Date.now(); // Record start time for swipe speed detection
         }
 
         setInitialTranslateX(currentTranslateX);
@@ -414,7 +426,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
         document.body.style.userSelect = 'none';
     };
 
-    // Handle drag
+    // Handle drag or swipe
     const doDrag = (e: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
 
@@ -463,6 +475,22 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
         } else if (e.touches && e.touches.length > 0) { // Should be 1 touch if it reaches here
             clientX = e.touches[0].clientX;
             clientY = e.touches[0].clientY;
+            
+            // For touch events, track horizontal movement for potential swipe
+            // We only track this during touch move, not mouse move
+            if (Math.abs(zoomLevel - 100) < 5) { // Only enable swipe at normal zoom level
+                const deltaX = clientX - swipeStartX;
+                const deltaY = clientY - swipeStartY;
+                
+                // If movement is primarily horizontal (more X than Y), it might be a swipe
+                if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+                    // Mark as potential swipe - will be confirmed on touch end
+                    setIsSwipe(true);
+                } else if (Math.abs(deltaY) > swipeThreshold) {
+                    // If significant vertical movement, this is not a swipe
+                    setIsSwipe(false);
+                }
+            }
         } else {
             return; // No relevant event data / or more than 1 touch but not pinch-ready
         }
@@ -475,10 +503,50 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
         setCurrentTranslateY(initialTranslateY + deltaY);
     };
 
-    // End drag
-    const endDrag = () => {
+    // End drag or swipe
+    const endDrag = (e?: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
+        
+        // Check if this was a swipe (for touch events)
+        if (e && 'changedTouches' in e && e.changedTouches.length > 0 && isSwipe) {
+            const touch = e.changedTouches[0];
+            const endX = touch.clientX;
+            const endY = touch.clientY;
+            const swipeDuration = Date.now() - swipeStartTime.current;
+            
+            // Calculate swipe distance and direction
+            const deltaX = endX - swipeStartX;
+            const deltaY = endY - swipeStartY;
+            const absX = Math.abs(deltaX);
+            
+            // If horizontal movement exceeds threshold and is fast enough
+            if (absX > swipeThreshold && swipeDuration < swipeTimeThreshold) {
+                // If zoom is close to 100%, handle page navigation
+                if (Math.abs(zoomLevel - 100) < 5) {
+                    // Left swipe (deltaX negative) -> Next page
+                    // Right swipe (deltaX positive) -> Previous page
+                    if (deltaX < 0) {
+                        goToNextPage();
+                        // Provide haptic feedback for page turn if available
+                        if (navigator.vibrate) {
+                            navigator.vibrate(20);
+                        }
+                    } else {
+                        goToPrevPage();
+                        // Provide haptic feedback for page turn if available
+                        if (navigator.vibrate) {
+                            navigator.vibrate(20);
+                        }
+                    }
+                    
+                    // Reset translation to avoid unexpected UI jumps
+                    resetTranslation();
+                }
+            }
+        }
+        
         setIsDragging(false);
+        setIsSwipe(false);
 
         // Reset pinch-specific states
         pinchInitialDistance.current = null;
@@ -577,11 +645,11 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
         //     debugDiv.textContent = `Current page updated: ${currentPage}/${totalPages}`;
         // }
 
-        // Event listeners for drag handling
+        // Event listeners for drag and swipe handling
         const handleDocumentMouseMove = (e: MouseEvent) => doDrag(e);
         const handleDocumentTouchMove = (e: TouchEvent) => doDrag(e);
         const handleDocumentMouseUp = () => endDrag();
-        const handleDocumentTouchEnd = () => endDrag();
+        const handleDocumentTouchEnd = (e: TouchEvent) => endDrag(e);
         const handleDocumentKeyDown = (e: KeyboardEvent) => handleKeyDown(e);
         const handleViewerContainerWheel = (e: WheelEvent) => handleWheel(e);
 
@@ -815,7 +883,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 {/* Main Content Area - Centered both horizontally and vertically */}
                 <div
                     ref={viewerContainerRef}
-                    className="flex-1 flex justify-center items-center relative overflow-hidden touch-none"
+                    className="viewer-container relative flex-1 bg-gray-800 w-full h-full overflow-hidden select-none touch-manipulation"
                 >
                     {/* Render Pages */}
                     <div
