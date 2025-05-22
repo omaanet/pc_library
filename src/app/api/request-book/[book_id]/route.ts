@@ -54,12 +54,15 @@ export async function POST(
                 user: process.env.MAIL_USER,
                 pass: process.env.MAIL_PASSWORD,
             },
+            tls: process.env.NODE_ENV === 'development' ? {
+                rejectUnauthorized: false
+            } : undefined,
         });
 
         // Email content
         const mailOptions = {
             from: process.env.MAIL_FROM || 'noreply@omaa.it',
-            to: 'oscar@omaa.it',
+            to: process.env.NODE_ENV === 'development' ? 'oscar@omaa.it' : 'racconti@pierocarbonetti.it',
             subject: `Richiesta PDF libro: ${bookTitle}`,
             html: `
             <h2>Richiesta PDF</h2>
