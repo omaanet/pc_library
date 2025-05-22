@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useAuth } from '@/context/auth-context';
 // import Image from 'next/image';
 import { Headphones, X, BookOpen, Download, MailOpen, Loader2 } from 'lucide-react';
 import {
@@ -58,11 +59,40 @@ export function BookDialogSimple({
     const [imageLoaded, setImageLoaded] = useState(false);
     const [isPdfRequesting, setIsPdfRequesting] = useState(false);
     const { toast } = useToast();
+    const { state: authState } = useAuth();
+    const pendingActionRef = useRef<{ type: 'request-pdf'; bookId: string } | null>(null);
 
     // Reset image loaded state when dialog opens/closes or book changes
     useEffect(() => {
         setImageLoaded(false);
     }, [book, open]);
+
+    // Effect to handle authentication state changes and retry pending actions
+    useEffect(() => {
+        // If user just logged in and there's a pending action
+        if (authState.isAuthenticated && pendingActionRef.current) {
+            const pendingAction = pendingActionRef.current;
+
+            // Clear the pending action immediately to prevent loops
+            pendingActionRef.current = null;
+
+            // Handle different action types
+            if (pendingAction.type === 'request-pdf' && book?.id === pendingAction.bookId) {
+                // Small delay to ensure auth is fully established
+                setTimeout(() => {
+                    toast({
+                        title: 'Autenticazione completata',
+                        description: 'Riproviamo a richiedere il PDF...',
+                        variant: 'default',
+                        className: 'bg-green-100 border-green-500 text-green-800'
+                    });
+
+                    // Retry the PDF request
+                    handleRequestPdf();
+                }, 500);
+            }
+        }
+    }, [authState.isAuthenticated, book]);
 
     // Function to handle PDF request
     const handleRequestPdf = async () => {
@@ -81,16 +111,37 @@ export function BookDialogSimple({
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Si è verificato un errore durante l\'invio della richiesta');
+                // Handle 401 Unauthorized errors by showing the AuthModal
+                if (response.status === 401 && onLoginClick) {
+                    // Save the pending action to retry after login
+                    pendingActionRef.current = {
+                        type: 'request-pdf',
+                        bookId: book.id
+                    };
+
+                    // Show login modal
+                    onLoginClick();
+
+                    // Display a message that login is required
+                    toast({
+                        title: 'Accesso richiesto',
+                        description: 'Devi effettuare l\'accesso per richiedere un PDF',
+                        variant: 'default',
+                        className: 'bg-blue-100 border-blue-500 text-blue-800'
+                    });
+                } else {
+                    // Handle other errors
+                    throw new Error(data.error || 'Si è verificato un errore durante l\'invio della richiesta');
+                }
+            } else {
+                // Success response
+                toast({
+                    title: 'Richiesta inviata',
+                    description: 'La richiesta per il PDF è stata inviata con successo.',
+                    variant: 'default',
+                    className: 'bg-green-100 border-green-500 text-green-800'
+                });
             }
-
-            toast({
-                title: 'Richiesta inviata',
-                description: 'La richiesta per il PDF è stata inviata con successo.',
-                variant: 'default',
-                className: 'bg-green-100 border-green-500 text-green-800'
-            });
-
         } catch (error) {
             console.error('Errore nella richiesta del PDF:', error);
             toast({
