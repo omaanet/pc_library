@@ -2,7 +2,7 @@
 
 The project is built using the following technologies:
 
--   **Frontend Framework:** Next.js 15 (App Router) with React 19
+-   **Frontend Framework:** Next.js 15+ (App Router) with React 19+
 -   **Language:** TypeScript
 -   **UI Components:** Shadcn UI built on Radix UI primitives
 -   **Styling:** Tailwind CSS

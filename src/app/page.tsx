@@ -10,14 +10,13 @@ import { AuthModal } from '@/components/auth/auth-modal';
 import { Book } from '@/types';
 import { useAuth } from '@/context/auth-context';
 // import { Button } from '@/components/ui/button';
-import { Book as BookIcon, Headphones } from 'lucide-react';
+import { Book as BookIcon, Headphones, Loader2 } from 'lucide-react';
 // import { cn } from '@/lib/utils';
 import { DEFAULT_COVER_SIZES } from '@/types/images';
 import { CopyrightFooter } from '@/components/shared/copyright-footer';
 // import { useLogger } from '@/lib/logging.client';
 
 import dynamic from 'next/dynamic';
-const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), { ssr: false });
 
 export default function HomePage() {
     // const source = 'HomePage';
@@ -27,13 +26,17 @@ export default function HomePage() {
     const [loading, setLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
 
-    /*
-    const { info } = useLogger(source);
-
-    useEffect(() => {
-        info('TEST');
-    }, []);
-    */
+    const MuxPlayer = dynamic(
+        () => import('@mux/mux-player-react'),
+        {
+            ssr: false,
+            loading: () => (
+                <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            )
+        }
+    );
 
     useEffect(() => {
         async function fetchPreviewBooks() {
@@ -55,10 +58,10 @@ export default function HomePage() {
         }
 
         fetchPreviewBooks();
-    }, []);
 
-    useEffect(() => {
+        // Set mounted state when component mounts
         setMounted(true);
+        return () => setMounted(false);
     }, []);
 
     return (
@@ -68,7 +71,7 @@ export default function HomePage() {
                 onAuthClick={() => setIsAuthModalOpen(true)}
             />
 
-            <main className="flex-1 mx-auto mx-5 sm:mx-auto">
+            <main className="flex-1 mx-5 sm:mx-auto">
 
                 {/* Hero Section */}
                 <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">
@@ -121,7 +124,7 @@ export default function HomePage() {
                 <div className="w-full grid grid-cols-1 gap-6 py-8">
                     <div className="rounded-xl border bg-card p-6">
                         <div className="flex flex-row items-center justify-center mb-8">
-                            <BookIcon className="h-10 w-10 mx-2" />
+                            <BookIcon className="h-8 w-8 -mt-1 mx-2" />
                             <div className="text-xl font-semibold mx-2 text-center">Racconti In Anteprima</div>
                         </div>
 
@@ -144,7 +147,7 @@ export default function HomePage() {
                                             style={{
                                                 width: DEFAULT_COVER_SIZES.video.width,
                                                 height: DEFAULT_COVER_SIZES.video.height,
-                                                "--cast-button": "none",
+                                                "--cast-button": "none"
                                             } as React.CSSProperties}
                                         />
                                     )}
@@ -163,6 +166,27 @@ export default function HomePage() {
                                         <BookCover key={`${book.id}-${index}`} book={book} orientation="portrait" />
                                     ))
                                 )}
+
+                                <div
+                                    className="relative flex justify-center items-center bg-muted/30 rounded-sm"
+                                    style={{ height: DEFAULT_COVER_SIZES.video.height }}
+                                >
+                                    {mounted && (
+                                        <MuxPlayer
+                                            playbackId="OUBwb9ttqKASxQnb8EnKnIszb301VrROQ"
+                                            metadata={{
+                                                video_title: 'La Ragazza del Carillon',
+                                                viewer_user_id: '1'
+                                            }}
+                                            style={{
+                                                width: DEFAULT_COVER_SIZES.video.width,
+                                                height: DEFAULT_COVER_SIZES.video.height,
+                                                "--cast-button": "none"
+                                            } as React.CSSProperties}
+                                        />
+                                    )}
+                                </div>
+
                             </div>
                         </section>
 

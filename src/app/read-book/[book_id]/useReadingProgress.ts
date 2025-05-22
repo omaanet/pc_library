@@ -7,14 +7,26 @@ import { useState, useEffect, useCallback } from 'react';
 export function useReadingProgress(bookId: string) {
     const key = `read-progress:${bookId}:audio`;
     const [progress, setProgress] = useState<number | undefined>(undefined);
+    const [isClient, setIsClient] = useState(false);
 
-    // Load progress from localStorage
+    // Set isClient to true after mount
     useEffect(() => {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-            setProgress(Number(stored));
+        setIsClient(true);
+    }, []);
+
+    // Load progress from localStorage after mount
+    useEffect(() => {
+        if (!isClient) return;
+        
+        try {
+            const stored = localStorage.getItem(key);
+            if (stored) {
+                setProgress(Number(stored));
+            }
+        } catch (error) {
+            console.error('Error loading reading progress:', error);
         }
-    }, [key]);
+    }, [key, isClient]);
 
     // Save progress to localStorage
     const saveProgress = useCallback(

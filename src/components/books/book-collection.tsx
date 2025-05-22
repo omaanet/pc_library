@@ -79,6 +79,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     // Local loading states
     const [searchDebounce, setSearchDebounce] = React.useState<NodeJS.Timeout>();
     const [isLoadingMore, setIsLoadingMore] = React.useState(false);
+    const [isInitialLoad, setIsInitialLoad] = React.useState(true);
 
     // Track loaded images
     const [loadedImages, setLoadedImages] = React.useState<Set<string>>(new Set());
@@ -96,6 +97,9 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
 
         const loadBooks = async () => {
             setLocalIsLoading(true);
+            if (isInitialLoad) {
+                setIsInitialLoad(false);
+            }
 
             // console.log('Loading books with displayPreviews:', displayPreviews);
             try {
@@ -439,11 +443,11 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     // const currentSortKey = `${sort.by}-${sort.order}`;
 
     return (
-        <div className="space-y-4 sm:space-y-6 w-100 mx-2 md:mx-0">
+        <div className="w-full max-w-[2000px] mx-auto px-2 sm:px-4 space-y-4 sm:space-y-6">
             {/* Controls Section */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-baseline gap-4">
-                    <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <BookOpen className="h-8 w-8 self-center" />
                     <h2 className="text-2xl sm:text-3xl font-medium tracking-normal">
                         Biblioteca
                     </h2>
@@ -451,7 +455,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
             </div>
 
             {/* Filters Section */}
-            <div className="flex flex-wrap gap-4 rounded-lg border bg-card px-4 py-2 sm:py-4 w-100">
+            <div className="flex flex-wrap gap-4 rounded-lg border bg-card p-4 w-full">
                 <div className="flex-1">
                     <Input
                         ref={searchInputRef}
@@ -475,65 +479,63 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
             </div>
 
             {/* Books Grid/List */}
-            {showLoadingState ? (
-                viewMode === 'grid' ? (
+            <div className="min-h-[600px] transition-opacity duration-300">
+                {isInitialLoad && showLoadingState ? (
                     <BookGridSkeleton count={localPagination?.perPage || 8} />
                 ) : (
-                    <BookListSkeleton count={localPagination?.perPage || 8} />
-                )
-            ) : (
-                <div className="space-y-6 w-100">
-                    {localBooks && localBooks.length > 0 ? (
-                        <>
-                            {viewMode === 'grid' ? (
-                                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 w-100">
-                                    {localBooks.map((book) => (
-                                        <BookGridCard
-                                            key={book.id}
-                                            book={book}
-                                            onSelect={selectBook}
-                                        />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="divide-y rounded-lg border bg-card w-100">
-                                    {localBooks.map((book) => (
-                                        <BookListCard
-                                            key={book.id}
-                                            book={book}
-                                            onSelect={selectBook}
-                                        />
-                                    ))}
-                                </div>
-                            )}
+                    <div className="space-y-6 w-full">
+                        {localBooks && localBooks.length > 0 ? (
+                            <>
+                                {viewMode === 'grid' ? (
+                                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 w-full">
+                                        {localBooks.map((book) => (
+                                            <BookGridCard
+                                                key={book.id}
+                                                book={book}
+                                                onSelect={selectBook}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="divide-y rounded-lg border bg-card w-100">
+                                        {localBooks.map((book) => (
+                                            <BookListCard
+                                                key={book.id}
+                                                book={book}
+                                                onSelect={selectBook}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
 
-                            {/* Load More */}
-                            {localPagination && localPagination.total > localBooks.length && (
-                                <div className="flex justify-center pt-4">
-                                    <Button
-                                        variant="outline"
-                                        onClick={handleLoadMore}
-                                        disabled={isLoadingMore}
-                                    >
-                                        {isLoadingMore ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Caricamento...
-                                            </>
-                                        ) : (
-                                            'Carica altro'
-                                        )}
-                                    </Button>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                            Nessun libro trovato. Prova a modificare la ricerca o i filtri.
-                        </div>
-                    )}
-                </div>
-            )}
+                                {/* Load More */}
+                                {localPagination && localPagination.total > localBooks.length && (
+                                    <div className="flex justify-center pt-4">
+                                        <Button
+                                            variant="outline"
+                                            onClick={handleLoadMore}
+                                            disabled={isLoadingMore}
+                                        >
+                                            {isLoadingMore ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Caricamento...
+                                                </>
+                                            ) : (
+                                                'Carica altro'
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-center py-8 text-muted-foreground">
+                                Nessun libro trovato. Prova a modificare la ricerca o i filtri.
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
 
             {/* Book Dialog */}
             <BookDialogSimple

@@ -1,16 +1,31 @@
-// BackButton.js - Client Component
-'use client'; // Mark as client component
+'use client';
 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CornerUpLeft } from 'lucide-react';
+import { CornerUpLeft } from 'lucide-react'; // Removed unused ArrowLeft import
 
 export function BackButton() {
     const router = useRouter();
 
+    const [supportsVibration, setSupportsVibration] = useState(false);
+
+    // Check for vibration support after mount
+    useEffect(() => {
+        setSupportsVibration(
+            typeof window !== 'undefined' &&
+            'vibrate' in window.navigator &&
+            typeof window.navigator.vibrate === 'function'
+        );
+    }, []);
+
     const handleBackClick = () => {
         // Play a subtle haptic feedback on mobile if available
-        if (navigator.vibrate) {
-            navigator.vibrate(40);
+        if (supportsVibration) {
+            try {
+                window.navigator.vibrate(40);
+            } catch (error) {
+                console.error('Vibration failed:', error);
+            }
         }
         router.back();
     };

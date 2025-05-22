@@ -14,15 +14,19 @@ export interface ReaderStyleConfig {
 
 export function useReaderTheme(bookId: string) {
     const key = `reader-style:${bookId}`;
-    // Initialize styleConfig synchronously from localStorage (client-only)
-    const [styleConfig, setStyleConfig] = useState<ReaderStyleConfig>(() => {
+    const [styleConfig, setStyleConfig] = useState<ReaderStyleConfig>({});
+
+    // Load style from localStorage after mount
+    useEffect(() => {
         try {
             const stored = localStorage.getItem(key);
-            return stored ? JSON.parse(stored) as ReaderStyleConfig : {};
-        } catch {
-            return {};
+            if (stored) {
+                setStyleConfig(JSON.parse(stored) as ReaderStyleConfig);
+            }
+        } catch (error) {
+            console.error('Error loading reader theme:', error);
         }
-    });
+    }, [key]);
 
     // Save style to localStorage
     const saveStyle = useCallback((newConfig: ReaderStyleConfig) => {

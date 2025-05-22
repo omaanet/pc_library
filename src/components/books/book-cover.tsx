@@ -44,7 +44,7 @@ export function BookCover({ book, orientation, className }: BookCoverProps) {
             )}
 
             {/* Book cover image */}
-            <Image
+            <img
                 src={imageUrl}
                 alt={`Cover of ${book.title}`}
                 width={width}
@@ -53,12 +53,9 @@ export function BookCover({ book, orientation, className }: BookCoverProps) {
                     "max-w-full max-h-full rounded-sm object-contain transition-opacity duration-200",
                     imageLoaded ? "opacity-100" : "opacity-0"
                 )}
-                sizes={getImageSizeString('list')}
-                quality={75}
                 loading="lazy"
                 onLoad={() => setImageLoaded(true)}
                 onError={() => setImageLoaded(true)}
-                unoptimized={false}
             />
 
             {/* Audio badge */}
