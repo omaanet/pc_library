@@ -108,10 +108,10 @@ export function BookDialogSimple({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="p-4 overflow-hidden !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0">
+            <DialogContent className="p-2 sm:p-4 overflow-hidden !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0">
                 {/* Header with Title and Audio Length */}
                 <DialogHeader className="space-y-0 p-0 sm:p-0 sm:pb-0">
-                    <DialogTitle className="text-lg font-medium text-cyan-300 line-clamp-2">
+                    <DialogTitle className="mt-2 sm:mt-0 text-lg font-medium text-cyan-300 line-clamp-2">
                         {book.title}
                     </DialogTitle>
                     {book.hasAudio && book.audioLength && (
@@ -142,7 +142,7 @@ export function BookDialogSimple({
                                         )}
                                         alt={`Cover of ${book.title}`}
                                         className={cn(
-                                            "w-full h-auto max-w-[70vw] max-h-[25vw] sm:max-w-full sm:max-h-[60vh] object-contain transition-opacity duration-400",
+                                            "w-full h-auto sm:max-w-full sm:max-h-[60vh] object-contain transition-opacity duration-400",
                                             imageLoaded ? "opacity-100" : "opacity-0"
                                         )}
                                         sizes="(max-width: 640px) 70vw, (min-width: 768px) 33vw, 100vw"
@@ -158,8 +158,8 @@ export function BookDialogSimple({
                                         <div className="text-center ">
                                             <LinkButton url={`/read-book/${book.id}`}
                                                 icon={BookOpen}
-                                                className="p-5 text-base text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 mt-1 sm:mt-0 shadow select-none">
-                                                Leggi Racconto on-line
+                                                className="p-2 sm:p-5 text-sm sm:text-base font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 mt-1 sm:mt-0 shadow select-none">
+                                                Leggi<span className="hidden sm:block">Racconto</span> on-line
                                             </LinkButton>
                                         </div>
 
@@ -167,7 +167,7 @@ export function BookDialogSimple({
                                             <Button
                                                 onClick={handleRequestPdf}
                                                 disabled={isPdfRequesting}
-                                                className="p-5 text-base text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 mt-1 sm:mt-0 shadow select-none">
+                                                className="p-2 sm:p-5 text-sm sm:text-base font-normal text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 mt-1 sm:mt-0 shadow select-none">
                                                 {isPdfRequesting ? (
                                                     <>
                                                         <Loader2 className="h-5 w-5 mr-2 animate-spin" />
@@ -176,7 +176,7 @@ export function BookDialogSimple({
                                                 ) : (
                                                     <>
                                                         <MailOpen className="h-8 w-8 mr-2" />
-                                                        Richiedi il PDF del Racconto
+                                                        Richiedi il PDF<span className="hidden sm:block">del Racconto</span>
                                                     </>
                                                 )}
                                             </Button>
@@ -204,7 +204,7 @@ export function BookDialogSimple({
                         </div>
 
                         {/* Book Extract - Auto height with scrolling when needed */}
-                        <div className="overflow-y-auto mt-2 px-0" style={{ maxHeight: 'min(25vh, 20ch)' }}>
+                        <div className="overflow-y-auto mt-1 sm:mt-2 px-0" style={{ maxHeight: 'min(25vh, 20ch)' }}>
                             <BookExtract extract={book.extract} />
                         </div>
                     </div>
@@ -239,7 +239,7 @@ export function BookDialog({
                 <DialogClose
                     className="!outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0 border-none absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                     <X className="h-4 w-4" />
-                    <span className="sr-only">Close</span>
+                    <span className="hidden sm:block">Close</span>
                 </DialogClose>
                 {book ? (
                     <>

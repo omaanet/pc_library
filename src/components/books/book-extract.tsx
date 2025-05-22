@@ -22,12 +22,12 @@ export function BookExtract({ extract }: BookExtractProps) {
             {/* italic */}
             <p
                 className="py-0 ps-2 pe-3 indent-8
-                    text-xs sm:text-[1.10rem]
+                    text-[0.85rem] sm:text-[1.10rem]
                     text-gray-700 dark:text-gray-300
                     font-light
                     text-justify whitespace-pre-line
-                    leading-relaxed
-                    line-clamp-4
+                    leading-default sm:leading-relaxed
+                    line-clamp-5
                     overflow-hidden text-ellipsis"
                 dangerouslySetInnerHTML={{ __html: sanitizedExtract || 'Nessun estratto disponibile' }}
             />
