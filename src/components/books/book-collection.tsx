@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, AlertCircle, BookOpen, Headphones } from 'lucide-react';
+import { AudioFilterSwitch } from '@/components/ui/audio-filter-switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BookGridSkeleton, BookListSkeleton } from '@/components/ui/loading-placeholder';
 // import { DEFAULT_COVER_SIZES } from '@/types/images';
@@ -467,15 +468,16 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                         disabled={showLoadingState}
                     />
                 </div>
-                <div className="flex flex-row flex-nowrap items-center gap-2 hover:text-yellow-400 cursor-pointer select-none">
-                    <Switch
-                        id="audioFilter"
-                        checked={filters.hasAudio}
-                        onCheckedChange={handleAudioFilterChange}
-                        disabled={showLoadingState}
-                    />
-                    <Label htmlFor="audioFilter" className="flex flex-row items-center gap-2"><Headphones className="h-4 w-4" />solo Audio Racconti</Label>
-                </div>
+                <AudioFilterSwitch 
+                    checked={filters.hasAudio} 
+                    onCheckedChange={handleAudioFilterChange} 
+                    disabled={Boolean(showLoadingState)}
+                    hoverUncheckedColor="yellow-400"
+                    hoverCheckedColor="yellow-200"
+                    defaultCheckedColor="yellow-400"
+                    defaultUncheckedColor="gray-200"
+                    disabledColor="gray-300"
+                />
             </div>
 
             {/* Books Grid/List */}
