@@ -11,7 +11,8 @@ import {
     Search,
     RefreshCw,
     Eye,
-    EyeOff
+    EyeOff,
+    Copy
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 // import { getCoverImageUrl } from '@/lib/image-utils';
@@ -40,6 +41,7 @@ import { Label } from '@/components/ui/label';
 interface BookTableProps {
     books: Book[];
     onEdit: (book: Book) => void;
+    onClone: (book: Book) => void;
     onDelete: (id: string) => Promise<boolean>;
     onRefresh: () => void;
     isLoading: boolean;
@@ -61,6 +63,7 @@ type SortDirection = 'asc' | 'desc';
 export function BookTable({
     books,
     onEdit,
+    onClone,
     onDelete,
     onRefresh,
     isLoading,
@@ -163,6 +166,12 @@ export function BookTable({
     const confirmDelete = (book: Book) => {
         setBookToDelete(book);
         setDeleteDialogOpen(true);
+    };
+
+    const handleClone = (book: Book) => {
+        const { id, ...bookWithoutId } = JSON.parse(JSON.stringify(book));
+        bookWithoutId.title = `${book.title} (Copy)`;
+        onClone(bookWithoutId as Book);
     };
 
     // Handle actual deletion
@@ -299,14 +308,34 @@ export function BookTable({
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                onClick={() => onEdit(book)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onEdit(book);
+                                                }}
+                                                title="Edit book"
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                onClick={() => confirmDelete(book)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onClone(book);
+                                                }}
+                                                title="Clone book"
+                                            >
+                                                <Copy className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    confirmDelete(book);
+                                                }}
+                                                className="text-destructive hover:text-destructive hover:border-destructive"
+                                                title="Delete book"
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>

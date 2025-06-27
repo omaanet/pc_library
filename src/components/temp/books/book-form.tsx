@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -37,16 +37,21 @@ const bookFormSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     coverImage: z.string().default(IMAGE_CONFIG.placeholder.token),
     pagesCount: z.number().int().min(1, 'Page count must be at least 1').optional(),
+    displayOrder: z.number().int().nullable().optional(),
     publishingDate: z.date({
         required_error: 'Publishing date is required',
     }),
-    // summary: z.string().min(1, 'Summary is required'),
-    summary: z.string().optional(),
+    summary: z.string().nullable().optional(),
     hasAudio: z.boolean().default(false),
-    audioLength: z.number().min(1).optional(),
-    extract: z.string().optional(),
+    audioLength: z.number().min(1).nullable().optional(),
+    extract: z.string().nullable().optional(),
     rating: z.number().min(1).max(5).nullable().optional(),
     isPreview: z.boolean().default(false),
+    isVisible: z.boolean().default(true),
+    // Audiobook specific fields
+    audiobook: z.object({
+        mediaId: z.string().nullable().optional()
+    }).optional()
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
@@ -59,13 +64,29 @@ interface BookFormProps {
 }
 
 export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormProps) {
+    // Debug log to see what data is being received
+    console.log('[BookForm] Received book data:', JSON.stringify(book, null, 2));
+    console.log('[BookForm] hasAudio:', book?.hasAudio);
+    console.log('[BookForm] audiobook:', book?.audiobook);
+    console.log('[BookForm] audiobook.mediaId:', book?.audiobook?.mediaId);
+
     const [showAudioLength, setShowAudioLength] = useState(book?.hasAudio || false);
+
+    // Ensure book.audiobook is defined if hasAudio is true
+    if (book?.hasAudio && !book.audiobook) {
+        console.log('[BookForm] Creating missing audiobook object');
+        book = {
+            ...book,
+            audiobook: { mediaId: null }
+        };
+    }
 
     // Default values for the form
     const defaultValues: Partial<BookFormValues> = {
         title: book?.title || '',
         coverImage: book?.coverImage || IMAGE_CONFIG.placeholder.token,
         pagesCount: book?.pagesCount,
+        displayOrder: book?.displayOrder ?? null,
         publishingDate: book?.publishingDate ? new Date(book.publishingDate) : new Date(),
         summary: book?.summary || '',
         hasAudio: book?.hasAudio || false,
@@ -73,6 +94,10 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         extract: book?.extract || '',
         rating: book?.rating,
         isPreview: book?.isPreview || false,
+        isVisible: book?.isVisible !== undefined ? Boolean(book.isVisible) : true,
+        audiobook: {
+            mediaId: book?.audiobook?.mediaId || null
+        }
     };
 
     const form = useForm<BookFormValues>({
@@ -81,15 +106,39 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         mode: "onBlur",
     });
 
+    // Reset form when book prop changes
+    useEffect(() => {
+        console.log('[BookForm] Book changed, resetting form with:', book);
+        if (book) {
+            form.reset({
+                title: book.title || '',
+                coverImage: book.coverImage || IMAGE_CONFIG.placeholder.token,
+                pagesCount: book.pagesCount,
+                displayOrder: book.displayOrder ?? null,
+                publishingDate: book.publishingDate ? new Date(book.publishingDate) : new Date(),
+                summary: book.summary || '',
+                hasAudio: book.hasAudio || false,
+                audioLength: book.audioLength,
+                extract: book.extract || '',
+                rating: book.rating,
+                isPreview: book.isPreview || false,
+                isVisible: book.isVisible !== undefined ? Boolean(book.isVisible) : true,
+                audiobook: {
+                    mediaId: book.audiobook?.mediaId || null
+                }
+            });
+        }
+    }, [book, form]);
+
     // Watch hasAudio to show/hide audioLength field
     const hasAudio = form.watch('hasAudio');
-    React.useEffect(() => {
+    useEffect(() => {
         setShowAudioLength(hasAudio);
     }, [hasAudio]);
 
     // Submit handler that properly logs and calls the parent's onSubmit function
     const handleSubmit = async (data: BookFormValues) => {
-        console.log("Form submitted with values:", data);
+        // console.log("Form submitted with values:", data);
         try {
             await onSubmit(data);
         } catch (error) {
@@ -104,7 +153,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                 onSubmit={(e) => {
                     e.preventDefault();
                     const formData = form.getValues();
-                    console.log("Form submitted manually with values:", formData);
+                    // console.log("Form submitted manually with values:", formData);
                     handleSubmit(formData);
                 }}
                 noValidate
@@ -177,6 +226,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                                     placeholder="Book summary"
                                     className="min-h-0 focus:min-h-[120px]"
                                     {...field}
+                                    value={field.value || ''}
                                     autoCorrect="off"
                                     autoCapitalize="off"
                                     autoComplete="off"
@@ -261,6 +311,33 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
 
                 <FormField
                     control={form.control}
+                    name="displayOrder"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Display Order <span className="text-muted-foreground">(optional)</span></FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    placeholder="Display order (lower numbers first)"
+                                    value={field.value === null || field.value === undefined ? '' : field.value}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        field.onChange(value === '' ? null : parseInt(value, 10));
+                                    }}
+                                    className="w-auto"
+                                />
+                            </FormControl>
+                            <FormDescription>
+                                Lower numbers appear first in listings
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
                     name="hasAudio"
                     render={({ field }) => (
                         <FormItem className={`space-y-4 rounded-lg border-2 p-4 transition-colors ${field.value ? 'border-primary/50' : 'border-border'}`}>
@@ -280,7 +357,31 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                             </div>
 
                             {field.value && (
-                                <div className="ms-10">
+                                <div className="ms-10 space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="audiobook.mediaId"
+                                        render={({ field: mediaField }) => (
+                                            <FormItem>
+                                                <FormLabel>Media ID <span className="text-muted-foreground">(optional)</span></FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="Audiobook media ID"
+                                                        value={mediaField.value || ''}
+                                                        onChange={(e) => {
+                                                            const value = e.target.value;
+                                                            mediaField.onChange(value || null);
+                                                        }}
+                                                        className="w-auto"
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    The media ID from the audiobooks table
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                     <FormField
                                         control={form.control}
                                         name="audioLength"
@@ -327,6 +428,28 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                                 <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="isVisible"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base">Visible to Users</FormLabel>
+                                <FormDescription>
+                                    Should this book be visible to regular users?
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    className="data-[state=checked]:bg-green-500"
                                 />
                             </FormControl>
                         </FormItem>
@@ -392,10 +515,10 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                         color="green"
                         onClick={() => {
                             const formData = form.getValues();
-                            console.log("Button clicked, submitting with values:", formData);
+                            /*console.log("Button clicked, submitting with values:", formData);
                             if (Object.keys(form.formState.errors).length > 0) {
                                 console.log("Form validation errors:", form.formState.errors);
-                            }
+                            }*/
                             handleSubmit(formData);
                         }}
                         className="select-none"

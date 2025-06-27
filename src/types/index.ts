@@ -1,3 +1,7 @@
+interface AudioBookInfo {
+    mediaId: string | null;
+}
+
 export interface Book {
     id: string;
     title: string;
@@ -5,7 +9,7 @@ export interface Book {
     publishingDate: string;
     summary: string;
     hasAudio: boolean;
-    audioLength?: number;
+    audioLength?: number; // Kept for backward compatibility
     extract?: string;
     rating?: number;
     isPreview?: boolean;
@@ -13,9 +17,8 @@ export interface Book {
     updatedAt?: Date;
     displayOrder?: number;
     isVisible?: number;
-
-    // pages_count?: number;
     pagesCount?: number;
+    audiobook?: AudioBookInfo;
 
     // Application-specific fields
     readingProgress?: number;

@@ -12,6 +12,17 @@ export async function saveOrUpdateAudioBook(data: {
     media_id: string | null;
     audio_length: number | null;
     publishing_date: string | null;
-}): Promise<AudioBook | undefined> {
-    return await saveAudioBook(data);
+}): Promise<boolean> {
+    try {
+        console.log('[saveOrUpdateAudioBook] data:', data);
+        const success = await saveAudioBook(data);
+        if (!success) {
+            console.error(`[saveOrUpdateAudioBook] Failed to save/update audiobook for book ${data.book_id}`);
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error(`[saveOrUpdateAudioBook] Error saving/updating audiobook for book ${data.book_id}:`, error);
+        return false;
+    }
 }

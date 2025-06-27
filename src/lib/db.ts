@@ -19,6 +19,10 @@ if (!connectionString) {
     throw new Error('DATABASE_URL environment variable is required for Neon connection');
 }
 
+// Log database connection info (without exposing full credentials)
+const dbUrl = new URL(connectionString);
+console.log(`[Database] Connecting to: ${dbUrl.protocol}//${dbUrl.hostname}${dbUrl.port ? `:${dbUrl.port}` : ''}${dbUrl.pathname}`);
+
 // Create a singleton Neon client (pool)
 let neonClient: any = null;
 
@@ -278,11 +282,50 @@ export async function getBookById(id: string): Promise<Book | undefined> {
     );
     const book = getFirstRow<Book>(res);
     if (!book) return undefined;
+
+    // If the book has audio, fetch the audiobook information
+    if (book.hasAudio) {
+        const audioBook = await getAudioBookById(id);
+        if (audioBook) {
+            book.audiobook = {
+                mediaId: audioBook.media_id
+            };
+            console.log('[getBookById] Populated audiobook data:', book.audiobook);
+        }
+    }
+
     return {
         ...book,
         hasAudio: book.hasAudio,
         isPreview: book.isPreview,
     };
+}
+
+/**
+ * Delete an audiobook by book_id
+ * @param bookId - The ID of the book whose audiobook to delete
+ * @returns Promise<boolean> - True if the audiobook was deleted, false if no audiobook was found with the given book ID
+ */
+export async function deleteAudioBook(bookId: string): Promise<boolean> {
+    if (!bookId) {
+        throw new Error('Book ID is required');
+    }
+
+    const client = getNeonClient();
+
+    try {
+        // Execute the delete query with RETURNING to confirm the deletion
+        const result = await client.query(
+            'DELETE FROM audiobooks WHERE book_id = $1 RETURNING book_id',
+            [bookId]
+        );
+
+        // Check if any rows were affected
+        return Array.isArray(result) ? result.length > 0 : false;
+    } catch (error) {
+        console.error('Error deleting audiobook:', error);
+        throw error;
+    }
 }
 
 /**
@@ -303,43 +346,121 @@ export async function getAudioBookById(id: string): Promise<AudioBook | undefine
 
 /**
  * Insert or update audiobook data (upsert by book_id)
+ * @returns Promise<boolean> - True if the operation was successful, false otherwise
  */
 export async function saveAudioBook(data: {
     book_id: string;
     media_id: string | null;
     audio_length: number | null;
     publishing_date: string | null;
-}): Promise<AudioBook | undefined> {
+}): Promise<boolean> {
     const client = getNeonClient();
-    // Try update first
-    const updateRes = await client.query(
-        `UPDATE audiobooks SET media_id = $1, audio_length = $2, publishing_date = $3, updated_at = NOW() WHERE book_id = $4`,
-        [data.media_id, data.audio_length, data.publishing_date, data.book_id]
-    );
-    if (updateRes.rowCount === 0) {
-        // If nothing updated, insert
-        await client.query(
-            `INSERT INTO audiobooks (book_id, media_id, audio_length, publishing_date) VALUES ($1, $2, $3, $4)`,
-            [data.book_id, data.media_id, data.audio_length, data.publishing_date]
+    console.log('[saveAudioBook] data:', data);
+
+    try {
+        // Try update first
+        const updateRes = await client.query(
+            `UPDATE audiobooks SET media_id = $1, audio_length = $2, publishing_date = $3, updated_at = NOW() WHERE book_id = $4 RETURNING book_id`,
+            [data.media_id, data.audio_length, data.publishing_date, data.book_id]
         );
+
+        console.log('[saveAudioBook] updateRes:', updateRes);
+
+        // If no rows were updated, try to insert
+        const wasUpdated = Array.isArray(updateRes)
+            ? updateRes.length > 0
+            : updateRes?.rowCount > 0;
+
+        if (!wasUpdated) {
+            try {
+                const insertRes = await client.query(
+                    `INSERT INTO audiobooks (book_id, media_id, audio_length, publishing_date) 
+                     VALUES ($1, $2, $3, $4) RETURNING book_id`,
+                    [data.book_id, data.media_id, data.audio_length, data.publishing_date]
+                );
+                console.log('[saveAudioBook] insertRes:', insertRes);
+
+                // Check if insert was successful
+                return Array.isArray(insertRes)
+                    ? insertRes.length > 0
+                    : insertRes?.rowCount > 0;
+            } catch (insertError) {
+                console.error('[saveAudioBook] Error inserting audiobook:', insertError);
+                return false;
+            }
+        }
+
+        return true;
+    } catch (error) {
+        console.error('[saveAudioBook] Error saving audiobook:', error);
+        return false;
     }
-    return getAudioBookById(data.book_id);
 }
 
 /**
  * Create a new book
+ * @returns Promise<{id: string} | null> - The ID of the created book, or null if creation failed
  */
-export async function createBook(book: Omit<Book, 'id'>): Promise<Book> {
+export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string } | null> {
     const client = getNeonClient();
-    // Use gen_random_uuid() if available, otherwise fallback to uuid_generate_v4()
-    const idRes = await client.query('SELECT gen_random_uuid() as id');
-    const id = idRes.rows[0].id;
-    await client.query(
-        `INSERT INTO books (id, title, cover_image, publishing_date, summary, has_audio, audio_length, extract, rating, is_preview, display_order, is_visible, pages_count)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-        [id, book.title, book.coverImage, book.publishingDate, book.summary, book.hasAudio ? 1 : 0, book.audioLength || null, book.extract || null, book.rating || null, book.isPreview ? 1 : null, book.displayOrder || null, book.isVisible ? 1 : null, book.pagesCount || null]
-    );
-    return { ...book, id };
+    // Generate ID in format 'book-{timestamp}'
+    // Using performance.now() for higher resolution timestamp if available
+    const timestamp = typeof performance !== 'undefined'
+        ? Math.floor(performance.timeOrigin + performance.now())
+        : Date.now();
+    const id = `book-${timestamp}`;
+
+    try {
+        // First, insert the book
+        const result = await client.query(
+            `INSERT INTO books (
+                id, title, cover_image, publishing_date, summary, 
+                has_audio, audio_length, extract, rating, 
+                is_preview, display_order, is_visible, pages_count
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            RETURNING id`,
+            [
+                id,
+                book.title,
+                book.coverImage,
+                book.publishingDate,
+                book.summary,
+                book.hasAudio ? 1 : 0,
+                book.audioLength || null,
+                book.extract || null,
+                book.rating || null,
+                book.isPreview ? 1 : null,
+                book.displayOrder || null,
+                book.isVisible ? 1 : 0,
+                book.pagesCount || null
+            ]
+        );
+
+        // If the book has audio, create/update the audiobook record
+        if (book.hasAudio) {
+            const mediaId = book.audiobook?.mediaId || null;
+            const audioLength = book.audioLength || null; // audioLength is directly on book object
+
+            if (mediaId !== null || audioLength !== null) {
+                await saveAudioBook({
+                    book_id: id,
+                    media_id: mediaId,
+                    audio_length: audioLength,
+                    publishing_date: book.publishingDate || null
+                });
+            }
+        }
+
+        // Check if the insert was successful
+        const wasInserted = Array.isArray(result)
+            ? result.length > 0
+            : result?.rowCount > 0;
+
+        return wasInserted ? { id } : null;
+    } catch (error) {
+        console.error('[createBook] Error creating book:', error);
+        return null;
+    }
 }
 
 
@@ -408,21 +529,91 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
     values.push(id);
     // Build SQL with RETURNING to get affected rows
     const sql = `UPDATE books SET ${updates.join(', ')} WHERE id = $${values.length} RETURNING id`;
+
+    // Handle audiobook updates if needed
+    if (book.hasAudio !== undefined || book.audiobook !== undefined || book.audioLength !== undefined) {
+        const audioBook = await getAudioBookById(id);
+        const currentBook = await getBookById(id);
+        console.log('[updateBook] *** audioBook:', audioBook);
+        // console.log('[updateBook] currentBook:', currentBook);
+        if (book.hasAudio) {
+            // Update or create audiobook record
+            const mediaId = book.audiobook?.mediaId !== undefined
+                ? book.audiobook.mediaId
+                : (audioBook?.media_id || null);
+
+            const audioLength = book.audioLength !== undefined
+                ? book.audioLength
+                : (audioBook?.audio_length || null); // audioLength is directly on book object
+
+            if (mediaId !== null || audioLength !== null) {
+                console.log('[updateBook] saving audiobook for book:', id);
+                await saveAudioBook({
+                    book_id: id,
+                    media_id: mediaId,
+                    audio_length: audioLength,
+                    publishing_date: book.publishingDate || (currentBook?.publishingDate || null)
+                });
+            }
+        } else if (audioBook) {
+            // If hasAudio is being set to false, delete the audiobook record
+            await deleteAudioBook(id);
+        }
+    }
     // console.log('[updateBook] id:', id);
     // console.log('[updateBook] updates clauses:', updates);
     // console.log('[updateBook] SQL:', sql);
-    // console.log('[updateBook] values:', values);
-    // Neon serverless client returns an array of rows
-    const rows = await client.query(sql, values);
-    // console.log('[updateBook] result rows:', rows);
-    return rows.length > 0;
+    console.log('[updateBook] values:', values);
+    console.log('[updateBook] SQL:', sql);
+
+    // Execute the update query
+    const result = await client.query(sql, values);
+    console.log('[updateBook] Update result:', result);
+
+    // Handle both array and object result formats
+    // For Neon/Postgres, result could be an array or an object with rowCount
+    const wasUpdated = Array.isArray(result)
+        ? result.length > 0
+        : result?.rowCount > 0;
+    console.log('[updateBook] wasUpdated:', wasUpdated);
+
+    return wasUpdated;
 }
 
 /**
  * Delete a book by ID
+ * @param id - The ID of the book to delete
+ * @returns Promise<boolean> - True if the book was deleted, false if no book was found with the given ID
+ * @throws {Error} If there's an error executing the delete operation
  */
 export async function deleteBook(id: string): Promise<boolean> {
+    if (!id) {
+        throw new Error('Book ID is required');
+    }
+
     const client = getNeonClient();
-    const res = await client.query('DELETE FROM books WHERE id = $1', [id]);
-    return res.rowCount > 0;
+
+    try {
+        // Execute the delete query with RETURNING to confirm the deletion
+        const result = await client.query(
+            'DELETE FROM books WHERE id = $1 RETURNING id',
+            [id]
+        );
+
+        // Check if any rows were affected
+        const wasDeleted = Array.isArray(result)
+            ? result.length > 0
+            : result?.rowCount > 0;
+
+        if (!wasDeleted) {
+            console.log(`[deleteBook] No book found with ID: ${id}`);
+        } else {
+            console.log(`[deleteBook] Successfully deleted book with ID: ${id}`);
+        }
+
+        return wasDeleted;
+    } catch (error) {
+        console.error(`[deleteBook] Error deleting book with ID ${id}:`, error);
+        throw new Error(`Failed to delete book: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }

@@ -73,15 +73,15 @@ export default function AddBookPage() {
                 publishingDate: values.publishingDate.toISOString(),
             };
 
-            if (editingBook) {
-                const bookId = editingBook?.id || '0';
-                console.log(`Updating book with ID: ${bookId}`, formattedValues);
+            // If editingBook exists and has an ID, update it. Otherwise, create a new book
+            if (editingBook?.id) {
+                console.log(`Updating book with ID: ${editingBook.id}`, formattedValues);
                 // Update existing book
-                await updateBook(bookId, formattedValues);
+                await updateBook(editingBook.id, formattedValues);
                 console.log('Book updated successfully');
             } else {
                 console.log('Creating new book', formattedValues);
-                // Create new book
+                // Create new book (including cloned books)
                 await createBook(formattedValues);
                 console.log('Book created successfully');
             }
@@ -100,10 +100,43 @@ export default function AddBookPage() {
     };
 
     // Handle edit button click
-    const handleEdit = (book: Book) => {
-        setEditingBook(book);
+    const handleEdit = async (book: Book, isClone = false) => {
+        setIsSubmitting(true); // Show loading state
+
+        try {
+            if (isClone) {
+                // Create a shallow copy of the book and remove the ID to ensure it's treated as a new book
+                const { id, ...bookWithoutId } = book;
+                setEditingBook(bookWithoutId as Book);
+            } else {
+                // Fetch complete book data to ensure we have audiobook.mediaId
+                const response = await fetch(`/api/books/${book.id}`);
+                if (!response.ok) {
+                    throw new Error(`Error fetching book details: ${response.status}`);
+                }
+
+                // The API returns the book directly, not wrapped in a data property
+                const completeBook = await response.json();
+                console.log('Fetched complete book data:', completeBook);
+                setEditingBook(completeBook);
+            }
+        } catch (error) {
+            console.error('Error preparing book for edit:', error);
+        } finally {
+            setIsSubmitting(false);
+            setActiveTab('add');
+        }
+    };
+
+    // Handle clone book
+    const handleClone = (book: Book) => {
+        // Create a deep copy of the book and remove the ID to ensure it's treated as a new book
+        const { id, ...bookWithoutId } = JSON.parse(JSON.stringify(book));
+        // Add " (Cloned)" to the title to indicate it's a clone
+        bookWithoutId.title = `${book.title} (Cloned)`;
+        // Set the cloned book for editing
+        setEditingBook(bookWithoutId as Book);
         setActiveTab('add');
-        // Preserve filter/sort state
     };
 
     // Handle cancel button click
@@ -179,6 +212,7 @@ export default function AddBookPage() {
                             <BookTable
                                 books={books}
                                 onEdit={handleEdit}
+                                onClone={handleClone}
                                 onDelete={deleteBook}
                                 onRefresh={fetchBooks}
                                 isLoading={loading}
@@ -212,7 +246,15 @@ export default function AddBookPage() {
                 <TabsContent value="add" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="select-none">{editingBook ? 'Edit Book' : 'Add New Book'}</CardTitle>
+                            <CardTitle className="select-none">
+                                {editingBook ? (
+                                    <>
+                                        Edit Book <span className="text-sm text-gray-500 ms-3">[<span className="font-bold text-cyan-400 mx-1">{editingBook.id}</span>]</span>
+                                    </>
+                                ) : (
+                                    'Add New Book'
+                                )}
+                            </CardTitle>
                             <CardDescription className="select-none">
                                 {editingBook
                                     ? `Edit details for "${editingBook.title}"`

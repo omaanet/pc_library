@@ -1,6 +1,7 @@
 // src/app/api/books/route.ts
 import { NextResponse } from 'next/server';
-import { getAllBooksOptimized, createBook, BookQueryOptions } from '@/lib/db';
+import { getAllBooksOptimized, createBook, BookQueryOptions, getBookById } from '@/lib/db';
+import { saveOrUpdateAudioBook } from '@/lib/services/audiobooks-service';
 // import type { Book } from '@/types';
 
 export async function GET(request: Request) {
@@ -117,8 +118,45 @@ export async function POST(request: Request) {
         }
 
         const newBook = await createBook(bookData);
+        if (!newBook) {
+            return NextResponse.json(
+                { error: 'Failed to create book' },
+                { status: 500 }
+            );
+        }
 
-        return NextResponse.json(newBook, { status: 201 });
+        // If the book has audio, create/update the audiobook entry
+        if (bookData.hasAudio) {
+            // Use audiobook.mediaId if available, fall back to audioMediaId for backward compatibility
+            // This follows the special case handling where audiobook.mediaId can't be derived from Book
+            const mediaId = bookData.audiobook?.mediaId || bookData.audioMediaId || null;
+
+            // When creating/updating an audiobook:
+            // - audioLength will update both values 'audio_length' in database's tables: 'books' and 'audiobooks'
+            // - mediaId will update 'media_id' in database's table 'audiobooks'
+            const audioBookSaved = await saveOrUpdateAudioBook({
+                book_id: newBook.id,
+                media_id: mediaId,
+                audio_length: bookData.audioLength || null,
+                publishing_date: bookData.publishingDate || null
+            });
+
+            if (!audioBookSaved) {
+                console.error(`[POST /api/books] Failed to save audiobook for book ${newBook.id}`);
+                // Continue even if audiobook save fails, as the book was created successfully
+            }
+        }
+
+        // Fetch the complete book with all its data
+        const createdBook = await getBookById(newBook.id);
+        if (!createdBook) {
+            return NextResponse.json(
+                { error: 'Failed to fetch created book' },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json(createdBook, { status: 201 });
     } catch (error) {
         console.error('API Error creating book:', error);
         return NextResponse.json(
