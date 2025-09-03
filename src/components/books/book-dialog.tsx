@@ -40,11 +40,11 @@ const renderAudioBadge = (book: Book | null, visible: boolean) => {
 
     return (
         <div className={cn(
-            "absolute -top-2 right-0 sm:top-0 sm:-right-2 rounded-full bg-yellow-600/80 p-1.5",
-            "backdrop-blur-sm transition-opacity duration-200",
+            "absolute -top-1 -right-1 rounded-full bg-yellow-600/90 p-1 sm:p-1.5",
+            "backdrop-blur-sm transition-opacity duration-200 z-10",
             visible ? "opacity-100" : "opacity-0"
         )}>
-            <Headphones className="h-4 w-4 sm:h-6 sm:w-6" />
+            <Headphones className="h-3 w-3 sm:h-4 sm:w-4" />
         </div>
     );
 };
@@ -173,14 +173,14 @@ export function BookDialogSimple({
                     )}
                 </DialogHeader>
 
-                {/* Scrollable Content */}
-                <div className="flex flex-col overflow-y-auto max-h-[85vh]">
-                    {/* Book Cover with container similar to BookDialog */}
+                {/* Content - auto-sizing with max height constraint */}
+                <div className="flex flex-col max-h-[calc(100vh-8rem)] overflow-y-auto">
+                    {/* Book Cover with container - no overlap layout */}
                     <div className="flex justify-center">
-                        <div className="relative w-full flex flex-col items-center rounded-lg bg-muted/30 px-3 py-3">
-                            <div className="flex flex-col items-center">
+                        <div className="w-full flex flex-col items-center rounded-lg bg-muted/30 px-3 py-3">
+                            <div className="flex flex-col items-center space-y-2">
 
-                                <div className="relative w-48 sm:w-56 md:w-64 aspect-[3/4] max-h-[60vh]">
+                                <div className="relative w-40 sm:w-48 md:w-56 aspect-[3/4] max-h-[30vh] sm:max-h-[35vh] flex-shrink-0 mx-auto">
                                     {!imageLoaded && (
                                         <Skeleton className="absolute inset-0 rounded-lg" />
                                     )}
@@ -193,7 +193,7 @@ export function BookDialogSimple({
                                         )}
                                         alt={`Cover of ${book.title}`}
                                         className={cn(
-                                            "w-full h-auto sm:max-w-full sm:max-h-[60vh] object-contain transition-opacity duration-400",
+                                            "w-full h-full object-contain transition-opacity duration-400",
                                             imageLoaded ? "opacity-100" : "opacity-0"
                                         )}
                                         sizes="(max-width: 640px) 70vw, (min-width: 768px) 33vw, 100vw"
@@ -203,22 +203,22 @@ export function BookDialogSimple({
                                     {renderAudioBadge(book, imageLoaded)}
                                 </div>
 
-                                {/* Actions positioned like in BookDialog */}
+                                {/* Actions - horizontal, compact for vertical space */}
                                 {isAuthenticated /*&& !book.hasAudio*/ && (
-                                    <div className="flex flex-row justify-between items-center gap-4 my-1">
-                                        <div className="text-center ">
+                                    <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">
+                                        <div className="flex-1">
                                             <LinkButton url={`/read-book/${book.id}`}
                                                 icon={BookOpen}
-                                                className="p-2 sm:p-5 text-sm sm:text-base font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 mt-1 sm:mt-0 shadow select-none">
-                                                Leggi<span className="hidden sm:block">Racconto</span> on-line
+                                                className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate">
+                                                Leggi Racconto on-line
                                             </LinkButton>
                                         </div>
 
-                                        <div className="text-center">
+                                        <div className="flex-1">
                                             <Button
                                                 onClick={handleRequestPdf}
                                                 disabled={isPdfRequesting}
-                                                className="p-2 sm:p-5 text-sm sm:text-base font-normal text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 mt-1 sm:mt-0 shadow select-none">
+                                                className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 shadow select-none transition-colors duration-200 truncate">
                                                 {isPdfRequesting ? (
                                                     <>
                                                         <Loader2 className="h-5 w-5 mr-2 animate-spin" />
@@ -226,8 +226,8 @@ export function BookDialogSimple({
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <MailOpen className="h-8 w-8 mr-2" />
-                                                        Richiedi il PDF<span className="hidden sm:block">del Racconto</span>
+                                                        <MailOpen className="h-3 w-3 mr-1" />
+                                                        Richiedi il PDF del Racconto
                                                     </>
                                                 )}
                                             </Button>
@@ -255,7 +255,7 @@ export function BookDialogSimple({
                         </div>
 
                         {/* Book Extract - Auto height with scrolling when needed */}
-                        <div className="overflow-y-auto mt-1 sm:mt-2 px-0" style={{ maxHeight: 'min(25vh, 20ch)' }}>
+                        <div className="overflow-y-auto mt-1 sm:mt-2 px-0 max-h-[25vh] sm:max-h-[30vh]">
                             <BookExtract extract={book.extract} />
                         </div>
                     </div>
@@ -283,7 +283,7 @@ export function BookDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="flex flex-col h-full max-h-[95vh] w-full max-w-[1200px] p-0 overflow-auto !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0"
+                className="flex flex-col w-full max-w-[1200px] p-0 !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0"
                 style={{ margin: '0 auto 0 auto' }}
             >
                 {/* Close button */}
@@ -309,12 +309,12 @@ export function BookDialog({
                                 </DialogDescription>
                             </div>
                         </DialogHeader>
-                        <div className="flex-1 flex flex-col h-full min-h-0">
-                            <div className="flex flex-1 flex-col md:flex-row gap-y-2 md:gap-4 h-full min-h-0 px-4 pt-0 pb-3">
+                        <div className="flex flex-col max-h-[calc(100vh-8rem)] overflow-hidden">
+                            <div className="flex flex-col md:flex-row gap-y-2 md:gap-4 px-4 pt-0 pb-3 overflow-hidden">
                                 {/* Left column: Book cover with audio badge, responsive */}
-                                <div className="flex flex-col items-center justify-center w-full md:w-1/3 ma2x-w-[320px] md:max-w-xs mx-auto md:mx-0 h-auto min-h-0 mt-0 mb-0">
+                                <div className="flex-shrink-0 flex flex-col items-center justify-start w-full md:w-1/3 md:max-w-xs mx-auto md:mx-0 mt-0 mb-2 md:mb-0">
 
-                                    <div className="relative w-full h-full flex flex-col sm:flex-col items-center justify-center rounded-lg bg-muted/30 px-3 py-2 space-y-1">
+                                    <div className="relative w-full flex flex-col items-center justify-center rounded-lg bg-muted/30 px-3 py-2 space-y-1">
 
                                         <div className="">
                                             <div>
@@ -331,10 +331,10 @@ export function BookDialog({
                                                         )}
                                                         alt={`Cover of ${book.title}`}
                                                         className={cn(
-                                                            "w-full h-auto max-w-[70vw] max-h-[25vw] sm:max-w-full sm:max-h-[60vh] object-contain transition-opacity duration-400",
+                                                            "w-full h-auto max-w-[60vw] max-h-[30vh] sm:max-w-full sm:max-h-[45vh] object-contain transition-opacity duration-400",
                                                             imageLoaded ? "opacity-100" : "opacity-0"
                                                         )}
-                                                        sizes="(max-width: 640px) 70vw, (min-width: 768px) 33vw, 100vw"
+                                                        sizes="(max-width: 640px) 60vw, (min-width: 768px) 30vw, 100vw"
                                                         // priority={true}
                                                         // quality={90}
                                                         onLoad={() => setImageLoaded(true)}
@@ -346,15 +346,15 @@ export function BookDialog({
                                             </div>
 
                                             {isAuthenticated /*&& !book.hasAudio*/ && (
-                                                <div className="flex flex-row justify-between items-center gap-2">
-                                                    <div className="text-center ">
-                                                        <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} className="text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 mt-1 sm:mt-0 h-8 sm:h-auto font-light shadow select-none">
-                                                            Leggi
+                                                <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">
+                                                    <div className="flex-1">
+                                                        <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate">
+                                                            Leggi Racconto
                                                         </LinkButton>
                                                     </div>
 
-                                                    <div className="text-center">
-                                                        <LinkButton url={`/api/download-book/${book.id}`} icon={Download} className="text-dark hover:text-white bg-red-700/30 hover:bg-red-800 border border-red-900 mt-1 sm:mt-0 h-8 sm:h-auto font-light shadow select-none">
+                                                    <div className="flex-1">
+                                                        <LinkButton url={`/api/download-book/${book.id}`} icon={Download} className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-red-700/30 hover:bg-red-800 border border-red-900 shadow select-none transition-colors duration-200 truncate">
                                                             Scarica PDF
                                                         </LinkButton>
                                                     </div>
@@ -367,7 +367,7 @@ export function BookDialog({
                                 </div>
 
                                 {/* Right column: Extract, Comments, Posting Form */}
-                                <div className="flex-1 flex flex-col h-full min-h-0">
+                                <div className="flex flex-col md:flex-1 overflow-hidden">
                                     {/* Estratto section */}
                                     <div className="mb-3 sm:mb-2">
                                         <BookExtract extract={book.extract} />
@@ -383,9 +383,9 @@ export function BookDialog({
                                     </div>
 
                                     {/* Comments section: header, scrollable list, posting form at bottom */}
-                                    <div className="flex-1 flex flex-col min-h-0 bg-muted/40 rounded px-4 py-2">
+                                    <div className="flex flex-col bg-muted/40 rounded px-2 sm:px-4 py-2 max-h-[35vh] overflow-hidden">
                                         <h3 className="text-md sm:text-lg font-medium mb-2 text-cyan-400">Commenti</h3>
-                                        <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                                        <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin">
                                             <BookComments
                                                 bookId={book.id}
                                                 isAuthenticated={isAuthenticated}

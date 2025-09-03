@@ -67,3 +67,4 @@ to_implement.md
 public/_epub
 db
 scripts/check-env.js
+.claude/settings.local.json
