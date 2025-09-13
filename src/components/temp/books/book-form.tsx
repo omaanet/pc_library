@@ -51,7 +51,12 @@ const bookFormSchema = z.object({
     // Audiobook specific fields
     audiobook: z.object({
         mediaId: z.string().nullable().optional()
-    }).optional()
+    }).optional(),
+    // Preview media fields (optional)
+    mediaId: z.string().nullable().optional(),
+    mediaTitle: z.string().nullable().optional(),
+    mediaUid: z.string().nullable().optional(),
+    previewPlacement: z.string().nullable().optional(),
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
@@ -97,7 +102,11 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         isVisible: book?.isVisible !== undefined ? Boolean(book.isVisible) : true,
         audiobook: {
             mediaId: book?.audiobook?.mediaId || null
-        }
+        },
+        mediaId: book?.mediaId ?? null,
+        mediaTitle: book?.mediaTitle ?? null,
+        mediaUid: book?.mediaUid ?? '1',
+        previewPlacement: book?.previewPlacement ?? null,
     };
 
     const form = useForm<BookFormValues>({
@@ -125,7 +134,11 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                 isVisible: book.isVisible !== undefined ? Boolean(book.isVisible) : true,
                 audiobook: {
                     mediaId: book.audiobook?.mediaId || null
-                }
+                },
+                mediaId: book.mediaId ?? null,
+                mediaTitle: book.mediaTitle ?? null,
+                mediaUid: book.mediaUid ?? '1',
+                previewPlacement: book.previewPlacement ?? null,
             });
         }
     }, [book, form]);
@@ -352,6 +365,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                                     <Switch
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
+                                        className="data-[state=checked]:bg-green-500"
                                     />
                                 </FormControl>
                             </div>
@@ -417,19 +431,118 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     control={form.control}
                     name="isPreview"
                     render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <FormLabel className="text-base">Preview Book</FormLabel>
-                                <FormDescription>
-                                    Is this book a preview version?
-                                </FormDescription>
+                        <FormItem className={`space-y-4 rounded-lg border-2 p-4 transition-colors ${field.value ? 'border-primary/50' : 'border-border'}`}>
+                            <div className="flex flex-row items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-base">Preview Book</FormLabel>
+                                    <FormDescription>
+                                        Is this book a preview version?
+                                    </FormDescription>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        className="data-[state=checked]:bg-green-500"
+                                    />
+                                </FormControl>
                             </div>
-                            <FormControl>
-                                <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
-                            </FormControl>
+
+                            {field.value && (
+                                <div className="ms-10 space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="mediaId"
+                                        render={({ field: mediaIdField }) => (
+                                            <FormItem>
+                                                <FormLabel>Media ID <span className="text-muted-foreground">(optional)</span></FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="Mux playback ID"
+                                                        value={mediaIdField.value || ''}
+                                                        onChange={(e) => mediaIdField.onChange(e.target.value || null)}
+                                                        className="w-auto"
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Optional Mux playback ID used for the preview video
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="mediaTitle"
+                                        render={({ field: mediaTitleField }) => (
+                                            <FormItem>
+                                                <FormLabel>Media Title <span className="text-muted-foreground">(optional)</span></FormLabel>
+                                                <div className="flex items-center gap-2">
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="Mux media title"
+                                                            value={mediaTitleField.value || ''}
+                                                            onChange={(e) => mediaTitleField.onChange(e.target.value || null)}
+                                                            className="flex-1"
+                                                        />
+                                                    </FormControl>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            const currentTitle = (form.getValues().title || '').trim();
+                                                            mediaTitleField.onChange(currentTitle.length ? currentTitle : null);
+                                                        }}
+                                                    >
+                                                        Use Book Title
+                                                    </Button>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="mediaUid"
+                                        render={({ field: mediaUidField }) => (
+                                            <FormItem>
+                                                <FormLabel>Media UserID <span className="text-muted-foreground">(optional)</span></FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="Viewer user id"
+                                                        value={mediaUidField.value || ''}
+                                                        onChange={(e) => mediaUidField.onChange(e.target.value || null)}
+                                                        className="w-auto"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="previewPlacement"
+                                        render={({ field: placementField }) => (
+                                            <FormItem>
+                                                <FormLabel>Preview placement (left/right) <span className="text-muted-foreground">(optional)</span></FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="left or right"
+                                                        value={placementField.value || ''}
+                                                        onChange={(e) => placementField.onChange(e.target.value || null)}
+                                                        className="w-auto"
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Determines whether the preview video appears before (left) or after (right) the cover
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            )}
                         </FormItem>
                     )}
                 />
@@ -438,7 +551,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     control={form.control}
                     name="isVisible"
                     render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className={`flex flex-row items-center justify-between rounded-lg border-2 p-4 transition-colors ${field.value ? 'border-primary/50' : 'border-border'}`}>
                             <div className="space-y-0.5">
                                 <FormLabel className="text-base">Visible to Users</FormLabel>
                                 <FormDescription>

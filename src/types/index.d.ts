@@ -12,6 +12,14 @@ export interface Book {
     rating?: number;
     readingProgress?: number;
     status?: 'unread' | 'reading' | 'completed' | 'on-hold';
+    isPreview?: boolean;
+    displayOrder?: number;
+    isVisible?: number;
+    pagesCount?: number;
+    mediaId?: string | null;
+    mediaTitle?: string | null;
+    mediaUid?: string | null;
+    previewPlacement?: 'left' | 'right' | null;
 }
 
 export interface User {

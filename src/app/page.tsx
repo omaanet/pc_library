@@ -1,68 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { RootNav } from '@/components/layout/root-nav';
 import { BookCollectionWrapper } from '@/components/books/book-collection-wrapper';
 // import { BookCollection } from '@/components/books/book-collection';
 // import { BookListCard } from '@/components/books/book-list-card';
-import { BookCover } from '@/components/books/book-cover';
 import { AuthModal } from '@/components/auth/auth-modal';
-import { Book } from '@/types';
 import { useAuth } from '@/context/auth-context';
 // import { Button } from '@/components/ui/button';
-import { Book as BookIcon, Headphones, Loader2 } from 'lucide-react';
+// import { Book as BookIcon, Headphones, Loader2 } from 'lucide-react';
 // import { cn } from '@/lib/utils';
-import { DEFAULT_COVER_SIZES } from '@/types/images';
 import { CopyrightFooter } from '@/components/shared/copyright-footer';
 // import { useLogger } from '@/lib/logging.client';
-
-import dynamic from 'next/dynamic';
+import { PreviewsCollection } from '@/components/books/previews-collection';
 
 export default function HomePage() {
     // const source = 'HomePage';
     const { state: { isAuthenticated, user } } = useAuth();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [books, setBooks] = useState<Book[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [mounted, setMounted] = useState(false);
-
-    const MuxPlayer = dynamic(
-        () => import('@mux/mux-player-react'),
-        {
-            ssr: false,
-            loading: () => (
-                <div className="flex items-center justify-center h-full">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-            )
-        }
-    );
-
-    useEffect(() => {
-        async function fetchPreviewBooks() {
-            try {
-                setLoading(true);
-                const response = await fetch('/api/books?displayPreviews=1&sortOrder=desc&isVisible=1'); // expects { data, pagination }
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch preview books: ${response.status}`);
-                }
-
-                const { books } = await response.json();
-
-                setBooks(Array.isArray(books) ? books : []);
-            } catch (error) {
-                console.error('Error loading preview books:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        fetchPreviewBooks();
-
-        // Set mounted state when component mounts
-        setMounted(true);
-        return () => setMounted(false);
-    }, []);
 
     return (
         <>
@@ -121,77 +76,9 @@ export default function HomePage() {
                 </section>
 
                 {/* Previews Collection Section */}
-                <div className="w-full grid grid-cols-1 gap-6 py-8">
-                    <div className="rounded-xl border bg-card p-6">
-                        <div className="flex flex-row items-center justify-center mb-8">
-                            <BookIcon className="h-8 w-8 -mt-1 mx-2" />
-                            <div className="text-xl font-semibold mx-2 text-center">Racconti In Anteprima</div>
-                        </div>
-
-                        <section id="previews-collection">
-
-                            <div className="container-fluid text-center flex flex-wrap gap-4 justify-center items-start">
-                                {/* <BookVideoCover videoSource="https://s3.eu-south-1.wasabisys.com/piero-audiolibri/Il Mistero del Dipinto.mp4" orientation="portrait" /> */}
-
-                                <div
-                                    className="relative flex justify-center items-center bg-muted/30 rounded-sm"
-                                    style={{ height: DEFAULT_COVER_SIZES.video.height }}
-                                >
-                                    {mounted && (
-                                        <MuxPlayer
-                                            playbackId="00cc2D1BA4VPs2uNwHl01ZGGkZu9seiUHu"
-                                            metadata={{
-                                                video_title: 'Il Mistero del Dipinto',
-                                                viewer_user_id: '1'
-                                            }}
-                                            style={{
-                                                width: DEFAULT_COVER_SIZES.video.width,
-                                                height: DEFAULT_COVER_SIZES.video.height,
-                                                "--cast-button": "none"
-                                            } as React.CSSProperties}
-                                        />
-                                    )}
-                                </div>
-
-                                {loading ? (
-                                    <div className="py-4 text-muted-foreground">
-                                        Caricamento anteprima libri...
-                                    </div>
-                                ) : (!Array.isArray(books) || books.length === 0) ? (
-                                    <div className="py-4 text-muted-foreground">
-                                        Al momento non sono disponibili anteprime dei libri.
-                                    </div>
-                                ) : (
-                                    books.map((book, index) => (
-                                        <BookCover key={`${book.id}-${index}`} book={book} orientation="portrait" />
-                                    ))
-                                )}
-
-                                <div
-                                    className="relative flex justify-center items-center bg-muted/30 rounded-sm"
-                                    style={{ height: DEFAULT_COVER_SIZES.video.height }}
-                                >
-                                    {mounted && (
-                                        <MuxPlayer
-                                            playbackId="OUBwb9ttqKASxQnb8EnKnIszb301VrROQ"
-                                            metadata={{
-                                                video_title: 'La Ragazza del Carillon',
-                                                viewer_user_id: '1'
-                                            }}
-                                            style={{
-                                                width: DEFAULT_COVER_SIZES.video.width,
-                                                height: DEFAULT_COVER_SIZES.video.height,
-                                                "--cast-button": "none"
-                                            } as React.CSSProperties}
-                                        />
-                                    )}
-                                </div>
-
-                            </div>
-                        </section>
-
-                    </div>
-                </div>
+                <section id="previews-collection" className="w-full py-12 sm:py-16">
+                        <PreviewsCollection />
+                </section>
 
             </main>
 

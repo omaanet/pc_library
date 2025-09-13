@@ -20,6 +20,12 @@ export interface Book {
     pagesCount?: number;
     audiobook?: AudioBookInfo;
 
+    // Preview media (Mux) fields stored on books table
+    mediaId?: string | null;
+    mediaTitle?: string | null;
+    mediaUid?: string | null;
+    previewPlacement?: 'left' | 'right' | null;
+
     // Application-specific fields
     readingProgress?: number;
     status?: 'unread' | 'reading' | 'completed' | 'on-hold';

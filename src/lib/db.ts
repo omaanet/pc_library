@@ -204,7 +204,27 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
     total = countRow?.total ? parseInt(countRow.total, 10) : 0;
 
     // Data query
-    const dataQuery = `SELECT id, title, cover_image as "coverImage", publishing_date as "publishingDate", summary, has_audio as "hasAudio", audio_length as "audioLength", extract, rating, is_preview as "isPreview", display_order as "displayOrder", is_visible as "isVisible", created_at as "createdAt", updated_at as "updatedAt", pages_count as "pagesCount" FROM books ${whereClause} ${orderByClause} ${limitClause}`;
+    const dataQuery = `SELECT 
+            id,
+            title,
+            cover_image as "coverImage",
+            publishing_date as "publishingDate",
+            summary,
+            has_audio as "hasAudio",
+            audio_length as "audioLength",
+            extract,
+            rating,
+            is_preview as "isPreview",
+            display_order as "displayOrder",
+            is_visible as "isVisible",
+            created_at as "createdAt",
+            updated_at as "updatedAt",
+            pages_count as "pagesCount",
+            media_id as "mediaId",
+            media_title as "mediaTitle",
+            media_uid as "mediaUid",
+            preview_placement as "previewPlacement"
+        FROM books ${whereClause} ${orderByClause} ${limitClause}`;
     const dataRes = await client.query(
         dataQuery,
         params
@@ -277,7 +297,27 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
 export async function getBookById(id: string): Promise<Book | undefined> {
     const client = getNeonClient();
     const res = await client.query(
-        `SELECT id, title, cover_image as "coverImage", publishing_date as "publishingDate", summary, has_audio as "hasAudio", audio_length as "audioLength", extract, rating, is_preview as "isPreview", is_visible as "isVisible", display_order as "displayOrder", created_at as "createdAt", updated_at as "updatedAt", pages_count as "pagesCount" FROM books WHERE id = $1`,
+        `SELECT 
+            id,
+            title,
+            cover_image as "coverImage",
+            publishing_date as "publishingDate",
+            summary,
+            has_audio as "hasAudio",
+            audio_length as "audioLength",
+            extract,
+            rating,
+            is_preview as "isPreview",
+            is_visible as "isVisible",
+            display_order as "displayOrder",
+            created_at as "createdAt",
+            updated_at as "updatedAt",
+            pages_count as "pagesCount",
+            media_id as "mediaId",
+            media_title as "mediaTitle",
+            media_uid as "mediaUid",
+            preview_placement as "previewPlacement"
+        FROM books WHERE id = $1`,
         [id]
     );
     const book = getFirstRow<Book>(res);
@@ -414,10 +454,16 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
         // First, insert the book
         const result = await client.query(
             `INSERT INTO books (
-                id, title, cover_image, publishing_date, summary, 
-                has_audio, audio_length, extract, rating, 
-                is_preview, display_order, is_visible, pages_count
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                id, title, cover_image, publishing_date, summary,
+                has_audio, audio_length, extract, rating,
+                is_preview, display_order, is_visible, pages_count,
+                media_id, media_title, media_uid, preview_placement
+            ) VALUES (
+                $1, $2, $3, $4, $5,
+                $6, $7, $8, $9,
+                $10, $11, $12, $13,
+                $14, $15, $16, $17
+            )
             RETURNING id`,
             [
                 id,
@@ -432,7 +478,11 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
                 book.isPreview ? 1 : null,
                 book.displayOrder || null,
                 book.isVisible ? 1 : 0,
-                book.pagesCount || null
+                book.pagesCount || null,
+                book.mediaId || null,
+                book.mediaTitle || null,
+                book.mediaUid || null,
+                book.previewPlacement || null
             ]
         );
 
@@ -519,6 +569,22 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
     if (book.pagesCount !== undefined) {
         updates.push('pages_count = $' + (updates.length + 1));
         values.push(book.pagesCount);
+    }
+    if (book.mediaId !== undefined) {
+        updates.push('media_id = $' + (updates.length + 1));
+        values.push(book.mediaId);
+    }
+    if (book.mediaTitle !== undefined) {
+        updates.push('media_title = $' + (updates.length + 1));
+        values.push(book.mediaTitle);
+    }
+    if (book.mediaUid !== undefined) {
+        updates.push('media_uid = $' + (updates.length + 1));
+        values.push(book.mediaUid);
+    }
+    if (book.previewPlacement !== undefined) {
+        updates.push('preview_placement = $' + (updates.length + 1));
+        values.push(book.previewPlacement);
     }
     if (updates.length === 0) {
         return false; // Nothing to update
