@@ -162,27 +162,38 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
         ? `WHERE ${whereConditions.join(' AND ')}`
         : '';
 
-    // Sorting
-    // let orderByClause = '';
-    // if (Array.isArray(sortBy) && sortBy.length > 0) {
-    //     const validColumns = [
-    //         'id', 'title', 'cover_image', 'publishing_date', 'summary',
-    //         'has_audio', 'audio_length', 'extract', 'rating', 'is_preview',
-    //         'created_at', 'updated_at', 'display_order'
-    //     ];
-    //     const sortClauses = sortBy
-    //         .filter(([col]: [string, string]) => validColumns.includes(col))
-    //         .map(([col, dir]: [string, string]) => `${col} ${dir}`)
-    //         .join(', ');
-    //     orderByClause = sortClauses ? `ORDER BY ${sortClauses}` : 'ORDER BY publishing_date DESC NULLS LAST';
-    // } else if (typeof sortBy === 'string' && sortBy) {
-    //     orderByClause = `ORDER BY ${sortBy} ${sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC'} NULLS LAST`;
-    // } else {
-    //     // Default sort to newest books first
-    //     orderByClause = 'ORDER BY publishing_date DESC NULLS LAST';
-    // }
+    // Sorting - implement proper dynamic sorting using provided parameters
+    let orderByClause = '';
 
-    const orderByClause = `ORDER BY has_audio ASC, display_order ASC`;
+    // Define valid sortable columns to prevent SQL injection
+    const validColumns = [
+        'id', 'title', 'publishing_date', 'summary',
+        'has_audio', 'audio_length', 'extract', 'rating', 'is_preview',
+        'created_at', 'updated_at', 'display_order', 'pages_count'
+    ];
+
+    if (Array.isArray(sortBy) && sortBy.length > 0) {
+        // Handle array format: [['column', 'ASC'], ['column2', 'DESC']]
+        const sortClauses = sortBy
+            .filter(([col]: [string, string]) => validColumns.includes(col))
+            .map(([col, dir]: [string, string]) => {
+                const direction = dir?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+                // Add NULLS LAST for proper handling of nullable columns
+                return col === 'rating' || col === 'publishing_date' ? `${col} ${direction} NULLS LAST` : `${col} ${direction}`;
+            });
+
+        orderByClause = sortClauses.length > 0 ? `ORDER BY ${sortClauses.join(', ')}` : 'ORDER BY publishing_date DESC NULLS LAST';
+    } else if (typeof sortBy === 'string' && sortBy && validColumns.includes(sortBy)) {
+        // Handle single column string format
+        const direction = sortOrder?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+        // Add NULLS LAST for proper handling of nullable columns like rating and publishing_date
+        orderByClause = sortBy === 'rating' || sortBy === 'publishing_date'
+            ? `ORDER BY ${sortBy} ${direction} NULLS LAST`
+            : `ORDER BY ${sortBy} ${direction}`;
+    } else {
+        // Default sort: prioritize books with audio first, then by display order, then newest books
+        orderByClause = 'ORDER BY has_audio ASC, display_order ASC, publishing_date DESC NULLS LAST';
+    }
 
     // Pagination
     const offset = (page - 1) * perPage;

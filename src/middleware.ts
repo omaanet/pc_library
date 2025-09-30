@@ -34,20 +34,87 @@ export async function middleware(request: NextRequest) {
     // Check if the user is authenticated (only parse the session once)
     if (session) {
         try {
-            // Parse the session cookie
-            const sessionData = JSON.parse(
-                Buffer.from(session.value, 'base64').toString('utf-8')
-            ) as { userId: string; expires: string };
+            // Parse the session cookie - decode base64 first
+            let decodedSession: string;
+            try {
+                decodedSession = Buffer.from(session.value, 'base64').toString('utf-8');
+            } catch (base64Error) {
+                // Invalid base64 encoding
+                console.error('Session base64 decoding failed:', {
+                    error: base64Error instanceof Error ? base64Error.message : 'Unknown base64 error',
+                    cookieLength: session.value.length,
+                    hasInvalidChars: /[^A-Za-z0-9+/=]/.test(session.value)
+                });
+                return NextResponse.next(); // Continue without authentication
+            }
+
+            // Parse JSON session data
+            let sessionData: { userId: string; expires: string };
+            try {
+                sessionData = JSON.parse(decodedSession);
+            } catch (jsonError) {
+                // Invalid JSON format
+                console.error('Session JSON parsing failed:', {
+                    error: jsonError instanceof Error ? jsonError.message : 'Unknown JSON error',
+                    decodedLength: decodedSession.length,
+                    decodedPreview: decodedSession.substring(0, 100)
+                });
+                return NextResponse.next(); // Continue without authentication
+            }
+
+            // Validate session data structure
+            if (!sessionData || typeof sessionData !== 'object') {
+                console.error('Session data is not a valid object:', {
+                    type: typeof sessionData,
+                    value: sessionData
+                });
+                return NextResponse.next();
+            }
+
+            if (!sessionData.userId || !sessionData.expires) {
+                console.error('Session data missing required fields:', {
+                    hasUserId: !!sessionData.userId,
+                    hasExpires: !!sessionData.expires,
+                    availableFields: Object.keys(sessionData)
+                });
+                return NextResponse.next();
+            }
+
+            if (typeof sessionData.userId !== 'string' || typeof sessionData.expires !== 'string') {
+                console.error('Session data has incorrect field types:', {
+                    userIdType: typeof sessionData.userId,
+                    expiresType: typeof sessionData.expires
+                });
+                return NextResponse.next();
+            }
 
             // Check if session has expired
-            if (new Date(sessionData.expires) < new Date()) {
+            let expirationDate: Date;
+            try {
+                expirationDate = new Date(sessionData.expires);
+                if (isNaN(expirationDate.getTime())) {
+                    throw new Error('Invalid date format');
+                }
+            } catch (dateError) {
+                console.error('Session expiration date parsing failed:', {
+                    error: dateError instanceof Error ? dateError.message : 'Unknown date error',
+                    expiresValue: sessionData.expires
+                });
+                return NextResponse.next();
+            }
+
+            if (expirationDate < new Date()) {
                 sessionExpired = true;
             } else {
                 isAuthenticated = true;
             }
         } catch (error) {
-            // Invalid session format, consider not authenticated
-            console.error('Session parse error:', error);
+            // Catch-all for any other parsing errors
+            console.error('Unexpected session parsing error:', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                stack: error instanceof Error ? error.stack : undefined
+            });
+            return NextResponse.next(); // Continue without authentication
         }
     }
 

@@ -15,19 +15,28 @@ This audit analyzed the Next.js/React application codebase for potential errors,
 
 ## High Priority Issues (Performance & Security)
 
-### [ ] A-003 **Hardcoded Sort Order in Database Query**
+### [x] A-003 **Hardcoded Sort Order in Database Query**
 **File:** `src/lib/db.ts:185`
 **Issue:** Sort order is hardcoded as `ORDER BY has_audio ASC, display_order ASC` despite function parameters for configurable sorting.
 **Impact:** `sortBy` and `sortOrder` parameters are ignored, limiting sorting flexibility.
 **Recommendation:** Implement the commented sorting logic to use the provided parameters.
 
-### [ ] A-004 **Insufficient Input Validation in API Routes**
+**Additional specifications:** Don't rely solely on the commented code; create the correct and necessary logic to use the parameters yourself. You can analyze the commented code to understand how it was originally intended, but always ensure the generated code is correct, efficient, and functional.
+
+**✅ RESOLVED:** Implemented comprehensive sorting logic that:
+- Supports both array format `[['column', 'ASC'], ['column2', 'DESC']]` and single column string format
+- Validates columns against a whitelist to prevent SQL injection
+- Properly handles NULLS LAST for nullable columns like `rating` and `publishing_date`
+- Provides intelligent defaults when invalid sorting parameters are provided
+- Maintains backward compatibility with existing hardcoded sorting behavior
+
+### [x] A-004 **Insufficient Input Validation in API Routes**
 **File:** `src/app/api/books/route.ts:105-118`
 **Issue:** Basic validation exists but inputs are not sanitized before database operations.
 **Impact:** Potential injection vulnerabilities and malformed data issues.
 **Recommendation:** Add input sanitization and more comprehensive validation.
 
-### [ ] A-005 **Base64 Decoding Error Handling**
+### [x] A-005 **Base64 Decoding Error Handling**
 **File:** `src/middleware.ts:38-40`
 **Issue:** Base64 decoding lacks specific error handling for malformed session data.
 **Impact:** Malformed session data could cause runtime errors.
@@ -200,11 +209,11 @@ This audit analyzed the Next.js/React application codebase for potential errors,
 
 - Move API logic to custom hooks or service layers
 
-### Short-term Improvements (High Priority - A-003 to A-005):
+### Short-term Improvements (High Priority - A-003):
 
 - Fix hardcoded sort order implementation
-- Add comprehensive input sanitization
-- Improve base64 decoding error handling
+- **✅ Add comprehensive input sanitization**
+- **✅ Improve base64 decoding error handling**
 
 ### Medium-term Enhancements (Medium Priority - A-006 to A-016):
 
@@ -233,4 +242,6 @@ This audit analyzed the Next.js/React application codebase for potential errors,
 
 The codebase shows good overall structure with a modern Next.js/React stack. The critical issues are primarily around proper separation of concerns and unused code that could lead to bugs. High priority issues focus on performance optimization and security hardening. The numerous code style warnings indicate the need for establishing consistent coding standards to improve long-term maintainability.
 
-**Total Issues:** 21 (1 Critical, 3 High Priority, 10 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
+**Total Issues:** 26 (1 Critical, 3 High Priority, 11 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
+**Total Open Issues:** 22 (0 Critical, 0 High Priority, 11 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
+**Total Closed Issues:** 4 (1 Critical, 3 High Priority, 0 Medium Priority, 0 Low Priority, 0 Warnings, 0 Performance, 0 Security)

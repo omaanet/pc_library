@@ -1,5 +1,6 @@
 'use client';
 
+import { SITE_CONFIG } from '@/config/site-config';
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -61,12 +62,12 @@ export function RootNav({
                 <div className="flex items-center space-x-4">
                     <div className="inline-flex items-center text-xs sm:text-sm text-muted-foreground">
                         <a
-                            href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#114;&#97;&#99;&#99;&#111;&#110;&#116;&#105;&#64;&#112;&#105;&#101;&#114;&#111;&#99;&#97;&#114;&#98;&#111;&#110;&#101;&#116;&#116;&#105;&#46;&#105;&#116;"
+                            href={`mailto:${SITE_CONFIG.CONTACT_EMAIL}`}
                             className="flex items-center gap-1.5 align-middle hover:text-yellow-400 transition-colors"
                             rel="nofollow"
                         >
                             <Mail className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-                            <span className="whitespace-nowrap">&#114;&#97;&#99;&#99;&#111;&#110;&#116;&#105;&#64;&#112;&#105;&#101;&#114;&#111;&#99;&#97;&#114;&#98;&#111;&#110;&#101;&#116;&#116;&#105;&#46;&#105;&#116;</span>
+                            <span className="whitespace-nowrap">{SITE_CONFIG.CONTACT_EMAIL}</span>
                         </a>
                     </div>
 

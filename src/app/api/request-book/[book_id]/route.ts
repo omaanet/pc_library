@@ -1,3 +1,4 @@
+import { SITE_CONFIG } from '@/config/site-config';
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { getSessionUser } from '@/lib/auth-utils';
@@ -62,7 +63,7 @@ export async function POST(
         // Email content
         const mailOptions = {
             from: process.env.MAIL_FROM || 'noreply@omaa.it',
-            to: process.env.NODE_ENV === 'development' ? 'oscar@omaa.it' : 'racconti@pierocarbonetti.it',
+            to: SITE_CONFIG.CONTACT_EMAIL,
             subject: `Richiesta PDF libro: ${bookTitle}`,
             html: `
             <h2>Richiesta PDF</h2>

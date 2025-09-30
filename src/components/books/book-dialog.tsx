@@ -240,7 +240,7 @@ export function BookDialogSimple({
                     </div>
 
                     <div className="flex flex-col-reverse">
-                        <div className="px-0 flex flex-col items-end">
+                        <div className="p-1 flex flex-col items-end">
                             {isAuthenticated && book.hasAudio ? (
                                 <AudioBookPlayer book={book} />
                             ) : !isAuthenticated && (

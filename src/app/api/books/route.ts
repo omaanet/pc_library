@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getAllBooksOptimized, createBook, BookQueryOptions, getBookById } from '@/lib/db';
 import { saveOrUpdateAudioBook } from '@/lib/services/audiobooks-service';
-// import type { Book } from '@/types';
+import { validateObject } from '@/lib/validation';
 
 export async function GET(request: Request) {
     try {
@@ -106,18 +106,96 @@ export async function POST(request: Request) {
     try {
         const bookData = await request.json();
 
-        // Validate required fields
-        const requiredFields = ['title', 'coverImage', 'publishingDate', 'summary', 'hasAudio'];
-        for (const field of requiredFields) {
-            if (bookData[field] === undefined) {
-                return NextResponse.json(
-                    { error: `Missing required field: ${field}` },
-                    { status: 400 }
-                );
+        // Define validation schema for book data
+        const validationSchema = {
+            title: {
+                type: 'string' as const,
+                required: true,
+                minLength: 1,
+                maxLength: 500,
+                sanitize: true
+            },
+            coverImage: {
+                type: 'url' as const,
+                required: true
+            },
+            publishingDate: {
+                type: 'date' as const,
+                required: true
+            },
+            summary: {
+                type: 'string' as const,
+                required: true,
+                minLength: 10,
+                maxLength: 5000,
+                sanitize: true
+            },
+            hasAudio: {
+                type: 'boolean' as const,
+                required: true
+            },
+            audioLength: {
+                type: 'number' as const,
+                required: false,
+                customValidator: (value: any) => value === null || value === undefined || (typeof value === 'number' && value > 0)
+            },
+            audiobook: {
+                type: 'string' as const, // We'll validate the nested structure separately
+                required: false
+            },
+            audioMediaId: {
+                type: 'string' as const,
+                required: false,
+                maxLength: 255
+            },
+            extract: {
+                type: 'string' as const,
+                required: false,
+                maxLength: 2000,
+                sanitize: true
+            },
+            rating: {
+                type: 'number' as const,
+                required: false,
+                customValidator: (value: any) => value === null || value === undefined || (typeof value === 'number' && value >= 0 && value <= 5)
+            },
+            isPreview: {
+                type: 'boolean' as const,
+                required: false
+            },
+            displayOrder: {
+                type: 'number' as const,
+                required: false,
+                customValidator: (value: any) => value === null || value === undefined || (typeof value === 'number' && value >= 0)
+            },
+            isVisible: {
+                type: 'number' as const,
+                required: false,
+                customValidator: (value: any) => value === null || value === undefined || [0, 1, -1].includes(value)
+            },
+            pagesCount: {
+                type: 'number' as const,
+                required: false,
+                customValidator: (value: any) => value === null || value === undefined || (typeof value === 'number' && value > 0)
             }
+        };
+
+        // Validate input data
+        const validation = validateObject(bookData, validationSchema);
+        if (!validation.isValid) {
+            return NextResponse.json(
+                {
+                    error: 'Validation failed',
+                    details: validation.errors
+                },
+                { status: 400 }
+            );
         }
 
-        const newBook = await createBook(bookData);
+        // Use sanitized data for database operations
+        const sanitizedData = validation.sanitizedData;
+
+        const newBook = await createBook(sanitizedData);
         if (!newBook) {
             return NextResponse.json(
                 { error: 'Failed to create book' },
@@ -126,10 +204,10 @@ export async function POST(request: Request) {
         }
 
         // If the book has audio, create/update the audiobook entry
-        if (bookData.hasAudio) {
+        if (sanitizedData.hasAudio) {
             // Use audiobook.mediaId if available, fall back to audioMediaId for backward compatibility
             // This follows the special case handling where audiobook.mediaId can't be derived from Book
-            const mediaId = bookData.audiobook?.mediaId || bookData.audioMediaId || null;
+            const mediaId = sanitizedData.audiobook?.mediaId || sanitizedData.audioMediaId || null;
 
             // When creating/updating an audiobook:
             // - audioLength will update both values 'audio_length' in database's tables: 'books' and 'audiobooks'
@@ -137,8 +215,8 @@ export async function POST(request: Request) {
             const audioBookSaved = await saveOrUpdateAudioBook({
                 book_id: newBook.id,
                 media_id: mediaId,
-                audio_length: bookData.audioLength || null,
-                publishing_date: bookData.publishingDate || null
+                audio_length: sanitizedData.audioLength || null,
+                publishing_date: sanitizedData.publishingDate || null
             });
 
             if (!audioBookSaved) {
