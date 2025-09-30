@@ -56,7 +56,7 @@ db/_archived
 # pnpm
 pnpm-lock.yaml
 
-*.md
+^*.md
 tmp
 db/books - Copy.db3
 #db/dump-postgreSQL.sql
@@ -68,3 +68,5 @@ public/_epub
 db
 scripts/check-env.js
 .claude/settings.local.json
+AUDIT_REPORT_20250930.md
+CLAUDE.md
