@@ -1,120 +1,104 @@
-// src/lib/db.ts
-// Neon/Postgres migration: remove SQLite dependencies
-import { neon } from '@neondatabase/serverless';
-// Only import Neon connection, not sql tagged template
+// src/lib/db/queries/books.ts
+// Book CRUD operations
 
-import { AudioBook, Book } from '@/types';
+import { Book, AudioBook } from '@/types';
+import { getNeonClient } from '../client';
+import { getFirstRow, extractRows } from '../utils';
+import type { BookQueryOptions, PaginatedResult } from '../types';
 
-// Get current environment
-// const NODE_ENV = process.env.NODE_ENV || 'development';
+// Internal helper functions for audiobook operations
+// These are duplicated from audiobooks.ts to avoid circular dependencies
 
-// if (NODE_ENV === 'development') {
-//     // Load environment variables from .env files
-//     require('dotenv').config();
-// }
-
-// Neon connection string from environment variable
-const connectionString = process.env.DATABASE_URL as string;
-if (!connectionString) {
-    throw new Error('DATABASE_URL environment variable is required for Neon connection');
+/**
+ * Internal: Get audiobook by book_id
+ */
+async function getAudioBookById(id: string): Promise<AudioBook | undefined> {
+    const client = getNeonClient();
+    const res = await client.query(
+        `SELECT id, book_id, media_id, audio_length, publishing_date FROM audiobooks WHERE book_id = $1`,
+        [id]
+    );
+    const audioBook = getFirstRow<AudioBook>(res);
+    if (!audioBook) return undefined;
+    return audioBook;
 }
 
-// Log database connection info (without exposing full credentials)
-const dbUrl = new URL(connectionString);
-console.log(`[Database] Connecting to: ${dbUrl.protocol}//${dbUrl.hostname}${dbUrl.port ? `:${dbUrl.port}` : ''}${dbUrl.pathname}`);
+/**
+ * Internal: Insert or update audiobook data (upsert by book_id)
+ */
+async function saveAudioBook(data: {
+    book_id: string;
+    media_id: string | null;
+    audio_length: number | null;
+    publishing_date: string | null;
+}): Promise<boolean> {
+    const client = getNeonClient();
+    console.log('[saveAudioBook] data:', data);
 
-// Create a singleton Neon client (pool)
-let neonClient: any = null;
+    try {
+        const updateRes = await client.query(
+            `UPDATE audiobooks SET media_id = $1, audio_length = $2, publishing_date = $3, updated_at = NOW() WHERE book_id = $4 RETURNING book_id`,
+            [data.media_id, data.audio_length, data.publishing_date, data.book_id]
+        );
 
-export function getNeonClient(): any {
-    if (!neonClient) {
-        // Create the base Neon client
-        neonClient = neon(connectionString);
+        console.log('[saveAudioBook] updateRes:', updateRes);
 
-        // Save the original query method
-        const originalQuery = neonClient.query;
+        const wasUpdated = Array.isArray(updateRes)
+            ? updateRes.length > 0
+            : updateRes?.rowCount > 0;
 
-        // Override the query method with our debugging wrapper
-        neonClient.query = async function (sql: string, params?: any[]) {
-            // Log query info
-            // console.debug('------ DATABASE QUERY -------');
-            // console.debug('[Neon SQL] Query:', sql);
-            // console.debug('[Neon SQL] Params:', params);
-
+        if (!wasUpdated) {
             try {
-                // Call the original query method, preserving 'this' context
-                const result = await originalQuery.call(this, sql, params);
+                const insertRes = await client.query(
+                    `INSERT INTO audiobooks (book_id, media_id, audio_length, publishing_date) 
+                     VALUES ($1, $2, $3, $4) RETURNING book_id`,
+                    [data.book_id, data.media_id, data.audio_length, data.publishing_date]
+                );
+                console.log('[saveAudioBook] insertRes:', insertRes);
 
-                // Log result info
-                // console.debug('[Neon SQL] Success! Rows:', result?.rows?.length || 0);
-                if (result?.rows?.length > 0) {
-                    // console.debug('[Neon SQL] First row:', JSON.stringify(result.rows[0]));
-                }
-
-                return result;
-            } catch (error) {
-                // Log error info
-                console.error('[Neon SQL] Error executing query:', error);
-                throw error;
+                return Array.isArray(insertRes)
+                    ? insertRes.length > 0
+                    : insertRes?.rowCount > 0;
+            } catch (insertError) {
+                console.error('[saveAudioBook] Error inserting audiobook:', insertError);
+                return false;
             }
-        };
+        }
+
+        return true;
+    } catch (error) {
+        console.error('[saveAudioBook] Error saving audiobook:', error);
+        return false;
     }
-
-    return neonClient;
-}
-
-// Define types for the enhanced book query options
-export interface BookQueryOptions {
-    search?: string;
-    hasAudio?: boolean;
-    sortBy?: Array<[string, 'ASC' | 'DESC']> | string;
-    sortOrder?: 'asc' | 'desc'; // Only used if sortBy is a string
-    page?: number;
-    perPage?: number;
-    displayPreviews?: number; // -1: all, 0: non-preview only, 1: preview only
-    displayOrder?: number;
-    isVisible?: number;
-}
-
-// Define the pagination result type
-export interface PaginatedResult<T> {
-    data: T[];
-    pagination: {
-        total: number;
-        page: number;
-        perPage: number;
-        totalPages: number;
-    };
-}
-
-// --- Neon DB Connection ---
-// Use getNeonClient() to get the Neon Postgres client for all DB operations.
-// All queries are async and parameterized for safety.
-
-/**
- * Extract first row from query result (handles both array and object formats)
- */
-export function getFirstRow<T = any>(result: any): T | null {
-    return (Array.isArray(result) ? result[0] : result?.rows?.[0]) || null;
 }
 
 /**
- * Utility to robustly extract rows from Neon/Postgres query results.
- * Handles both array and { rows: [...] } result shapes.
+ * Internal: Delete an audiobook by book_id
  */
-export function extractRows<T = any>(res: any): T[] {
-    if (Array.isArray(res)) {
-        return res as T[];
+async function deleteAudioBook(bookId: string): Promise<boolean> {
+    if (!bookId) {
+        throw new Error('Book ID is required');
     }
-    if (res && Array.isArray(res.rows)) {
-        return res.rows as T[];
+
+    const client = getNeonClient();
+
+    try {
+        const result = await client.query(
+            'DELETE FROM audiobooks WHERE book_id = $1 RETURNING book_id',
+            [bookId]
+        );
+
+        return Array.isArray(result) ? result.length > 0 : false;
+    } catch (error) {
+        console.error('Error deleting audiobook:', error);
+        throw error;
     }
-    console.error('[extractRows] Unexpected query result:', res);
-    return [];
 }
 
+/**
+ * Get all books with advanced filtering, sorting, and pagination
+ */
 export async function getAllBooksOptimized(options: BookQueryOptions = {}): Promise<PaginatedResult<Book>> {
-    // console.log('getAllBooksOptimized');
     const client = getNeonClient();
     const {
         search,
@@ -241,47 +225,8 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
         params
     );
 
-    // Extra debugging to troubleshoot data transformation
-    // console.debug('============================================================');
-    // console.debug('[Books Debug] SQL:', dataQuery);
-    // console.debug('[Books Debug] Params:', orderByClause);
-    // console.debug('[Books Debug] displayPreviews:', displayPreviews);
-    // console.debug('[Books Debug] isVisible:', isVisible);
-
     // Handle both response formats robustly using extractRows utility
     const books = extractRows<Book>(dataRes);
-    // console.debug('[Books Debug] Direct array length:', rowsData.length);
-    if (books.length > 0) {
-        // console.debug('[Books Debug] First row sample:', JSON.stringify(rowsData[0]));
-    }
-
-    // Map raw database records to Book objects with boolean conversions
-    // const books = rowsData.length > 0 ? rowsData.map((book: Book) => {
-    //     // Convert database integer values to booleans
-    //     const transformedBook = {
-    //         ...book,
-    //         hasAudio: book.hasAudio,
-    //         isPreview: book.isPreview,
-    //         isVisible: book.isVisible
-    //     };
-
-    //     // if (rowsData.indexOf(book) === 0) {
-    //     //     console.debug('[Books Debug] Transformed first book:', JSON.stringify(transformedBook));
-    //     // }
-
-    //     return transformedBook;
-    // }) : [];
-
-    // Final debug of result being returned
-    // if (process.env.NODE_ENV === 'development') {
-    //     console.debug('[Books Debug] Final books array length:', books.length);
-    //     console.debug('[Books Debug] Pagination info:', JSON.stringify({
-    //         total,
-    //         page,
-    //         perPage,
-    //         totalPages: perPage > 0 ? Math.ceil(total / perPage) : 1
-    //     }));
-    // }
 
     const result = {
         data: books,
@@ -292,12 +237,6 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
             totalPages: perPage > 0 ? Math.ceil(total / perPage) : 1,
         },
     };
-
-    // if (displayPreviews === 1) {
-    //     console.debug('************************************************************************');
-    //     console.debug('---->> result:', result);
-    //     console.debug('************************************************************************');
-    // }
 
     return result;
 }
@@ -350,102 +289,6 @@ export async function getBookById(id: string): Promise<Book | undefined> {
         hasAudio: book.hasAudio,
         isPreview: book.isPreview,
     };
-}
-
-/**
- * Delete an audiobook by book_id
- * @param bookId - The ID of the book whose audiobook to delete
- * @returns Promise<boolean> - True if the audiobook was deleted, false if no audiobook was found with the given book ID
- */
-export async function deleteAudioBook(bookId: string): Promise<boolean> {
-    if (!bookId) {
-        throw new Error('Book ID is required');
-    }
-
-    const client = getNeonClient();
-
-    try {
-        // Execute the delete query with RETURNING to confirm the deletion
-        const result = await client.query(
-            'DELETE FROM audiobooks WHERE book_id = $1 RETURNING book_id',
-            [bookId]
-        );
-
-        // Check if any rows were affected
-        return Array.isArray(result) ? result.length > 0 : false;
-    } catch (error) {
-        console.error('Error deleting audiobook:', error);
-        throw error;
-    }
-}
-
-/**
- * Get audiobook by book_id
- */
-export async function getAudioBookById(id: string): Promise<AudioBook | undefined> {
-    const client = getNeonClient();
-    const res = await client.query(
-        `SELECT id, book_id, media_id, audio_length, publishing_date FROM audiobooks WHERE book_id = $1`,
-        [id]
-    );
-
-    const audioBook = getFirstRow<AudioBook>(res);
-    if (!audioBook) return undefined;
-
-    return audioBook;
-}
-
-/**
- * Insert or update audiobook data (upsert by book_id)
- * @returns Promise<boolean> - True if the operation was successful, false otherwise
- */
-export async function saveAudioBook(data: {
-    book_id: string;
-    media_id: string | null;
-    audio_length: number | null;
-    publishing_date: string | null;
-}): Promise<boolean> {
-    const client = getNeonClient();
-    console.log('[saveAudioBook] data:', data);
-
-    try {
-        // Try update first
-        const updateRes = await client.query(
-            `UPDATE audiobooks SET media_id = $1, audio_length = $2, publishing_date = $3, updated_at = NOW() WHERE book_id = $4 RETURNING book_id`,
-            [data.media_id, data.audio_length, data.publishing_date, data.book_id]
-        );
-
-        console.log('[saveAudioBook] updateRes:', updateRes);
-
-        // If no rows were updated, try to insert
-        const wasUpdated = Array.isArray(updateRes)
-            ? updateRes.length > 0
-            : updateRes?.rowCount > 0;
-
-        if (!wasUpdated) {
-            try {
-                const insertRes = await client.query(
-                    `INSERT INTO audiobooks (book_id, media_id, audio_length, publishing_date) 
-                     VALUES ($1, $2, $3, $4) RETURNING book_id`,
-                    [data.book_id, data.media_id, data.audio_length, data.publishing_date]
-                );
-                console.log('[saveAudioBook] insertRes:', insertRes);
-
-                // Check if insert was successful
-                return Array.isArray(insertRes)
-                    ? insertRes.length > 0
-                    : insertRes?.rowCount > 0;
-            } catch (insertError) {
-                console.error('[saveAudioBook] Error inserting audiobook:', insertError);
-                return false;
-            }
-        }
-
-        return true;
-    } catch (error) {
-        console.error('[saveAudioBook] Error saving audiobook:', error);
-        return false;
-    }
 }
 
 /**
@@ -523,7 +366,6 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
         return null;
     }
 }
-
 
 /**
  * Update an existing book
@@ -612,7 +454,6 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
         const audioBook = await getAudioBookById(id);
         const currentBook = await getBookById(id);
         console.log('[updateBook] *** audioBook:', audioBook);
-        // console.log('[updateBook] currentBook:', currentBook);
         if (book.hasAudio) {
             // Update or create audiobook record
             const mediaId = book.audiobook?.mediaId !== undefined
@@ -637,9 +478,6 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
             await deleteAudioBook(id);
         }
     }
-    // console.log('[updateBook] id:', id);
-    // console.log('[updateBook] updates clauses:', updates);
-    // console.log('[updateBook] SQL:', sql);
     console.log('[updateBook] values:', values);
     console.log('[updateBook] SQL:', sql);
 

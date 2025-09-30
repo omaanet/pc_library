@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import HTML5Player from "@/components/HTML5Player";
+import HTML5Player from "@/components/audio/HTML5Player";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Book } from "@/types";
 
