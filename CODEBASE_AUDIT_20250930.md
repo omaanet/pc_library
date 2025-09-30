@@ -106,26 +106,32 @@ This audit analyzed the Next.js/React application codebase for potential errors,
 
 **✅ RESOLVED:** Refactored as part of A-007. Database layer now properly organized with clear separation of concerns.
 
-### [ ] A-010 **Missing useEffect in useAudiobook Hook**
+### [x] A-010 **Missing useEffect in useAudiobook Hook**
 
 **File:** `src/hooks/use-audiobook.ts:10-88`
 **Issue:** The `fetchAudiobook` function is defined but never called automatically when `bookId` changes.
 **Impact:** Audiobook data won't be loaded when the hook is used unless manually triggered.
 **Recommendation:** Add useEffect to automatically fetch audiobook when bookId changes.
 
-### [ ] A-011 **Double API Calls in updatePreference**
+**✅ RESOLVED:** Added useEffect hook that automatically fetches audiobook data when bookId changes. Implemented with AbortController for proper cleanup when bookId changes rapidly. Removed manual fetchAudiobook calls from components.
+
+### [x] A-011 **Double API Calls in updatePreference**
 
 **File:** `src/hooks/use-user-preferences.ts:69-95`
 **Issue:** `updatePreferences` is called twice - once in the try block and again in the auth context.
 **Impact:** Unnecessary duplicate API calls and potential race conditions.
 **Recommendation:** Remove the redundant call or ensure single execution.
 
-### [ ] A-012 **Missing fetchBooks Dependency in useBookFilters**
+**✅ RESOLVED:** Removed redundant `setPreferences` call. The auth context's `updatePreferences` already handles both the API call and state update. The hook's useEffect properly syncs from user.preferences to local state. Added comprehensive documentation explaining the state flow.
+
+### [x] A-012 **Missing fetchBooks Dependency in useBookFilters**
 
 **File:** `src/hooks/use-book-filters.ts:24-26`
 **Issue:** `fetchBooks` is destructured but commented out and not included in useEffect dependencies.
 **Impact:** Hook may not work correctly if fetchBooks is needed in the future.
 **Recommendation:** Either use fetchBooks properly or remove it entirely.
+
+**✅ RESOLVED:** Removed unnecessary `fetchBooks` destructuring and eslint-disable comment. Analysis showed that `updateFilters` and `updateSort` already call `fetchBooks` internally, so direct access is not needed. Also fixed memory leak by replacing timeout state with useRef and adding proper cleanup useEffect.
 
 ### [ ] A-013 **Component Too Large and Complex**
 
@@ -273,5 +279,5 @@ This audit analyzed the Next.js/React application codebase for potential errors,
 The codebase shows good overall structure with a modern Next.js/React stack. The critical issues are primarily around proper separation of concerns and unused code that could lead to bugs. High priority issues focus on performance optimization and security hardening. The numerous code style warnings indicate the need for establishing consistent coding standards to improve long-term maintainability.
 
 **Total Issues:** 26 (1 Critical, 3 High Priority, 11 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
-**Total Open Issues:** 18 (0 Critical, 0 High Priority, 7 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
-**Total Closed Issues:** 8 (1 Critical, 3 High Priority, 4 Medium Priority, 0 Low Priority, 0 Warnings, 0 Performance, 0 Security)
+**Total Open Issues:** 15 (0 Critical, 0 High Priority, 4 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
+**Total Closed Issues:** 11 (1 Critical, 3 High Priority, 7 Medium Priority, 0 Low Priority, 0 Warnings, 0 Performance, 0 Security)

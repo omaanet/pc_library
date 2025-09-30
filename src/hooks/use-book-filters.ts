@@ -1,5 +1,5 @@
 // src/hooks/use-book-filters.ts
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useLibrary } from '@/context/library-context';
 import type { LibraryFilters, LibrarySort, ViewMode } from '@/types/context';
 
@@ -21,12 +21,19 @@ export function useBookFilters({
         updateFilters,
         updateSort,
         setViewMode,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        fetchBooks,
     } = useLibrary();
 
-    const [debouncedSearch, setDebouncedSearch] = useState<NodeJS.Timeout>();
+    const debounceTimeoutRef = useRef<NodeJS.Timeout>();
     const [isDebouncing, setIsDebouncing] = useState(false);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // Initialize filters
     useEffect(() => {
@@ -44,17 +51,15 @@ export function useBookFilters({
     // Handle search with debounce
     const handleSearch = useCallback((searchTerm: string) => {
         setIsDebouncing(true);
-        if (debouncedSearch) {
-            clearTimeout(debouncedSearch);
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
         }
 
-        const timeoutId = setTimeout(() => {
+        debounceTimeoutRef.current = setTimeout(() => {
             updateFilters({ search: searchTerm });
             setIsDebouncing(false);
         }, debounceMs);
-
-        setDebouncedSearch(timeoutId);
-    }, [debouncedSearch, debounceMs, updateFilters]);
+    }, [debounceMs, updateFilters]);
 
     // Handle audio filter toggle
     const handleAudioFilter = useCallback((hasAudio: boolean) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AudioBook } from '@/types';
 
 interface UseAudiobookProps {
@@ -40,6 +40,56 @@ export function useAudiobook({ bookId }: UseAudiobookProps) {
             setLoading(false);
         }
     };
+
+    // Auto-fetch audiobook data when bookId changes
+    useEffect(() => {
+        const abortController = new AbortController();
+
+        const fetchData = async () => {
+            if (!bookId) {
+                setAudiobook(null);
+                return;
+            }
+
+            setLoading(true);
+            setError(null);
+
+            try {
+                const response = await fetch(`/api/audiobooks/${bookId}`, {
+                    signal: abortController.signal,
+                });
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        // No audiobook data yet, which is fine
+                        setAudiobook(null);
+                        return;
+                    }
+                    throw new Error(`Failed to fetch audiobook: ${response.statusText}`);
+                }
+
+                const { data } = await response.json();
+                if (!abortController.signal.aborted) {
+                    setAudiobook(data);
+                }
+            } catch (err) {
+                if (!abortController.signal.aborted) {
+                    console.error('Error fetching audiobook:', err);
+                    setError('Failed to load audiobook data');
+                }
+            } finally {
+                if (!abortController.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchData();
+
+        return () => {
+            abortController.abort();
+        };
+    }, [bookId]);
 
     // Save audiobook data
     const saveAudiobook = async (data: {

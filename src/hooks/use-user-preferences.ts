@@ -1,4 +1,17 @@
 // src/hooks/use-user-preferences.ts
+/**
+ * Custom hook for managing user preferences.
+ * 
+ * State Flow:
+ * 1. Auth context updates user.preferences via API call
+ * 2. useEffect (lines 54-66) syncs from user.preferences to local state
+ * 3. Local state provides defaults and stable reference for components
+ * 
+ * The local preferences state is necessary to:
+ * - Provide default values when user is not authenticated
+ * - Build updated preferences objects for API calls
+ * - Prevent unnecessary re-renders with stable reference
+ */
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from 'next-themes';
@@ -79,8 +92,8 @@ export function useUserPreferences(): UseUserPreferencesResult {
                 [key]: value,
             };
 
+            // updatePreferences from auth context handles both API call and state update
             await updatePreferences(updatedPreferences);
-            setPreferences(updatedPreferences);
 
             // Special handling for theme changes
             if (key === 'theme') {

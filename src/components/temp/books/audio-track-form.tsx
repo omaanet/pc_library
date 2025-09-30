@@ -37,13 +37,8 @@ interface AudioTrackFormProps {
 
 export function AudioTrackForm({ bookId, onCancel }: AudioTrackFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { audiobook, loading, error, fetchAudiobook, saveAudiobook } = useAudiobook({ bookId });
+    const { audiobook, loading, error, saveAudiobook } = useAudiobook({ bookId });
     const [fileName, setFileName] = useState<string>('');
-
-    // Fetch audiobook data when component mounts
-    useEffect(() => {
-        fetchAudiobook();
-    }, [bookId]);
 
     // Set default values for the form
     const defaultValues: AudioTrackFormValues = {
