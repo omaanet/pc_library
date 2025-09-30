@@ -35,4 +35,31 @@ export const SITE_CONFIG = {
     /** Show only preview books */
     PREVIEW_ONLY: 1,
   },
+
+  /**
+   * Default sort order for book queries when no sortBy parameter is provided
+   * This configuration allows changing the default sorting behavior without modifying code
+   * 
+   * Format: Array of [column, direction] tuples
+   * - Column must be a valid sortable column from the books table
+   * - Direction must be 'ASC' or 'DESC'
+   * 
+   * Current default behavior:
+   * 1. Books with audio first (has_audio ASC)
+   * 2. Then by display order (display_order ASC)
+   * 3. Then newest books first (publishing_date DESC with NULLS LAST)
+   * 
+   * @example
+   * // To prioritize newest books first instead:
+   * DEFAULT_SORT: [
+   *   ['publishing_date', 'DESC'],
+   *   ['has_audio', 'ASC'],
+   *   ['display_order', 'ASC']
+   * ]
+   */
+  DEFAULT_SORT: [
+    ['has_audio', 'ASC'],
+    ['display_order', 'ASC'],
+    ['publishing_date', 'DESC']
+  ] as const,
 } as const;

@@ -17,13 +17,8 @@ const AUTH_ROUTES = [
     '/activate',
 ];
 
-// Security headers for image responses
-const securityHeaders = {
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Content-Security-Policy': "default-src 'none'; img-src 'self'",
-};
+// Note: Security headers for cover images are configured in next.config.ts
+// This middleware focuses on validation only (dimensions, path security)
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -172,15 +167,9 @@ export async function middleware(request: NextRequest) {
             return new NextResponse('Invalid image path', { status: 400 });
         }
 
-        // Allow the request to proceed
-        const response = NextResponse.next();
-
-        // Add security headers
-        Object.entries(securityHeaders).forEach(([key, value]) => {
-            response.headers.set(key, value);
-        });
-
-        return response;
+        // Validation passed - allow the request to proceed to the API route
+        // Security headers are applied by next.config.ts for all /api/covers/:path* responses
+        return NextResponse.next();
     }
 
     // For all other routes, proceed normally

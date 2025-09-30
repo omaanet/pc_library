@@ -98,6 +98,15 @@ async function deleteAudioBook(bookId: string): Promise<boolean> {
 
 /**
  * Get all books with advanced filtering, sorting, and pagination
+ * 
+ * Sorting behavior:
+ * - If `sortBy` is provided as an array or valid string, uses that for sorting
+ * - If no `sortBy` is provided, uses the configurable default from `SITE_CONFIG.DEFAULT_SORT`
+ * - All sorting respects the validated column whitelist for security
+ * - Nullable columns (rating, publishing_date) automatically get NULLS LAST handling
+ * 
+ * @param options - Query options including filters, sorting, and pagination
+ * @returns Paginated result with books and pagination metadata
  */
 export async function getAllBooksOptimized(options: BookQueryOptions = {}): Promise<PaginatedResult<Book>> {
     const client = getNeonClient();
@@ -176,8 +185,22 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
             ? `ORDER BY ${sortBy} ${direction} NULLS LAST`
             : `ORDER BY ${sortBy} ${direction}`;
     } else {
-        // Default sort: prioritize books with audio first, then by display order, then newest books
-        orderByClause = 'ORDER BY has_audio ASC, display_order ASC, publishing_date DESC NULLS LAST';
+        // Default sort: use configurable default from SITE_CONFIG
+        // This allows changing the default sort behavior without modifying code
+        const defaultSortClauses = SITE_CONFIG.DEFAULT_SORT
+            .filter(([col]) => validColumns.includes(col as string))
+            .map(([col, dir]) => {
+                const column = col as string;
+                const direction = dir?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+                // Add NULLS LAST for proper handling of nullable columns
+                return column === 'rating' || column === 'publishing_date' 
+                    ? `${column} ${direction} NULLS LAST` 
+                    : `${column} ${direction}`;
+            });
+        
+        orderByClause = defaultSortClauses.length > 0 
+            ? `ORDER BY ${defaultSortClauses.join(', ')}`
+            : 'ORDER BY publishing_date DESC NULLS LAST'; // Final fallback if config is invalid
     }
 
     // Pagination

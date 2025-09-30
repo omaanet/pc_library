@@ -6,6 +6,23 @@ import { validateObject } from '@/lib/validation';
 import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
 
+/**
+ * GET /api/books
+ * 
+ * Query parameters:
+ * - page: Page number (default: 1)
+ * - perPage: Items per page (default: 10, -1 for all)
+ * - search: Search term for title/summary
+ * - hasAudio: Filter by audio availability (true/false)
+ * - displayPreviews: -1 (all), 0 (non-preview only), 1 (preview only)
+ * - isVisible: -1 (all), 0 (hidden), 1 (visible)
+ * - sortBy: Column to sort by (optional, uses SITE_CONFIG.DEFAULT_SORT if not provided)
+ * - sortOrder: Sort direction 'asc' or 'desc' (default: 'desc')
+ * 
+ * Available sort columns: id, title, publishing_date, summary, has_audio, 
+ * audio_length, extract, rating, is_preview, created_at, updated_at, 
+ * display_order, pages_count
+ */
 export async function GET(request: Request) {
     try {
         const url = new URL(request.url);
@@ -37,18 +54,15 @@ export async function GET(request: Request) {
             parseInt(isVisibleParam) : -1; // Default to visible books (-1)
 
         // Parse sorting parameters
-        const sortBy: [string, 'ASC' | 'DESC'][] | string | undefined = undefined;
+        // If sortBy is provided, use it; otherwise, getAllBooksOptimized will use SITE_CONFIG.DEFAULT_SORT
         const sortByParam = url.searchParams.get('sortBy');
-        const sortOrder = (url.searchParams.get('sortOrder') || 'asc') as 'asc' | 'desc';
-
-        // Check if we have a compound sort request via ?sort parameter
-        const sortParam = url.searchParams.get('sort');
+        const sortOrder = (url.searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
         // Prepare query options for the optimized function
         const queryOptions: BookQueryOptions = {
             search,
             hasAudio,
-            sortBy: sortBy as [string, 'ASC' | 'DESC'][] | string | undefined,
+            sortBy: sortByParam || undefined, // Pass sortBy only if provided
             sortOrder,
             page,
             perPage,

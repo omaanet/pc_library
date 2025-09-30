@@ -31,15 +31,36 @@ const nextConfig: NextConfig = {
     async headers() {
         return [
             {
-                source: "/api/covers/:path*", // Match API paths serving images
+                // Security headers for cover image API routes
+                // These headers are applied to all responses from /api/covers/:path*
+                source: "/api/covers/:path*",
                 headers: [
                     {
+                        // Content Security Policy: Restricts what resources can be loaded
+                        // - default-src 'none': Block all resources by default
+                        // - img-src 'self': Allow images only from same origin
                         key: "Content-Security-Policy",
-                        value: "default-src 'self'; script-src 'none'; sandbox;",
+                        value: "default-src 'none'; img-src 'self'",
                     },
                     {
+                        // Prevents MIME type sniffing, forcing browsers to respect declared content type
+                        key: "X-Content-Type-Options",
+                        value: "nosniff",
+                    },
+                    {
+                        // Prevents the page from being displayed in frames/iframes
+                        key: "X-Frame-Options",
+                        value: "DENY",
+                    },
+                    {
+                        // Controls how much referrer information is sent with requests
+                        key: "Referrer-Policy",
+                        value: "strict-origin-when-cross-origin",
+                    },
+                    {
+                        // Ensures images display inline in browser rather than downloading
                         key: "Content-Disposition",
-                        value: "inline", // Ensures images display in browser
+                        value: "inline",
                     },
                 ],
             },

@@ -1,5 +1,12 @@
 # API Standards and Error Handling
 
+## Table of Contents
+- [Error Response Format](#error-response-format)
+- [HTTP Status Codes](#http-status-codes)
+- [Usage Examples](#usage-examples)
+- [Books API Sorting](#books-api-sorting)
+- [Security Headers](#security-headers)
+
 ## Error Response Format
 
 All API errors follow this standardized format:
@@ -143,3 +150,92 @@ useEffect(() => {
 // In UI
 <Button onClick={retry}>Retry</Button>
 ```
+
+## Books API Sorting
+
+### Default Sort Configuration
+
+The `/api/books` endpoint uses a configurable default sort order defined in `SITE_CONFIG.DEFAULT_SORT`. This allows changing the default sorting behavior without modifying code.
+
+**Current Default Sort:**
+1. Books with audio first (`has_audio ASC`)
+2. Then by display order (`display_order ASC`)
+3. Then newest books first (`publishing_date DESC NULLS LAST`)
+
+### Sort Parameters
+
+**Query Parameters:**
+- `sortBy` (optional): Column to sort by. If not provided, uses `SITE_CONFIG.DEFAULT_SORT`
+- `sortOrder` (optional): Sort direction, either `asc` or `desc` (default: `desc`)
+
+**Available Sort Columns:**
+- `id` - Book ID
+- `title` - Book title
+- `publishing_date` - Publishing date (nullable, uses NULLS LAST)
+- `summary` - Book summary
+- `has_audio` - Audio availability (0 or 1)
+- `audio_length` - Audio duration in seconds
+- `extract` - Book extract/preview text
+- `rating` - Book rating (nullable, uses NULLS LAST)
+- `is_preview` - Preview status
+- `created_at` - Creation timestamp
+- `updated_at` - Last update timestamp
+- `display_order` - Display order
+- `pages_count` - Number of pages
+
+### Examples
+
+```bash
+# Use default sort (from SITE_CONFIG.DEFAULT_SORT)
+GET /api/books?perPage=10
+
+# Sort by title ascending
+GET /api/books?sortBy=title&sortOrder=asc
+
+# Sort by publishing date descending (newest first)
+GET /api/books?sortBy=publishing_date&sortOrder=desc
+
+# Sort by rating descending (highest rated first)
+GET /api/books?sortBy=rating&sortOrder=desc
+
+# Invalid sortBy falls back to default sort
+GET /api/books?sortBy=invalid_column&sortOrder=desc
+```
+
+### Changing Default Sort
+
+To change the default sort order, modify `SITE_CONFIG.DEFAULT_SORT` in `src/config/site-config.ts`:
+
+```typescript
+// Example: Prioritize newest books first
+DEFAULT_SORT: [
+  ['publishing_date', 'DESC'],
+  ['has_audio', 'ASC'],
+  ['display_order', 'ASC']
+] as const,
+```
+
+## Security Headers
+
+### Cover Images (`/api/covers/:path*`)
+
+All cover image responses include the following security headers (configured in `next.config.ts`):
+
+- **Content-Security-Policy**: `default-src 'none'; img-src 'self'`
+  - Restricts resource loading to images from same origin only
+- **X-Content-Type-Options**: `nosniff`
+  - Prevents MIME type sniffing
+- **X-Frame-Options**: `DENY`
+  - Prevents page from being displayed in frames/iframes
+- **Referrer-Policy**: `strict-origin-when-cross-origin`
+  - Controls referrer information sent with requests
+- **Content-Disposition**: `inline`
+  - Ensures images display in browser rather than downloading
+
+### EPUB Files (`/epub/:path*.epub`)
+
+EPUB file responses have different security requirements and include additional headers for proper file handling.
+
+### Header Configuration Location
+
+All security headers are centralized in `next.config.ts` under the `headers()` function. The middleware focuses solely on request validation (dimensions, path security checks) and does not apply headers.
