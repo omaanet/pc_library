@@ -7,6 +7,7 @@ import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/context/auth-context';
 import { CopyrightFooter } from '@/components/shared/copyright-footer';
 import { PreviewsCollection } from '@/components/books/previews-collection';
+import { BookErrorBoundary } from '@/components/books/book-error-boundary';
 import { SITE_CONFIG } from '@/config/site-config';
 
 export default function HomePage() {
@@ -49,7 +50,9 @@ export default function HomePage() {
 
                 {/* Previews Collection Section */}
                 <section id="previews-collection" className="w-full py-12 sm:py-16">
-                    <PreviewsCollection />
+                    <BookErrorBoundary>
+                        <PreviewsCollection />
+                    </BookErrorBoundary>
                 </section>
 
             </main>

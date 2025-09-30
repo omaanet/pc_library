@@ -276,20 +276,37 @@ Updated `src/app/page.tsx` to use `SITE_CONFIG.DISPLAY_PREVIEWS.NON_PREVIEW_ONLY
 - Added ESLint `@typescript-eslint/naming-convention` rule (set to "off" by user)
 - All TypeScript compilation passing
 
-### [ ] W-004 **Type Organization**
+### [x] W-004 **Type Organization**
 
 **File:** `src/types/index.ts:1-4`
 **Issue:** `AudioBookInfo` interface defined outside main export scope.
 **Recommendation:** Move all interfaces to proper export locations.
 
+**✅ RESOLVED:** Exported `AudioBookInfo` interface properly:
+- Added `export` keyword to `AudioBookInfo` interface
+- Added comprehensive JSDoc documentation
+- Verified all interfaces in the file follow consistent export pattern
+- TypeScript compilation passes with strict mode
+
 ## Performance Issues (Non-Critical)
 
-### [ ] P-001 **Client-Side Data Fetching**
+### [x] P-001 **Client-Side Data Fetching**
 
-**File:** `src/components/books/previews-collection.tsx:25-44`
+**File:** `src/components/books/previews-collection.tsx:25-44` (now using `use-preview-books.ts` hook)
 **Issue:** Direct fetch calls in useEffect without error boundaries.
 **Impact:** Potential unhandled promise rejections in development.
 **Recommendation:** Add error boundaries and loading states.
+
+**✅ RESOLVED:** Implemented comprehensive data fetching improvements:
+- Extended `bookApiService` with `fetchPreviewBooks()` method using `SITE_CONFIG.DISPLAY_PREVIEWS.PREVIEW_ONLY`
+- Created `PreviewBooksParams` interface for type-safe API calls
+- Refactored `usePreviewBooks` hook to use centralized service layer
+- Added AbortController for proper cleanup on unmount
+- Implemented retry mechanism with enhanced error messages
+- Wrapped `PreviewsCollection` component with `BookErrorBoundary`
+- Added user-friendly retry button with Italian error messages
+- All hardcoded API URLs removed
+- Build passes successfully with no errors or warnings
 
 ### [ ] P-002 **Database Query Optimization**
 
@@ -338,7 +355,7 @@ Updated `src/app/page.tsx` to use `SITE_CONFIG.DISPLAY_PREVIEWS.NON_PREVIEW_ONLY
 
 ### Performance Monitoring (P-001, P-002):
 
-- Add error boundaries to data fetching
+- **✅ Add error boundaries to data fetching**
 - Make sorting configurable
 
 ### Security Hardening (S-001, S-002):
@@ -351,6 +368,6 @@ Updated `src/app/page.tsx` to use `SITE_CONFIG.DISPLAY_PREVIEWS.NON_PREVIEW_ONLY
 The codebase shows good overall structure with a modern Next.js/React stack. The critical issues are primarily around proper separation of concerns and unused code that could lead to bugs. High priority issues focus on performance optimization and security hardening. The numerous code style warnings indicate the need for establishing consistent coding standards to improve long-term maintainability.
 
 **Total Issues:** 26 (1 Critical, 3 High Priority, 11 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
-**Total Open Issues:** 6 (0 Critical, 0 High Priority, 0 Medium Priority, 1 Low Priority, 2 Warnings, 2 Performance, 2 Security)
-**Total Closed Issues:** 18 (1 Critical, 3 High Priority, 11 Medium Priority, 1 Low Priority, 2 Warnings, 0 Performance, 0 Security)
+**Total Open Issues:** 4 (0 Critical, 0 High Priority, 0 Medium Priority, 1 Low Priority, 1 Warning, 1 Performance, 1 Security)
+**Total Closed Issues:** 20 (1 Critical, 3 High Priority, 11 Medium Priority, 1 Low Priority, 3 Warnings, 1 Performance, 0 Security)
 **Partially Resolved:** 2 (L-002 Comment Styles - guide created, L-003 Unused Options - documented)

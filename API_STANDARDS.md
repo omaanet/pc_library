@@ -63,3 +63,83 @@ try {
 3. Use handleApiError in catch blocks for consistent formatting
 4. Preserve localized error messages (e.g., Italian for auth routes)
 5. Include meaningful error details for validation errors
+
+## Client-Side Data Fetching Best Practices
+
+### Use Service Layer for API Calls
+
+Always use the centralized `bookApiService` for API calls instead of direct fetch:
+
+```typescript
+// ❌ Bad: Direct fetch in component/hook
+const response = await fetch('/api/books?displayPreviews=1');
+
+// ✅ Good: Use service layer
+import { bookApiService } from '@/lib/services/book-api-service';
+const response = await bookApiService.fetchPreviewBooks({ sortOrder: 'desc' });
+```
+
+### Implement Error Boundaries
+
+Wrap data-fetching components with error boundaries for graceful error handling:
+
+```typescript
+import { BookErrorBoundary } from '@/components/books/book-error-boundary';
+
+<BookErrorBoundary>
+  <PreviewsCollection />
+</BookErrorBoundary>
+```
+
+### Add Cleanup with AbortController
+
+Always implement proper cleanup in hooks to prevent memory leaks:
+
+```typescript
+useEffect(() => {
+  let isMounted = true;
+  const abortController = new AbortController();
+
+  async function fetchData() {
+    try {
+      const data = await apiCall();
+      if (isMounted) {
+        setData(data);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return; // Ignore abort errors
+      }
+      if (isMounted) {
+        setError(error);
+      }
+    }
+  }
+
+  fetchData();
+
+  return () => {
+    isMounted = false;
+    abortController.abort();
+  };
+}, []);
+```
+
+### Provide Retry Mechanisms
+
+Include retry functionality for failed requests:
+
+```typescript
+const [retryCount, setRetryCount] = useState(0);
+
+const retry = () => {
+  setRetryCount(prev => prev + 1);
+};
+
+useEffect(() => {
+  // Fetch data
+}, [retryCount]);
+
+// In UI
+<Button onClick={retry}>Retry</Button>
+```

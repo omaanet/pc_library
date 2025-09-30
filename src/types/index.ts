@@ -1,4 +1,10 @@
-interface AudioBookInfo {
+/**
+ * Audiobook information associated with a book.
+ * Contains media metadata for books that have audio versions.
+ * Used as an optional property in the Book interface.
+ */
+export interface AudioBookInfo {
+    /** Mux media ID for the audiobook, null if not available */
     mediaId: string | null;
 }
 

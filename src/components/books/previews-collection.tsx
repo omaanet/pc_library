@@ -1,12 +1,13 @@
 'use client';
 
 import { usePreviewBooks } from '@/hooks/use-preview-books';
-import { Book as BookIcon } from 'lucide-react';
+import { Book as BookIcon, RefreshCw } from 'lucide-react';
 import type { Book } from '@/types';
 import { PreviewCover } from '@/components/books/preview-cover';
+import { Button } from '@/components/ui/button';
 
 export function PreviewsCollection() {
-    const { books, loading, mounted, error } = usePreviewBooks();
+    const { books, loading, mounted, error, retry } = usePreviewBooks();
 
     return (
         <div className="rounded-xl border bg-card p-6">
@@ -21,7 +22,18 @@ export function PreviewsCollection() {
                     {loading ? (
                         <div className="py-4 text-muted-foreground">Caricamento anteprima libri...</div>
                     ) : error ? (
-                        <div className="py-4 text-red-500">Errore nel caricamento: {error}</div>
+                        <div className="py-4 space-y-4">
+                            <div className="text-red-500">Errore nel caricamento: {error}</div>
+                            <Button
+                                onClick={retry}
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                            >
+                                <RefreshCw className="h-4 w-4" />
+                                Riprova
+                            </Button>
+                        </div>
                     ) : !Array.isArray(books) || books.length === 0 ? (
                         <div className="py-4 text-muted-foreground">Al momento non sono disponibili anteprime dei libri.</div>
                     ) : (
