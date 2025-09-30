@@ -1,4 +1,4 @@
-import React, { useMemo, useState, CSSProperties, ReactNode } from 'react';
+import { useMemo, useState, CSSProperties, ReactNode } from 'react';
 import Color from 'color'; // You'll need to install: npm install color @types/color
 
 // Define theme colors structure

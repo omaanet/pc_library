@@ -4,14 +4,25 @@ import { getAllBooksOptimized, createBook, BookQueryOptions, getBookById } from 
 import { saveOrUpdateAudioBook } from '@/lib/services/audiobooks-service';
 import { validateObject } from '@/lib/validation';
 import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export async function GET(request: Request) {
     try {
         const url = new URL(request.url);
 
         // Parse parameters with defaults
-        const page = parseInt(url.searchParams.get('page') ?? '1');
-        const perPage = parseInt(url.searchParams.get('perPage') ?? '-1');
+        const page = parseInt(url.searchParams.get('page') ?? String(SITE_CONFIG.PAGINATION.DEFAULT_PAGE));
+        let perPage = parseInt(url.searchParams.get('perPage') ?? '-1');
+        
+        // Validate perPage is within allowed range (if pagination is enabled)
+        if (perPage > 0) {
+            if (perPage < SITE_CONFIG.PAGINATION.MIN_PER_PAGE) {
+                perPage = SITE_CONFIG.PAGINATION.MIN_PER_PAGE;
+            } else if (perPage > SITE_CONFIG.PAGINATION.MAX_PER_PAGE) {
+                perPage = SITE_CONFIG.PAGINATION.MAX_PER_PAGE;
+            }
+        }
+        
         const search = url.searchParams.get('search') || undefined;
         const hasAudio = url.searchParams.get('hasAudio') === 'true' ? true :
             url.searchParams.get('hasAudio') === 'false' ? false : undefined;

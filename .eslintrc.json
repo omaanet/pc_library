@@ -19,6 +19,35 @@
                     "error"
                 ]
             }
+        ],
+        "@typescript-eslint/naming-convention": [
+            "off",
+            {
+                "selector": "variable",
+                "format": ["camelCase", "UPPER_CASE"],
+                "leadingUnderscore": "allow"
+            },
+            {
+                "selector": "function",
+                "format": ["camelCase", "PascalCase"]
+            },
+            {
+                "selector": "parameter",
+                "format": ["camelCase"],
+                "leadingUnderscore": "allow"
+            },
+            {
+                "selector": "property",
+                "format": null,
+                "custom": {
+                    "regex": "^[a-z][a-zA-Z0-9]*$|^[a-z][a-z0-9_]*$",
+                    "match": true
+                }
+            },
+            {
+                "selector": "typeLike",
+                "format": ["PascalCase"]
+            }
         ]
     }
 }

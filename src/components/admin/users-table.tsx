@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { SITE_CONFIG } from '@/config/site-config';
 
 type CheckedState = boolean | 'indeterminate';
 
@@ -35,8 +36,8 @@ export interface UsersResponse {
 
 
 export function UsersTable() {
-    const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(10);
+    const [page, setPage] = useState<number>(SITE_CONFIG.PAGINATION.DEFAULT_PAGE);
+    const [perPage, setPerPage] = useState<number>(SITE_CONFIG.PAGINATION.DEFAULT_PER_PAGE);
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState<keyof User>('createdAt');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -97,8 +98,8 @@ export function UsersTable() {
     // Get users and pagination data with defaults
     const users = data?.users || [];
     const pagination = data?.pagination || {
-        page: 1,
-        perPage: 10,
+        page: SITE_CONFIG.PAGINATION.DEFAULT_PAGE,
+        perPage: SITE_CONFIG.PAGINATION.DEFAULT_PER_PAGE,
         total: 0,
         totalPages: 1
     };

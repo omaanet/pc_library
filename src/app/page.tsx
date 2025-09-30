@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { RootNav } from '@/components/layout/root-nav';
 import { BookCollectionWrapper } from '@/components/books/book-collection-wrapper';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/context/auth-context';
 import { CopyrightFooter } from '@/components/shared/copyright-footer';
 import { PreviewsCollection } from '@/components/books/previews-collection';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export default function HomePage() {
     const { state: { isAuthenticated, user } } = useAuth();
@@ -42,13 +43,13 @@ export default function HomePage() {
                 {/* Collection Section */}
                 <section id="collection" className="w-full py-12 sm:py-16">
                     <div className="w-full container">
-                        <BookCollectionWrapper displayPreviews={0} />
+                        <BookCollectionWrapper displayPreviews={SITE_CONFIG.DISPLAY_PREVIEWS.NON_PREVIEW_ONLY} />
                     </div>
                 </section>
 
                 {/* Previews Collection Section */}
                 <section id="previews-collection" className="w-full py-12 sm:py-16">
-                        <PreviewsCollection />
+                    <PreviewsCollection />
                 </section>
 
             </main>

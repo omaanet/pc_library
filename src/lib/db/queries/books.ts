@@ -5,6 +5,7 @@ import { Book, AudioBook } from '@/types';
 import { getNeonClient } from '../client';
 import { getFirstRow, extractRows } from '../utils';
 import type { BookQueryOptions, PaginatedResult } from '../types';
+import { SITE_CONFIG } from '@/config/site-config';
 
 // Internal helper functions for audiobook operations
 // These are duplicated from audiobooks.ts to avoid circular dependencies
@@ -105,8 +106,8 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
         hasAudio,
         sortBy = '',
         sortOrder = 'desc',
-        page = 1,
-        perPage = 10,
+        page = SITE_CONFIG.PAGINATION.DEFAULT_PAGE,
+        perPage = SITE_CONFIG.PAGINATION.DEFAULT_PER_PAGE,
         displayPreviews = 0,
         isVisible = 1
     } = options;

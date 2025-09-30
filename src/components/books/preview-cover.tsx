@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import dynamic from 'next/dynamic';
 import { Book } from '@/types';
 import { BookCover } from '@/components/books/book-cover';

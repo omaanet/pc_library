@@ -58,8 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         dispatch({ type: 'SET_AUTHENTICATED', payload: true });
                     }
                 }
-            } catch (error_catched) {
-                console.error('Failed to initialize auth:', error_catched);
+            } catch (errorCaught) {
+                console.error('Failed to initialize auth:', errorCaught);
             } finally {
                 dispatch({ type: 'SET_LOADING', payload: false });
             }
@@ -109,8 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
 
             if (!response.ok) {
-                const error_response = await response.json();
-                throw new Error(error_response.error || 'Registrazione fallita');
+                const errorResponse = await response.json();
+                throw new Error(errorResponse.error || 'Registrazione fallita');
             }
 
             const data = await response.json() as RegisterResponse;

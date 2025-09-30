@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { Book } from '@/types';
 import { BackButton } from './BackButton';
 import { useAuth } from '@/context/auth-context';

@@ -191,46 +191,90 @@ This audit analyzed the Next.js/React application codebase for potential errors,
 
 ## Low Priority Issues (Code Style & Best Practices)
 
-### [ ] L-001 **Magic Numbers**
+### [x] L-001 **Magic Numbers**
 
 **Files:** Multiple locations
 **Issue:** Hardcoded pagination defaults (`perPage = 10`, `page = 1`).
 **Impact:** Magic numbers scattered throughout codebase reduce readability.
 **Recommendation:** Extract to configuration constants.
 
-### [ ] L-002 **Inconsistent Comment Styles**
+**✅ RESOLVED:** Created `SITE_CONFIG.PAGINATION` constants with:
+- `DEFAULT_PAGE: 1` - Default page number
+- `DEFAULT_PER_PAGE: 10` - Default items per page
+- `MAX_PER_PAGE: 100` - Maximum validation limit
+- `MIN_PER_PAGE: 1` - Minimum validation limit
+
+Updated all affected files:
+- `src/lib/db/queries/books.ts` - Database queries
+- `src/lib/db/types.ts` - Enhanced JSDoc documentation
+- `src/lib/services/book-api-service.ts` - API service layer
+- `src/app/api/books/route.ts` - Books API route with validation
+- `src/app/api/users/route.ts` - Users API route with validation
+- `src/components/admin/users-table.tsx` - Admin component
+
+### [~] L-002 **Inconsistent Comment Styles**
 
 **Files:** Various files
 **Issue:** Mix of JSDoc comments and regular comments.
 **Impact:** Inconsistent documentation style affects code maintainability.
 **Recommendation:** Standardize comment format throughout codebase.
 
-### [ ] L-003 **Unused Configuration Options**
+**⚠️ PARTIALLY RESOLVED:** Created comprehensive `COMMENT_STYLE_GUIDE.md` with:
+- Clear guidelines for when to use JSDoc vs regular comments
+- Examples for functions, components, interfaces, and API routes
+- Best practices and enforcement strategies
+- Migration strategy for existing code
 
-**File:** `src/lib/db.ts:67-77`
+**Note:** File-by-file audit and updates deferred as low-priority cosmetic improvements.
+
+### [~] L-003 **Unused Configuration Options**
+
+**File:** `src/lib/db/types.ts:7-17`
 **Issue:** Complex `BookQueryOptions` interface with some unused parameters.
 **Impact:** Interface complexity without corresponding functionality.
 **Recommendation:** Remove or implement unused options.
 
+**✅ RESOLVED (Documentation Approach):** Per user decision, all parameters are intentionally kept for future extensibility.
+- Added comprehensive JSDoc documentation to `BookQueryOptions` interface
+- Documented each parameter with inline comments
+- Added usage examples
+- Noted parameters reserved for future use
+- **No parameters removed** - maintained for backward compatibility and future features
+
 ## Warnings (Code Style & Consistency)
 
-### [ ] W-001 **Inconsistent Import Patterns**
+### [x] W-001 **Inconsistent Import Patterns**
 
 **Files:** `src/app/layout.tsx:4`, `src/app/page.tsx:4`
 **Issue:** Mixing of `React` and direct imports.
 **Recommendation:** Use consistent import style throughout the application.
 
-### [ ] W-002 **Hardcoded Values in Components**
+### [x] W-002 **Hardcoded Values in Components**
 
-**File:** `src/app/page.tsx:74`
+**File:** `src/app/page.tsx:45`
 **Issue:** `displayPreviews={0}` hardcoded in BookCollectionWrapper.
 **Recommendation:** Use named constants or configuration.
 
-### [ ] W-003 **Variable Naming Inconsistencies**
+**✅ RESOLVED:** Created `SITE_CONFIG.DISPLAY_PREVIEWS` constants with:
+- `ALL: -1` - Show all books (both preview and non-preview)
+- `NON_PREVIEW_ONLY: 0` - Show only non-preview books (full books)
+- `PREVIEW_ONLY: 1` - Show only preview books
+
+Updated `src/app/page.tsx` to use `SITE_CONFIG.DISPLAY_PREVIEWS.NON_PREVIEW_ONLY` instead of hardcoded `0`.
+
+### [x] W-003 **Variable Naming Inconsistencies**
 
 **Files:** `src/context/auth-context.tsx:61`, `src/context/auth-context.tsx:112`
 **Issue:** Inconsistent variable naming (`error_catched`, `error_response`).
 **Recommendation:** Use consistent camelCase naming throughout.
+
+**✅ RESOLVED:** Fixed all variable naming inconsistencies:
+- Renamed `error_catched` → `errorCaught` (line 61)
+- Renamed `error_response` → `errorResponse` (line 112)
+- Audited entire codebase for other snake_case variables
+- Confirmed all remaining snake_case are legitimate database field names
+- Added ESLint `@typescript-eslint/naming-convention` rule (set to "off" by user)
+- All TypeScript compilation passing
 
 ### [ ] W-004 **Type Organization**
 
@@ -307,5 +351,6 @@ This audit analyzed the Next.js/React application codebase for potential errors,
 The codebase shows good overall structure with a modern Next.js/React stack. The critical issues are primarily around proper separation of concerns and unused code that could lead to bugs. High priority issues focus on performance optimization and security hardening. The numerous code style warnings indicate the need for establishing consistent coding standards to improve long-term maintainability.
 
 **Total Issues:** 26 (1 Critical, 3 High Priority, 11 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
-**Total Open Issues:** 11 (0 Critical, 0 High Priority, 0 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
-**Total Closed Issues:** 15 (1 Critical, 3 High Priority, 11 Medium Priority, 0 Low Priority, 0 Warnings, 0 Performance, 0 Security)
+**Total Open Issues:** 6 (0 Critical, 0 High Priority, 0 Medium Priority, 1 Low Priority, 2 Warnings, 2 Performance, 2 Security)
+**Total Closed Issues:** 18 (1 Critical, 3 High Priority, 11 Medium Priority, 1 Low Priority, 2 Warnings, 0 Performance, 0 Security)
+**Partially Resolved:** 2 (L-002 Comment Styles - guide created, L-003 Unused Options - documented)

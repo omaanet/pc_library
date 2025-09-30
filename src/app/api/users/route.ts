@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getNeonClient } from '@/lib/db';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export interface UsersQueryParams {
     page?: number;
@@ -15,8 +16,15 @@ export async function GET(request: Request) {
     console.log('[Users API] Request received');
     try {
         const { searchParams } = new URL(request.url);
-        const page = parseInt(searchParams.get('page') || '1');
-        const perPage = parseInt(searchParams.get('perPage') || '10');
+        const page = parseInt(searchParams.get('page') || String(SITE_CONFIG.PAGINATION.DEFAULT_PAGE));
+        let perPage = parseInt(searchParams.get('perPage') || String(SITE_CONFIG.PAGINATION.DEFAULT_PER_PAGE));
+        
+        // Validate perPage is within allowed range
+        if (perPage < SITE_CONFIG.PAGINATION.MIN_PER_PAGE) {
+            perPage = SITE_CONFIG.PAGINATION.MIN_PER_PAGE;
+        } else if (perPage > SITE_CONFIG.PAGINATION.MAX_PER_PAGE) {
+            perPage = SITE_CONFIG.PAGINATION.MAX_PER_PAGE;
+        }
         const search = searchParams.get('search') || '';
         const sortBy = searchParams.get('sortBy') as UsersQueryParams['sortBy'] || 'createdAt';
         const sortOrder = searchParams.get('sortOrder') as 'asc' | 'desc' || 'desc';

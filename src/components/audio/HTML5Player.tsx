@@ -3,7 +3,6 @@
 // src/components/audio/HTML5Player.tsx
 // Main orchestrator component for audio player
 
-import React from 'react';
 import type { HTML5PlayerProps } from './types';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useVolumeControl } from './hooks/useVolumeControl';

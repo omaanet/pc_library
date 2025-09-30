@@ -1,5 +1,6 @@
 import type { BookResponse } from '@/types';
 import type { LibraryFilters, LibrarySort } from '@/types/context';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export interface FetchBooksParams {
   page?: number;
@@ -19,7 +20,7 @@ export const bookApiService = {
    * Builds URL search parameters for book API requests
    */
   buildParams(params: FetchBooksParams): URLSearchParams {
-    const { page = 1, perPage, sortBy, sortOrder, displayPreviews, filters = {} } = params;
+    const { page = SITE_CONFIG.PAGINATION.DEFAULT_PAGE, perPage, sortBy, sortOrder, displayPreviews, filters = {} } = params;
 
     const urlParams = new URLSearchParams({
       page: page.toString(),

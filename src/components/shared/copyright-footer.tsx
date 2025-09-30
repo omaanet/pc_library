@@ -1,5 +1,3 @@
-import React from "react";
-
 interface CopyrightFooterProps {
     /**
      * Language: 'it' (Italian) or 'en' (English)
