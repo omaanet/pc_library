@@ -1,5 +1,6 @@
 // src/app/api/user/preferences/route.ts
 import { NextResponse } from 'next/server';
+import { handleApiError, HttpStatus } from '@/lib/api-error-handler';
 
 // Define default preferences directly
 const defaultUserPreferences = {
@@ -10,22 +11,32 @@ const defaultUserPreferences = {
 };
 
 export async function GET() {
-    // Simulate network delay
-    // await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+        // Simulate network delay
+        // await new Promise(resolve => setTimeout(resolve, 500));
 
-    return NextResponse.json({ preferences: defaultUserPreferences });
+        return NextResponse.json({ preferences: defaultUserPreferences });
+    } catch (error) {
+        console.error('Error fetching user preferences:', error);
+        return handleApiError(error, 'Failed to fetch user preferences', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
 
 export async function PATCH(request: Request) {
-    const body = await request.json();
+    try {
+        const body = await request.json();
 
-    // Simulate network delay
-    // await new Promise(resolve => setTimeout(resolve, 500));
+        // Simulate network delay
+        // await new Promise(resolve => setTimeout(resolve, 500));
 
-    return NextResponse.json({
-        preferences: {
-            ...defaultUserPreferences,
-            ...body,
-        },
-    });
+        return NextResponse.json({
+            preferences: {
+                ...defaultUserPreferences,
+                ...body,
+            },
+        });
+    } catch (error) {
+        console.error('Error updating user preferences:', error);
+        return handleApiError(error, 'Failed to update user preferences', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

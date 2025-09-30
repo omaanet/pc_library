@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAllBooksOptimized, createBook, BookQueryOptions, getBookById } from '@/lib/db';
 import { saveOrUpdateAudioBook } from '@/lib/services/audiobooks-service';
 import { validateObject } from '@/lib/validation';
+import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 
 export async function GET(request: Request) {
     try {
@@ -32,43 +33,6 @@ export async function GET(request: Request) {
         // Check if we have a compound sort request via ?sort parameter
         const sortParam = url.searchParams.get('sort');
 
-        // return NextResponse.json({ message: 'GET request not implemented' }, { status: 501 });
-
-        // if (sortParam) {
-        //     try {
-        //         // Parse JSON sort definition from URL parameter
-        //         // Expected format: [['has_audio','ASC'],['publishing_date','DESC']]
-        //         sortBy = JSON.parse(sortParam);
-
-        //         // Validate the structure
-        //         if (!Array.isArray(sortBy) ||
-        //             !sortBy.every(item =>
-        //                 Array.isArray(item) &&
-        //                 item.length === 2 &&
-        //                 typeof item[0] === 'string' &&
-        //                 ['ASC', 'DESC'].includes(item[1].toUpperCase())
-        //             )
-        //         ) {
-        //             // If invalid, fallback to default
-        //             // sortBy = [['has_audio', 'ASC'], ['title', 'ASC']];
-        //             sortBy = [['has_audio', 'ASC']];
-        //         }
-        //     } catch (e) {
-        //         // If parse fails, use default sort
-        //         // sortBy = [['has_audio', 'ASC'], ['title', 'ASC']];
-        //         sortBy = [['has_audio', 'ASC']];
-        //     }
-        // } else if (sortByParam) {
-        //     // Legacy single-column sort
-        //     sortBy = sortByParam;
-        // } else {
-        //     // Default sort: hasAudio ASC, publishing_date DESC
-        //     // sortBy = [['has_audio', 'ASC'], ['publishing_date', 'DESC']];
-        //     sortBy = [['has_audio', 'ASC']];
-        // }
-
-        // sortBy = [['has_audio', 'ASC'], ['display_order', 'ASC']];
-
         // Prepare query options for the optimized function
         const queryOptions: BookQueryOptions = {
             search,
@@ -92,13 +56,7 @@ export async function GET(request: Request) {
         });
     } catch (error) {
         console.error('API Error fetching books:', error);
-        return NextResponse.json(
-            {
-                error: 'Failed to fetch books',
-                details: error instanceof Error ? error.message : 'Unknown error'
-            },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Failed to fetch books', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
 
@@ -183,12 +141,10 @@ export async function POST(request: Request) {
         // Validate input data
         const validation = validateObject(bookData, validationSchema);
         if (!validation.isValid) {
-            return NextResponse.json(
-                {
-                    error: 'Validation failed',
-                    details: validation.errors
-                },
-                { status: 400 }
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                'Validation failed',
+                validation.errors
             );
         }
 
@@ -197,9 +153,9 @@ export async function POST(request: Request) {
 
         const newBook = await createBook(sanitizedData);
         if (!newBook) {
-            return NextResponse.json(
-                { error: 'Failed to create book' },
-                { status: 500 }
+            throw new ApiError(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                'Failed to create book'
             );
         }
 
@@ -228,21 +184,15 @@ export async function POST(request: Request) {
         // Fetch the complete book with all its data
         const createdBook = await getBookById(newBook.id);
         if (!createdBook) {
-            return NextResponse.json(
-                { error: 'Failed to fetch created book' },
-                { status: 500 }
+            throw new ApiError(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                'Failed to fetch created book'
             );
         }
 
         return NextResponse.json(createdBook, { status: 201 });
     } catch (error) {
         console.error('API Error creating book:', error);
-        return NextResponse.json(
-            {
-                error: 'Failed to create book',
-                details: error instanceof Error ? error.message : 'Unknown error'
-            },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Failed to create book', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

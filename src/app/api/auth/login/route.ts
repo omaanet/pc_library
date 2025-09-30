@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { validateUserCredentials } from '@/lib/user-db';
 import { authenticateUserByEmail } from '@/lib/user-db-simple';
 import { USE_NEW_AUTH_FLOW, SESSION_DURATION } from '@/config/auth-config';
+import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 
 export async function POST(request: Request) {
     try {
@@ -17,10 +18,7 @@ export async function POST(request: Request) {
         }
     } catch (error) {
         console.error('Login error:', error);
-        return NextResponse.json(
-            { error: 'Accesso fallito' },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Accesso fallito', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
 
@@ -31,20 +29,14 @@ export async function POST(request: Request) {
 async function handleLegacyAuthFlow(email: string, password: string) {
     // Basic validation
     if (!email || !password) {
-        return NextResponse.json(
-            { error: 'Email e password sono richiesti' },
-            { status: 400 }
-        );
+        throw new ApiError(HttpStatus.BAD_REQUEST, 'Email e password sono richiesti');
     }
 
     // Validate user credentials against database
     const user = await validateUserCredentials(email, password);
 
     if (!user) {
-        return NextResponse.json(
-            { error: 'Email o password non validi' },
-            { status: 401 }
-        );
+        throw new ApiError(HttpStatus.UNAUTHORIZED, 'Email o password non validi');
     }
 
     // Create session data (7 days)
@@ -75,20 +67,14 @@ async function handleLegacyAuthFlow(email: string, password: string) {
 async function handleNewAuthFlow(email: string) {
     // Basic validation
     if (!email) {
-        return NextResponse.json(
-            { error: 'Email è richiesto' },
-            { status: 400 }
-        );
+        throw new ApiError(HttpStatus.BAD_REQUEST, 'Email è richiesto');
     }
 
     // Authenticate user by email only
     const user = await authenticateUserByEmail(email);
 
     if (!user) {
-        return NextResponse.json(
-            { error: 'Utente non trovato' },
-            { status: 401 }
-        );
+        throw new ApiError(HttpStatus.UNAUTHORIZED, 'Utente non trovato');
     }
 
     // Create session data (3 hours)

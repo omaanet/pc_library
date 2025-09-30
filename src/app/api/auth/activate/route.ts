@@ -4,6 +4,7 @@ import { findUserByVerificationToken, activateUser, getUserById } from '@/lib/us
 import { getMailer } from '@/lib/mailer';
 import { ItalianMarkovPasswordGenerator } from '@/lib/italian-markov-password-generator';
 import { Logger } from '@/lib/logging';
+import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 
 export async function POST(request: Request) {
     const source = 'api/auth/activate';
@@ -15,10 +16,7 @@ export async function POST(request: Request) {
 
         if (!token) {
             Logger.warning(source, 'Missing verification token in request');
-            return NextResponse.json(
-                { error: 'Token di verifica richiesto' },
-                { status: 400 }
-            );
+            throw new ApiError(HttpStatus.BAD_REQUEST, 'Token di verifica richiesto');
         }
 
         // Find the user by verification token
@@ -41,9 +39,9 @@ export async function POST(request: Request) {
 
             // Try to find a user who was activated recently (edge case: frontend could pass email as fallback)
             // For now, return a friendly message
-            return NextResponse.json(
-                { error: 'Token di verifica non valido o già utilizzato. L\'account potrebbe essere già stato attivato.' },
-                { status: 400 }
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                'Token di verifica non valido o già utilizzato. L\'account potrebbe essere già stato attivato.'
             );
         }
 
@@ -82,10 +80,7 @@ export async function POST(request: Request) {
                 reason: 'database_update_failed'
             });
 
-            return NextResponse.json(
-                { error: 'Impossibile attivare l\'account' },
-                { status: 500 }
-            );
+            throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, 'Impossibile attivare l\'account');
         }
 
         // Send welcome email with the generated password
@@ -117,10 +112,7 @@ export async function POST(request: Request) {
                 reason: 'user_not_found_after_activation'
             });
 
-            return NextResponse.json(
-                { error: 'Utente non trovato' },
-                { status: 404 }
-            );
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Utente non trovato');
         }
 
         // Create a session for the user
@@ -157,9 +149,6 @@ export async function POST(request: Request) {
             Logger.extractErrorDetails(error)
         );
 
-        return NextResponse.json(
-            { error: 'Si è verificato un errore imprevisto. Riprova più tardi.' },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Si è verificato un errore imprevisto. Riprova più tardi.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

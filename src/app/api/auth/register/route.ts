@@ -4,6 +4,7 @@ import { userExists, createUser } from '@/lib/user-db';
 import { createUserSimple } from '@/lib/user-db-simple';
 import { getMailer } from '@/lib/mailer';
 import { USE_NEW_AUTH_FLOW, SESSION_DURATION } from '@/config/auth-config';
+import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 
 export async function POST(request: Request) {
     try {
@@ -12,27 +13,18 @@ export async function POST(request: Request) {
 
         // Validate required fields
         if (!email || !fullName) {
-            return NextResponse.json(
-                { error: 'Email e nome completo sono richiesti' },
-                { status: 400 }
-            );
+            throw new ApiError(HttpStatus.BAD_REQUEST, 'Email e nome completo sono richiesti');
         }
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            return NextResponse.json(
-                { error: 'Formato email non valido' },
-                { status: 400 }
-            );
+            throw new ApiError(HttpStatus.BAD_REQUEST, 'Formato email non valido');
         }
 
         // Check if email is already registered
         if (await userExists(email)) {
-            return NextResponse.json(
-                { error: 'Un utente con questa email esiste già' },
-                { status: 409 }
-            );
+            throw new ApiError(HttpStatus.CONFLICT, 'Un utente con questa email esiste già');
         }
 
         // Choose which authentication flow to use based on config
@@ -43,10 +35,7 @@ export async function POST(request: Request) {
         }
     } catch (error) {
         console.error('Registration error:', error);
-        return NextResponse.json(
-            { error: 'Si è verificato un errore imprevisto. Riprova più tardi.' },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Si è verificato un errore imprevisto. Riprova più tardi.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
 
@@ -58,10 +47,7 @@ async function handleLegacyAuthFlow(email: string, fullName: string) {
     // Create a new user
     const createResult = await createUser(email, fullName);
     if (!createResult) {
-        return NextResponse.json(
-            { error: 'Impossibile creare l\'utente. Riprova più tardi.' },
-            { status: 500 }
-        );
+        throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, 'Impossibile creare l\'utente. Riprova più tardi.');
     }
     const { userId, verificationToken } = createResult;
 
@@ -71,10 +57,7 @@ async function handleLegacyAuthFlow(email: string, fullName: string) {
 
     if (!emailSent) {
         // If email could not be sent, return an error
-        return NextResponse.json(
-            { error: 'Impossibile inviare la mail di verifica. Riprova più tardi.' },
-            { status: 500 }
-        );
+        throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, 'Impossibile inviare la mail di verifica. Riprova più tardi.');
     }
 
     return NextResponse.json({
@@ -91,10 +74,7 @@ async function handleNewAuthFlow(email: string, fullName: string) {
     // Create a new user with simplified flow (already activated)
     const createResult = await createUserSimple(email, fullName);
     if (!createResult) {
-        return NextResponse.json(
-            { error: 'Impossibile creare l\'utente. Riprova più tardi.' },
-            { status: 500 }
-        );
+        throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, 'Impossibile creare l\'utente. Riprova più tardi.');
     }
     
     // Create session data (3 hours)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchAudioBook, saveOrUpdateAudioBook } from '@/lib/services/audiobooks-service';
+import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 
 export async function GET(
     req: NextRequest,
@@ -10,16 +11,13 @@ export async function GET(
         const audiobook = await fetchAudioBook(bookId);
 
         if (!audiobook) {
-            return NextResponse.json({ message: 'Audiobook not found' }, { status: 404 });
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Audiobook not found');
         }
 
         return NextResponse.json(audiobook);
     } catch (error) {
         console.error('Error fetching audiobook:', error);
-        return NextResponse.json(
-            { message: 'Failed to fetch audiobook data' },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Failed to fetch audiobook data', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
 
@@ -41,9 +39,6 @@ export async function POST(
         return NextResponse.json(audiobook);
     } catch (error) {
         console.error('Error saving audiobook:', error);
-        return NextResponse.json(
-            { message: 'Failed to save audiobook data' },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Failed to save audiobook data', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

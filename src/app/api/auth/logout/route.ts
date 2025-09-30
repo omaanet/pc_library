@@ -1,5 +1,6 @@
 // src/app/api/auth/logout/route.ts
 import { NextResponse } from 'next/server';
+import { handleApiError, HttpStatus } from '@/lib/api-error-handler';
 
 export async function POST() {
     try {
@@ -18,9 +19,6 @@ export async function POST() {
         return response;
     } catch (error) {
         console.error('Logout error:', error);
-        return NextResponse.json(
-            { error: 'Logout failed' },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Logout failed', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

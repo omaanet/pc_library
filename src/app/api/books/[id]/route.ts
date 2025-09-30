@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getBookById, updateBook, deleteBook, getAudioBookById, deleteAudioBook } from '@/lib/db';
 import { saveOrUpdateAudioBook, fetchAudioBook } from '@/lib/services/audiobooks-service';
+import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 
 export async function GET(
     request: NextRequest,
@@ -12,10 +13,7 @@ export async function GET(
         const book = await getBookById(id);
 
         if (!book) {
-            return NextResponse.json(
-                { error: 'Book not found' },
-                { status: 404 }
-            );
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Book not found');
         }
 
         // If the book has audio, populate audiobook.mediaId from AudioBook record
@@ -38,13 +36,7 @@ export async function GET(
         return NextResponse.json(book);
     } catch (error) {
         console.error('API Error fetching book:', error);
-        return NextResponse.json(
-            {
-                error: 'Failed to fetch book',
-                details: error instanceof Error ? error.message : 'Unknown error'
-            },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Failed to fetch book', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
 
@@ -59,10 +51,7 @@ export async function PUT(
         // Get the current book to check if hasAudio is changing
         const currentBook = await getBookById(id);
         if (!currentBook) {
-            return NextResponse.json(
-                { error: 'Book not found' },
-                { status: 404 }
-            );
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Book not found');
         }
 
         const hadAudio = currentBook.hasAudio;
@@ -72,10 +61,7 @@ export async function PUT(
         const success = await updateBook(id, book);
 
         if (!success) {
-            return NextResponse.json(
-                { error: 'Failed to update book' },
-                { status: 500 }
-            );
+            throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, 'Failed to update book');
         }
 
         // Handle audiobook data if the book has audio
@@ -97,22 +83,13 @@ export async function PUT(
         // Fetch the complete updated book with all its data
         const updatedBook = await getBookById(id);
         if (!updatedBook) {
-            return NextResponse.json(
-                { error: 'Failed to fetch updated book' },
-                { status: 500 }
-            );
+            throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, 'Failed to fetch updated book');
         }
 
         return NextResponse.json(updatedBook);
     } catch (error) {
         console.error('API Error updating book:', error);
-        return NextResponse.json(
-            {
-                error: 'Failed to update book',
-                details: error instanceof Error ? error.message : 'Unknown error'
-            },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Failed to update book', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
 
@@ -126,20 +103,14 @@ export async function DELETE(
         // First, check if the book exists and has an associated audiobook
         const book = await getBookById(id);
         if (!book) {
-            return NextResponse.json(
-                { error: 'Book not found' },
-                { status: 404 }
-            );
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Book not found');
         }
 
         // Delete the book (this will cascade to the audiobook if foreign key constraints are set up)
         const success = await deleteBook(id);
 
         if (!success) {
-            return NextResponse.json(
-                { error: 'Failed to delete book' },
-                { status: 500 }
-            );
+            throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, 'Failed to delete book');
         }
 
         // If the book had an audiobook, delete it explicitly
@@ -150,12 +121,6 @@ export async function DELETE(
         return new NextResponse(null, { status: 204 });
     } catch (error) {
         console.error('API Error deleting book:', error);
-        return NextResponse.json(
-            {
-                error: 'Failed to delete book',
-                details: error instanceof Error ? error.message : 'Unknown error'
-            },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Failed to delete book', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

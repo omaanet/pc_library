@@ -44,7 +44,7 @@ This audit analyzed the Next.js/React application codebase for potential errors,
 
 ## Medium Priority Issues (Code Quality & Maintainability)
 
-### [ ] A-006 **Extensive Commented Code**
+### [x] A-006 **Extensive Commented Code**
 
 **Files:** Multiple files contain large blocks of commented code
 
@@ -54,6 +54,12 @@ This audit analyzed the Next.js/React application codebase for potential errors,
   **Issue:** Dead code accumulation makes the codebase harder to maintain.
   **Impact:** Reduced code readability and maintenance burden.
   **Recommendation:** Remove commented code or move to commit history.
+
+**✅ RESOLVED:** Successfully cleaned up commented code:
+- Removed all commented code blocks from `src/app/page.tsx` (background gradient, feature cards, alternative description, unused imports)
+- Removed commented sorting logic from `src/app/api/books/route.ts` (32+ lines)
+- Note: `src/lib/db.ts` was refactored as part of A-007, removing commented code in the process
+- Additional finding: `src/components/books/book-shelf.tsx` is entirely commented out (117 lines) and unused - candidate for deletion
 
 ### [x] A-007 **Large File Sizes**
 
@@ -69,12 +75,27 @@ This audit analyzed the Next.js/React application codebase for potential errors,
 - Build passes with no errors
 - Follows Single Responsibility Principle
 
-### [ ] A-008 **Inconsistent Error Handling**
+### [x] A-008 **Inconsistent Error Handling**
 
 **Files:** Multiple API routes
 **Issue:** Inconsistent error response formats across API endpoints.
 **Impact:** Inconsistent API behavior for frontend consumers.
 **Recommendation:** Standardize error response format.
+
+**✅ RESOLVED:** Implemented comprehensive error handling standardization:
+- Created `src/lib/api-error-handler.ts` with `ApiError` class, `handleApiError()`, and `HttpStatus` constants
+- Created `src/types/api.ts` with standardized error response type definitions
+- Updated all major API routes to use standardized error handling:
+  - `/api/books` (GET, POST)
+  - `/api/books/[id]` (GET, PUT, DELETE)
+  - `/api/audiobooks/[book_id]` (GET, POST)
+  - `/api/auth/login`, `/api/auth/register`, `/api/auth/activate`, `/api/auth/logout`, `/api/auth/session`
+  - `/api/user/preferences` (GET, PATCH)
+  - `/api/system/log` (POST)
+  - `/api/download-book/[book_id]` (GET)
+- Created `API_STANDARDS.md` with comprehensive documentation and usage examples
+- Verified frontend compatibility - all components already use `error` field from responses
+- Italian error messages preserved in authentication routes
 
 ### [x] A-009 **Code Organization Issues**
 
@@ -252,5 +273,5 @@ This audit analyzed the Next.js/React application codebase for potential errors,
 The codebase shows good overall structure with a modern Next.js/React stack. The critical issues are primarily around proper separation of concerns and unused code that could lead to bugs. High priority issues focus on performance optimization and security hardening. The numerous code style warnings indicate the need for establishing consistent coding standards to improve long-term maintainability.
 
 **Total Issues:** 26 (1 Critical, 3 High Priority, 11 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
-**Total Open Issues:** 20 (0 Critical, 0 High Priority, 9 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
-**Total Closed Issues:** 6 (1 Critical, 3 High Priority, 2 Medium Priority, 0 Low Priority, 0 Warnings, 0 Performance, 0 Security)
+**Total Open Issues:** 18 (0 Critical, 0 High Priority, 7 Medium Priority, 3 Low Priority, 4 Warnings, 2 Performance, 2 Security)
+**Total Closed Issues:** 8 (1 Critical, 3 High Priority, 4 Medium Priority, 0 Low Priority, 0 Warnings, 0 Performance, 0 Security)

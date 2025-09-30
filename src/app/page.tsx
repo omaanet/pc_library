@@ -3,19 +3,12 @@
 import React, { useState } from 'react';
 import { RootNav } from '@/components/layout/root-nav';
 import { BookCollectionWrapper } from '@/components/books/book-collection-wrapper';
-// import { BookCollection } from '@/components/books/book-collection';
-// import { BookListCard } from '@/components/books/book-list-card';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/context/auth-context';
-// import { Button } from '@/components/ui/button';
-// import { Book as BookIcon, Headphones, Loader2 } from 'lucide-react';
-// import { cn } from '@/lib/utils';
 import { CopyrightFooter } from '@/components/shared/copyright-footer';
-// import { useLogger } from '@/lib/logging.client';
 import { PreviewsCollection } from '@/components/books/previews-collection';
 
 export default function HomePage() {
-    // const source = 'HomePage';
     const { state: { isAuthenticated, user } } = useAuth();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -30,16 +23,11 @@ export default function HomePage() {
 
                 {/* Hero Section */}
                 <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">
-                    {/* <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]" /> */}
                     <div className="container mx-auto space-y-2">
                         <div className="space-y-4 text-center">
                             <h1 className="text-3xl font-medium tracking-tight md:tracking-normal sm:text-5xl text-sky-600 dark:text-sky-400">
                                 Racconti in Voce e Caratteri<br />Espressioni di Scrittura Creativa
                             </h1>
-
-                            {/*<p className="mx-auto max-w-5xl text-lg tracking-tight text-sky-400 dark:text-sky-500">
-                                Una variegata raccolta narrativa di fantasia.  Novelle in libera lettura.
-                            </p> */}
 
                             <p className="mx-auto max-w-5xl text-lg tracking-tight md:tracking-normal text-sky-500 dark:text-sky-300">
                                 <span className="inline-block mt-4">Una variegata raccolta narrativa di fantasia.</span><br />
@@ -47,23 +35,6 @@ export default function HomePage() {
                                 <span className="inline-block mt-4 text-emerald-600 dark:text-emerald-400">Un libero contributo da destinarsi a scelta del lettore a favore di:<br />Organizzazioni Non Profit, Associazioni di Volontariato, Fondazioni o a cause specifiche.</span>
                             </p>
                         </div>
-
-                        {/* <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
-                            <div className="rounded-xl border bg-card p-6">
-                                <BookIcon className="h-12 w-12 mb-4" />
-                                <h3 className="text-xl font-semibold mb-2">Digital Books</h3>
-                                <p className="text-muted-foreground">
-                                    Access our extensive collection of digital books from any device.
-                                </p>
-                            </div>
-                            <div className="rounded-xl border bg-card p-6">
-                                <Headphones className="h-12 w-12 mb-4" />
-                                <h3 className="text-xl font-semibold mb-2">Audiobooks</h3>
-                                <p className="text-muted-foreground">
-                                    Listen to professionally narrated audiobooks on the go.
-                                </p>
-                            </div>
-                        </div> */}
 
                     </div>
                 </section>

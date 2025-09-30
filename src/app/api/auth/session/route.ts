@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getUserById } from '@/lib/user-db';
+import { handleApiError, HttpStatus } from '@/lib/api-error-handler';
 
 export async function GET() {
     try {
@@ -55,9 +56,6 @@ export async function GET() {
         }
     } catch (error) {
         console.error('Session error:', error);
-        return NextResponse.json(
-            { error: 'Failed to get session' },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Failed to get session', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

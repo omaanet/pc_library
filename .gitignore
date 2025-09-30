@@ -69,5 +69,4 @@ db
 !src/lib/db
 scripts/check-env.js
 .claude/settings.local.json
-AUDIT_REPORT_20250930.md
 CLAUDE.md

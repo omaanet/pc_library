@@ -1,6 +1,7 @@
 // src/app/api/system/log/route.ts
 import { Logger, LogLevel } from '@/lib/logging';
 import { NextRequest, NextResponse } from 'next/server';
+import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 
 export async function POST(request: NextRequest) {
     try {
@@ -15,10 +16,7 @@ export async function POST(request: NextRequest) {
 
         // Validate required fields
         if (!level || !source || !message) {
-            return NextResponse.json(
-                { error: 'Missing required log fields' },
-                { status: 400 }
-            );
+            throw new ApiError(HttpStatus.BAD_REQUEST, 'Missing required log fields');
         }
 
         // Try to get user ID from auth token in cookies if available
@@ -55,18 +53,12 @@ export async function POST(request: NextRequest) {
                 });
                 break;
             default:
-                return NextResponse.json(
-                    { error: 'Invalid log level' },
-                    { status: 400 }
-                );
+                throw new ApiError(HttpStatus.BAD_REQUEST, 'Invalid log level');
         }
 
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error in logging API:', error);
-        return NextResponse.json(
-            { error: 'Failed to process log' },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Failed to process log', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

@@ -4,6 +4,7 @@ import { normalizeItalianTitleWithOptions } from "@/lib/utils"
 import { getSessionUser } from "@/lib/auth-utils"
 import { Logger } from "@/lib/logging"
 import { User } from "@/types"
+import { ApiError, HttpStatus } from "@/lib/api-error-handler"
 
 export async function GET(
     req: NextRequest,
@@ -16,10 +17,7 @@ export async function GET(
 
         // If not authenticated, return 401 Unauthorized
         if (!user) {
-            return new NextResponse("Autenticazione richiesta per scaricare questo libro", {
-                status: 401,
-                headers: { 'Content-Type': 'text/plain' }
-            });
+            throw new ApiError(HttpStatus.UNAUTHORIZED, "Autenticazione richiesta per scaricare questo libro");
         }
 
         const bookId = (await params).book_id;
@@ -28,7 +26,7 @@ export async function GET(
         const book = await getBookById(bookId)
 
         if (!book) {
-            return new NextResponse("Libro non trovato", { status: 404 })
+            throw new ApiError(HttpStatus.NOT_FOUND, "Libro non trovato");
         }
 
         // Convert spaces in title to underscores for the PDF filename
