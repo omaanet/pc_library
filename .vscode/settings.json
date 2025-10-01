@@ -16,6 +16,7 @@
     },
     "explorer.fileNesting.enabled": true,
     "explorer.fileNesting.patterns": {
-        "*.ts": "${basename}.d.ts, ${basename}.js"
-    }
+        "*.d.ts": "${basename}.ts, ${basename}.js"
+    },
+    "css.lint.unknownAtRules": "ignore"
 }
