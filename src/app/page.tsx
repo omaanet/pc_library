@@ -21,7 +21,7 @@ export default function HomePage() {
                 onAuthClick={() => setIsAuthModalOpen(true)}
             />
 
-            <main className="flex-1 mx-5 sm:mx-auto">
+            <main className="flex-1 mx-5 sm:mx-auto w-full">
 
                 {/* Hero Section */}
                 <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">

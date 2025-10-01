@@ -2,24 +2,22 @@
 // src/components/ui/loading-placeholder.tsx
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 export function BookCardSkeleton({ view }: { view: 'grid' | 'list' }) {
     if (view === 'grid') {
         return (
-            <Card className="overflow-hidden">
-                <div className="space-y-4">
-                    <Skeleton className="aspect-[3/4] w-full" />
-                    <div className="p-4 space-y-3">
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-4 w-full" />
-                        <div className="flex items-center justify-between pt-2">
-                            <Skeleton className="h-4 w-24" />
-                            <Skeleton className="h-4 w-16" />
+            <Card className="group overflow-hidden transition-colors hover:border-primary">
+                <CardContent className="p-0">
+                    <Skeleton className="aspect-[304/360] w-full" />
+                    <div className="px-4 pt-2 pb-5">
+                        <div className="flex flex-col items-center justify-center mb-2 h-[3.25rem]">
+                            <Skeleton className="h-7 line-clamp-1 text-center text-lg font-semibold tracking-tight" />
+                            <div className="h-3"></div>
                         </div>
-                        <Skeleton className="h-9 w-full" />
+                        <Skeleton className="h-10 w-full" />
                     </div>
-                </div>
+                </CardContent>
             </Card>
         );
     }
