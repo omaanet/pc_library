@@ -165,12 +165,17 @@ export function BookDialogSimple({
                     <DialogTitle className="mt-2 sm:mt-0 text-lg font-medium text-cyan-300 line-clamp-2">
                         {book.title}
                     </DialogTitle>
-                    {book.hasAudio && book.audioLength && (
-                        <DialogDescription className="text-xs text-muted-foreground flex items-center justify-center">
-                            <Headphones className="h-3 w-3 mr-1" />
-                            {formatAudioLength(book.audioLength)}
-                        </DialogDescription>
-                    )}
+                    <DialogDescription className="text-xs text-muted-foreground flex items-center justify-center">
+                        {book.hasAudio && book.audioLength ? (
+                            <>
+                                <Headphones className="h-3 w-3 mr-1" />
+                                {formatAudioLength(book.audioLength)}
+                            </>
+                        ) : (
+                            // `Published ${new Date(book.publishingDate).toLocaleDateString()}`
+                            <></>
+                        )}
+                    </DialogDescription>
                 </DialogHeader>
 
                 {/* Content - auto-sizing with max height constraint */}
@@ -300,11 +305,13 @@ export function BookDialog({
                                     {book.title}
                                 </DialogTitle>
                                 <DialogDescription className="flex items-center gap-4">
-                                    {book.hasAudio && book.audioLength && (
+                                    {book.hasAudio && book.audioLength ? (
                                         <span className="inline-flex items-center gap-1">
                                             <Headphones className="h-4 w-4" />
                                             Versione Audio: {formatAudioLength(book.audioLength)}
                                         </span>
+                                    ) : (
+                                        <></>
                                     )}
                                 </DialogDescription>
                             </div>

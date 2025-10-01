@@ -79,7 +79,7 @@ async function handleNewAuthFlow(email: string, fullName: string) {
     
     // Create session data (3 hours)
     const session = {
-        userId: createResult.userId,
+        userId: String(createResult.userId),
         expires: new Date(Date.now() + SESSION_DURATION.NEW_AUTH * 1000).toISOString(), // 3 hours
     };
 

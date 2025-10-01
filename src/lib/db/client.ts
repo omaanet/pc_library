@@ -10,8 +10,10 @@ if (!connectionString) {
 
 // Log database connection info (without exposing full credentials)
 const dbUrl = new URL(connectionString);
-console.log(`[Database] Connecting to: ${dbUrl.protocol}//${dbUrl.hostname}${dbUrl.port ? `:${dbUrl.port}` : ''}${dbUrl.pathname}`);
-
+// In src/lib/db/client.ts, line 13
+if (process.env.NODE_ENV === 'development') {
+    console.log(`[Database] Connecting to: ${dbUrl.protocol}//${dbUrl.hostname}${dbUrl.port ? `:${dbUrl.port}` : ''}${dbUrl.pathname}`);
+}
 // Create a singleton Neon client (pool)
 let neonClient: any = null;
 

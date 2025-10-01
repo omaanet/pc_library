@@ -41,7 +41,7 @@ async function handleLegacyAuthFlow(email: string, password: string) {
 
     // Create session data (7 days)
     const session = {
-        userId: user.id,
+        userId: String(user.id),
         expires: new Date(Date.now() + SESSION_DURATION.OLD_AUTH * 1000).toISOString(),
     };
 
@@ -79,7 +79,7 @@ async function handleNewAuthFlow(email: string) {
 
     // Create session data (3 hours)
     const session = {
-        userId: user.id,
+        userId: String(user.id),
         expires: new Date(Date.now() + SESSION_DURATION.NEW_AUTH * 1000).toISOString(),
     };
 

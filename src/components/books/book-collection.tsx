@@ -21,7 +21,7 @@ import { BookCollectionEmpty } from './book-collection-empty';
 const PRELOAD_COUNT = 4;
 
 interface BookCollectionProps {
-  displayPreviews: number; // -1: all, 0: non-preview only, 1: preview only
+    displayPreviews: number; // -1: all, 0: non-preview only, 1: preview only
 }
 
 /**
@@ -39,166 +39,166 @@ interface BookCollectionProps {
  * while sharing global UI preferences through context.
  */
 export function BookCollection({ displayPreviews }: BookCollectionProps) {
-  // Context: Global state shared across app
-  const {
-    state: { viewMode, selectedBook, filters, sort, pagination },
-    selectBook,
-    updateFilters,
-  } = useLibrary();
+    // Context: Global state shared across app
+    const {
+        state: { viewMode, selectedBook, filters, sort, pagination },
+        selectBook,
+        updateFilters,
+    } = useLibrary();
 
-  const {
-    state: { isAuthenticated },
-  } = useAuth();
-  const { toast } = useToast();
+    const {
+        state: { isAuthenticated },
+    } = useAuth();
+    const { toast } = useToast();
 
-  // Local state
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
-  const searchInputRef = useRef<HTMLInputElement>(null);
+    // Local state
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Custom hooks for data fetching and search
-  const {
-    books,
-    isLoading,
-    isLoadingMore,
-    isInitialLoad,
-    error,
-    pagination: localPagination,
-    loadMore,
-    retry,
-  } = useBookData({
-    displayPreviews,
-    filters,
-    sort,
-    perPage: pagination.perPage,
-    onError: (message) =>
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: message,
-      }),
-  });
-
-  const { searchTerm, handleSearch, handleSearchBlur } = useBookSearch({
-    onSearch: (term) => {
-      updateFilters({ search: term });
-    },
-  });
-
-  // Audio filter handler
-  const handleAudioFilterChange = useCallback(
-    (checked: boolean) => {
-      updateFilters({ hasAudio: checked });
-    },
-    [updateFilters]
-  );
-
-  // Preload book cover images for visible books
-  useEffect(() => {
-    if (!books || books.length === 0) return;
-
-    // Only preload a limited number of books
-    const booksToPreload = books.slice(0, PRELOAD_COUNT);
-
-    // Skip already loaded images
-    const unloadedBooks = booksToPreload.filter((book) => {
-      return !loadedImages.has(book.coverImage);
+    // Custom hooks for data fetching and search
+    const {
+        books,
+        isLoading,
+        isLoadingMore,
+        isInitialLoad,
+        error,
+        pagination: localPagination,
+        loadMore,
+        retry,
+    } = useBookData({
+        displayPreviews,
+        filters,
+        sort,
+        perPage: pagination.perPage,
+        onError: (message) =>
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: message,
+            }),
     });
 
-    if (unloadedBooks.length === 0) return;
-
-    const preloadImages = unloadedBooks.map((book) => {
-      return new Promise<void>((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          setLoadedImages((prev) => new Set([...prev, book.coverImage]));
-          resolve();
-        };
-        img.onerror = () => resolve(); // Don't block on error
-
-        // Use getCoverImageUrl to properly handle placeholder images
-        const isPlaceholder = book.coverImage === IMAGE_CONFIG.placeholder.token;
-        const imageUrl = getCoverImageUrl(book.coverImage, 'grid', {
-          bookId: isPlaceholder ? book.id : undefined,
-        });
-        img.src = imageUrl;
-      });
+    const { searchTerm, handleSearch, handleSearchBlur } = useBookSearch({
+        onSearch: (term) => {
+            updateFilters({ search: term });
+        },
     });
 
-    Promise.all(preloadImages).catch(console.error);
-  }, [books, loadedImages]);
-
-  // Focus management effect for search input
-  useEffect(() => {
-    if (searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isLoading]);
-
-  const showLoadingState = isLoading && !isLoadingMore;
-
-  // Early return for error state
-  if (error) {
-    return (
-      <div className="w-full max-w-[2000px] mx-auto px-2 sm:px-4 space-y-4 sm:space-y-6">
-        <BookCollectionError error={error} onRetry={retry} />
-      </div>
+    // Audio filter handler
+    const handleAudioFilterChange = useCallback(
+        (checked: boolean) => {
+            updateFilters({ hasAudio: checked });
+        },
+        [updateFilters]
     );
-  }
 
-  return (
-    <div className="w-full max-w-[2000px] mx-auto px-2 sm:px-4 space-y-4 sm:space-y-6">
-      {/* Controls Section */}
-      <BookCollectionControls />
+    // Preload book cover images for visible books
+    useEffect(() => {
+        if (!books || books.length === 0) return;
 
-      {/* Filters Section */}
-      <BookCollectionFilters
-        searchTerm={searchTerm}
-        onSearchChange={handleSearch}
-        onSearchBlur={handleSearchBlur}
-        audioFilter={filters.hasAudio}
-        onAudioFilterChange={handleAudioFilterChange}
-        disabled={showLoadingState}
-        searchInputRef={searchInputRef}
-      />
+        // Only preload a limited number of books
+        const booksToPreload = books.slice(0, PRELOAD_COUNT);
 
-      {/* Books Grid/List */}
-      <div className="min-h-[600px] transition-opacity duration-300">
-        {isInitialLoad && showLoadingState ? (
-          <BookGridSkeleton count={localPagination?.perPage || 8} />
-        ) : (
-          <div className="space-y-6 w-full">
-            {books && books.length > 0 ? (
-              <>
-                <BookCollectionGrid books={books} viewMode={viewMode} onSelectBook={selectBook} />
+        // Skip already loaded images
+        const unloadedBooks = booksToPreload.filter((book) => {
+            return !loadedImages.has(book.coverImage);
+        });
 
-                {/* Load More */}
-                <BookCollectionLoadMore
-                  hasMore={localPagination.total > books.length}
-                  isLoading={isLoadingMore}
-                  onLoadMore={loadMore}
-                />
-              </>
-            ) : (
-              <BookCollectionEmpty />
-            )}
-          </div>
-        )}
-      </div>
+        if (unloadedBooks.length === 0) return;
 
-      {/* Book Dialog */}
-      <BookDialogSimple
-        book={selectedBook}
-        open={!!selectedBook}
-        onOpenChange={(open) => !open && selectBook(null)}
-        isAuthenticated={isAuthenticated}
-        onLoginClick={() => {
-          setIsAuthModalOpen(true);
-        }}
-      />
+        const preloadImages = unloadedBooks.map((book) => {
+            return new Promise<void>((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    setLoadedImages((prev) => new Set([...prev, book.coverImage]));
+                    resolve();
+                };
+                img.onerror = () => resolve(); // Don't block on error
 
-      {/* Auth Modal */}
-      <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
-    </div>
-  );
+                // Use getCoverImageUrl to properly handle placeholder images
+                const isPlaceholder = book.coverImage === IMAGE_CONFIG.placeholder.token;
+                const imageUrl = getCoverImageUrl(book.coverImage, 'grid', {
+                    bookId: isPlaceholder ? book.id : undefined,
+                });
+                img.src = imageUrl;
+            });
+        });
+
+        Promise.all(preloadImages).catch(console.error);
+    }, [books, loadedImages]);
+
+    // Focus management effect for search input
+    useEffect(() => {
+        if (searchInputRef.current) {
+            searchInputRef.current.focus();
+        }
+    }, [isLoading]);
+
+    const showLoadingState = isLoading && !isLoadingMore;
+
+    // Early return for error state
+    if (error) {
+        return (
+            <div className="w-full max-w-[2000px] mx-auto px-2 sm:px-4 space-y-4 sm:space-y-6">
+                <BookCollectionError error={error} onRetry={retry} />
+            </div>
+        );
+    }
+
+    return (
+        <div className="w-full max-w-[2000px] mx-auto px-2 sm:px-4 space-y-4 sm:space-y-6">
+            {/* Controls Section */}
+            <BookCollectionControls />
+
+            {/* Filters Section */}
+            <BookCollectionFilters
+                searchTerm={searchTerm}
+                onSearchChange={handleSearch}
+                onSearchBlur={handleSearchBlur}
+                audioFilter={filters.hasAudio}
+                onAudioFilterChange={handleAudioFilterChange}
+                disabled={showLoadingState}
+                searchInputRef={searchInputRef}
+            />
+
+            {/* Books Grid/List */}
+            <div className="min-h-[600px] transition-opacity duration-300">
+                {isInitialLoad && showLoadingState ? (
+                    <BookGridSkeleton count={localPagination?.perPage || 8} />
+                ) : (
+                    <div className="space-y-6 w-full">
+                        {books && books.length > 0 ? (
+                            <>
+                                <BookCollectionGrid books={books} viewMode={viewMode} onSelectBook={selectBook} />
+
+                                {/* Load More */}
+                                <BookCollectionLoadMore
+                                    hasMore={localPagination.total > books.length}
+                                    isLoading={isLoadingMore}
+                                    onLoadMore={loadMore}
+                                />
+                            </>
+                        ) : (
+                            <BookCollectionEmpty />
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Book Dialog */}
+            <BookDialogSimple
+                book={selectedBook}
+                open={!!selectedBook}
+                onOpenChange={(open) => !open && selectBook(null)}
+                isAuthenticated={isAuthenticated}
+                onLoginClick={() => {
+                    setIsAuthModalOpen(true);
+                }}
+            />
+
+            {/* Auth Modal */}
+            <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
+        </div>
+    );
 }
