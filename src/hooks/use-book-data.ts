@@ -8,6 +8,7 @@ export interface UseBookDataParams {
   filters: LibraryFilters;
   sort: LibrarySort;
   perPage: number;
+  isFiltersReady?: boolean; // Flag to indicate filters have been loaded from storage
   onError?: (message: string) => void;
 }
 
@@ -49,6 +50,7 @@ export function useBookData({
   filters,
   sort,
   perPage,
+  isFiltersReady = true, // Default to true for backwards compatibility
   onError,
 }: UseBookDataParams): UseBookDataReturn {
   const [books, setBooks] = useState<any[]>([]);
@@ -154,9 +156,21 @@ export function useBookData({
 
   // Initial load and reload when dependencies change
   useEffect(() => {
+    // Skip fetch on server-side rendering
+    if (typeof window === 'undefined') return;
+    
+    // Wait for filters to be loaded from localStorage before fetching
+    if (!isFiltersReady) {
+      console.log('[useBookData] Waiting for filters to be ready...');
+      return;
+    }
+    
+    console.log('[useBookData] Effect triggered with filters:', { search: filters.search, hasAudio: filters.hasAudio, isFiltersReady });
+    
     let isMounted = true;
 
     const loadBooks = async () => {
+      console.log('[useBookData] Fetching books with filters:', { search: filters.search, hasAudio: filters.hasAudio });
       await fetchBooks(1, false);
     };
 
@@ -165,7 +179,7 @@ export function useBookData({
     return () => {
       isMounted = false;
     };
-  }, [displayPreviews, filters.search, filters.hasAudio, sort.by, sort.order, perPage]);
+  }, [displayPreviews, filters.search, filters.hasAudio, sort.by, sort.order, perPage, isFiltersReady]);
 
   return {
     books,

@@ -32,6 +32,7 @@ export interface LibraryState {
         perPage: number;
         total: number;
     };
+    isFiltersReady: boolean; // Indicates if filters have been loaded from localStorage
 }
 
 export type LibraryAction =
@@ -42,7 +43,8 @@ export type LibraryAction =
     | { type: 'SET_SORT'; payload: LibrarySort }
     | { type: 'SET_VIEW_MODE'; payload: ViewMode }
     | { type: 'SET_SELECTED_BOOK'; payload: Book | null }
-    | { type: 'SET_PAGINATION'; payload: { page: number; perPage: number; total: number } };
+    | { type: 'SET_PAGINATION'; payload: { page: number; perPage: number; total: number } }
+    | { type: 'SET_FILTERS_READY'; payload: boolean };
 
 export interface LibraryContextType {
     state: LibraryState;

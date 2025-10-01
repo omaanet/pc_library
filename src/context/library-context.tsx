@@ -3,7 +3,7 @@
 'use client';
 
 import * as React from 'react';
-import { createContext, useContext, useReducer, useCallback } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import type {
     LibraryState,
     LibraryAction,
@@ -14,20 +14,70 @@ import type {
 } from '@/types/context';
 import type { Book } from '@/types';
 
-const initialState: LibraryState = {
-    books: [],
-    isLoading: false,
-    error: null,
-    filters: {},
-    sort: { by: 'hasAudio', order: 'desc' },
-    viewMode: 'grid',
-    selectedBook: null,
-    pagination: {
-        page: 1,
-        perPage: -1,
-        total: 0,
-    },
-};
+// localStorage key for persisting filters
+const FILTERS_STORAGE_KEY = 'bookLibrary_filters';
+
+/**
+ * Load filters from localStorage
+ */
+function loadFiltersFromStorage(): Partial<LibraryFilters> {
+    if (typeof window === 'undefined') return {};
+    
+    try {
+        const stored = localStorage.getItem(FILTERS_STORAGE_KEY);
+        if (stored) {
+            return JSON.parse(stored);
+        }
+    } catch (error) {
+        console.error('Failed to load filters from localStorage:', error);
+    }
+    
+    return {};
+}
+
+/**
+ * Save filters to localStorage
+ */
+function saveFiltersToStorage(filters: Partial<LibraryFilters>): void {
+    if (typeof window === 'undefined') return;
+    
+    try {
+        // Only persist specific filter properties (hasAudio and search)
+        // Exclude undefined values to avoid storing them
+        const filtersToPersist: Partial<LibraryFilters> = {};
+        
+        if (filters.hasAudio !== undefined) {
+            filtersToPersist.hasAudio = filters.hasAudio;
+        }
+        
+        if (filters.search !== undefined) {
+            filtersToPersist.search = filters.search;
+        }
+        
+        localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filtersToPersist));
+    } catch (error) {
+        console.error('Failed to save filters to localStorage:', error);
+    }
+}
+
+// Create initial state with a function to handle SSR properly
+function createInitialState(): LibraryState {
+    return {
+        books: [],
+        isLoading: false,
+        error: null,
+        filters: {}, // Start with empty filters to avoid hydration mismatch
+        sort: { by: 'hasAudio', order: 'desc' },
+        viewMode: 'grid',
+        selectedBook: null,
+        pagination: {
+            page: 1,
+            perPage: -1,
+            total: 0,
+        },
+        isFiltersReady: false, // Filters not loaded yet
+    };
+}
 
 function libraryReducer(state: LibraryState, action: LibraryAction): LibraryState {
     switch (action.type) {
@@ -53,6 +103,8 @@ function libraryReducer(state: LibraryState, action: LibraryAction): LibraryStat
                     ...action.payload
                 }
             };
+        case 'SET_FILTERS_READY':
+            return { ...state, isFiltersReady: action.payload };
         default:
             return state;
     }
@@ -61,7 +113,47 @@ function libraryReducer(state: LibraryState, action: LibraryAction): LibraryStat
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 
 export function LibraryProvider({ children }: { children: React.ReactNode }) {
-    const [state, dispatch] = useReducer(libraryReducer, initialState);
+    const [state, dispatch] = useReducer(libraryReducer, createInitialState());
+    const [isReady, setIsReady] = React.useState(false);
+    
+    // Track last saved filters to avoid unnecessary writes
+    const lastSavedFilters = React.useRef<string>('{}');
+    
+    // Load filters from localStorage BEFORE first render using useLayoutEffect
+    // This runs synchronously after DOM mutations but before browser paint
+    React.useLayoutEffect(() => {
+        if (typeof window !== 'undefined') {
+            const storedFilters = loadFiltersFromStorage();
+            console.log('[LibraryContext] Loading filters from localStorage:', storedFilters);
+            if (Object.keys(storedFilters).length > 0) {
+                dispatch({ type: 'SET_FILTERS', payload: storedFilters });
+                lastSavedFilters.current = JSON.stringify({
+                    hasAudio: storedFilters.hasAudio,
+                    search: storedFilters.search,
+                });
+            }
+            // Mark filters as ready - this will trigger child effects to run
+            dispatch({ type: 'SET_FILTERS_READY', payload: true });
+            setIsReady(true);
+            console.log('[LibraryContext] Filters loaded, isFiltersReady set to true');
+        }
+    }, []);
+
+    // Persist filters to localStorage whenever they change
+    // Only save if filters actually changed to avoid unnecessary writes
+    useEffect(() => {
+        if (!isReady) return; // Don't save until we've loaded initial filters
+        
+        const currentFilters = JSON.stringify({
+            hasAudio: state.filters.hasAudio,
+            search: state.filters.search,
+        });
+        
+        if (currentFilters !== lastSavedFilters.current) {
+            saveFiltersToStorage(state.filters);
+            lastSavedFilters.current = currentFilters;
+        }
+    }, [state.filters.hasAudio, state.filters.search, isReady]);
 
     const fetchBooks = useCallback(async (page: number = 1, displayPreviewsParam?: number) => {
         dispatch({ type: 'SET_LOADING', payload: true });

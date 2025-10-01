@@ -41,7 +41,7 @@ interface BookCollectionProps {
 export function BookCollection({ displayPreviews }: BookCollectionProps) {
     // Context: Global state shared across app
     const {
-        state: { viewMode, selectedBook, filters, sort, pagination },
+        state: { viewMode, selectedBook, filters, sort, pagination, isFiltersReady },
         selectBook,
         updateFilters,
     } = useLibrary();
@@ -71,6 +71,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         filters,
         sort,
         perPage: pagination.perPage,
+        isFiltersReady, // Pass the ready flag to prevent premature fetching
         onError: (message) =>
             toast({
                 variant: 'destructive',
@@ -83,12 +84,15 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         onSearch: (term) => {
             updateFilters({ search: term });
         },
+        initialSearchTerm: filters.search,
     });
 
     // Audio filter handler
     const handleAudioFilterChange = useCallback(
         (checked: boolean) => {
-            updateFilters({ hasAudio: checked });
+            // When checked: show only books with audio (true)
+            // When unchecked: show all books (undefined)
+            updateFilters({ hasAudio: checked ? true : undefined });
         },
         [updateFilters]
     );
