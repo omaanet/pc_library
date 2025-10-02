@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { AudioFilterSwitch } from '@/components/ui/audio-filter-switch';
 
@@ -13,6 +14,7 @@ export interface BookCollectionFiltersProps {
 
 /**
  * Filter controls for the book collection including search input and audio filter.
+ * Memoized to prevent unnecessary re-renders that cause focus loss.
  * 
  * @param props - Component props
  * @param props.searchTerm - Current search term value
@@ -36,7 +38,7 @@ export interface BookCollectionFiltersProps {
  * />
  * ```
  */
-export function BookCollectionFilters({
+export const BookCollectionFilters = memo(function BookCollectionFilters({
     searchTerm,
     onSearchChange,
     onSearchBlur,
@@ -70,4 +72,4 @@ export function BookCollectionFilters({
             />
         </div>
     );
-}
+});

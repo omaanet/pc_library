@@ -55,6 +55,7 @@ export function useBookSearch({
   // Use ref instead of state to avoid memory leaks
   const debounceTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const isInitialMount = useRef(true);
+  const hasInitializedFromContext = useRef(false);
 
   /**
    * Validates search term (must be empty or meet minimum length requirement)
@@ -136,22 +137,23 @@ export function useBookSearch({
     [isValidSearch, performSearch]
   );
 
-  // Sync local searchTerm state when initialSearchTerm changes (from context)
+  // Sync from context ONLY once when initialSearchTerm is first available
+  // This handles localStorage restoration without interfering with user typing
   useEffect(() => {
-    if (initialSearchTerm !== undefined && initialSearchTerm !== searchTerm) {
-      console.log('[useBookSearch] Syncing searchTerm from context:', initialSearchTerm);
+    if (!hasInitializedFromContext.current && initialSearchTerm !== undefined) {
+      console.log('[useBookSearch] Initial sync from context:', initialSearchTerm);
       setSearchTerm(initialSearchTerm);
-    }
-  }, [initialSearchTerm, searchTerm]);
-
-  // Trigger initial search on mount if there's a persisted search term
-  useEffect(() => {
-    if (isInitialMount.current && searchTerm && isValidSearch(searchTerm)) {
-      console.log('[useBookSearch] Triggering initial search with term:', searchTerm);
+      hasInitializedFromContext.current = true;
+      
+      // Trigger initial search if term is valid
+      if (initialSearchTerm && isValidSearch(initialSearchTerm)) {
+        console.log('[useBookSearch] Triggering initial search');
+        setLastSearched(initialSearchTerm);
+        onSearch(initialSearchTerm);
+      }
       isInitialMount.current = false;
-      performSearch(searchTerm);
     }
-  }, [searchTerm, isValidSearch, performSearch]);
+  }, [initialSearchTerm, isValidSearch, onSearch]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

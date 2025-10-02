@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useLibrary } from '@/context/library-context';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/components/ui/use-toast';
@@ -80,10 +80,13 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
             }),
     });
 
+    // Memoize onSearch callback to prevent re-creating on every render
+    const onSearch = useCallback((term: string) => {
+        updateFilters({ search: term });
+    }, [updateFilters]);
+
     const { searchTerm, handleSearch, handleSearchBlur } = useBookSearch({
-        onSearch: (term) => {
-            updateFilters({ search: term });
-        },
+        onSearch,
         initialSearchTerm: filters.search,
     });
 
@@ -132,12 +135,13 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         Promise.all(preloadImages).catch(console.error);
     }, [books, loadedImages]);
 
-    // Focus management effect for search input
+    // Focus search input on initial mount only
     useEffect(() => {
         if (searchInputRef.current) {
             searchInputRef.current.focus();
         }
-    }, [isLoading]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const showLoadingState = isLoading && !isLoadingMore;
 
@@ -162,7 +166,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                 onSearchBlur={handleSearchBlur}
                 audioFilter={filters.hasAudio}
                 onAudioFilterChange={handleAudioFilterChange}
-                disabled={showLoadingState}
+                disabled={false}
                 searchInputRef={searchInputRef}
             />
 
