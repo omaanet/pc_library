@@ -64,11 +64,6 @@ export const BookCollectionFilters = memo(function BookCollectionFilters({
                 checked={audioFilter}
                 onCheckedChange={onAudioFilterChange}
                 disabled={disabled}
-                hoverUncheckedColor="yellow-400"
-                hoverCheckedColor="yellow-200"
-                defaultCheckedColor="yellow-400"
-                defaultUncheckedColor="gray-200"
-                disabledColor="gray-300"
             />
         </div>
     );
