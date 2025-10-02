@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
         contentDispositionType: 'inline', // Ensures images display instead of downloading
         contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;", // Optional CSP security settings
     },
+    // Remove only console.log statements in production builds
+    // Keep error, warn, info, debug, and trace for important diagnostics
+    compiler: {
+        removeConsole:
+            process.env.NODE_ENV === 'production'
+                ? { exclude: ['error', 'warn', 'info', 'debug', 'trace'] }
+                : false,
+    },
     // Configure webpack to handle EPUB files as static assets
     // webpack(config) {
     //     config.module.rules.push({
