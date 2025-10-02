@@ -49,7 +49,6 @@ export type LibraryAction =
 export interface LibraryContextType {
     state: LibraryState;
     dispatch: React.Dispatch<LibraryAction>;
-    fetchBooks: (page?: number) => Promise<void>;
     selectBook: (book: Book | null) => void;
     updateFilters: (filters: Partial<LibraryFilters>) => void;
     updateSort: (sort: Partial<LibrarySort>) => void;

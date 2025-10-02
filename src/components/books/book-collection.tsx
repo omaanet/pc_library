@@ -56,6 +56,15 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
     const searchInputRef = useRef<HTMLInputElement>(null);
 
+    // Stabilize onError callback to prevent useBookData from re-creating fetchBooks
+    const onError = useCallback((message: string) => {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: message,
+        });
+    }, [toast]);
+
     // Custom hooks for data fetching and search
     const {
         books,
@@ -71,19 +80,17 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         filters,
         sort,
         perPage: pagination.perPage,
-        isFiltersReady, // Pass the ready flag to prevent premature fetching
-        onError: (message) =>
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: message,
-            }),
+        isFiltersReady,
+        onError,
     });
 
-    // Memoize onSearch callback to prevent re-creating on every render
+    // Use ref to stabilize onSearch callback and prevent unnecessary re-renders
+    const updateFiltersRef = useRef(updateFilters);
+    updateFiltersRef.current = updateFilters;
+
     const onSearch = useCallback((term: string) => {
-        updateFilters({ search: term });
-    }, [updateFilters]);
+        updateFiltersRef.current({ search: term });
+    }, []);
 
     const { searchTerm, handleSearch, handleSearchBlur } = useBookSearch({
         onSearch,

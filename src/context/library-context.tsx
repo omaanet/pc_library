@@ -62,11 +62,14 @@ function saveFiltersToStorage(filters: Partial<LibraryFilters>): void {
 
 // Create initial state with a function to handle SSR properly
 function createInitialState(): LibraryState {
+    // Load filters from localStorage immediately during state initialization
+    const storedFilters = typeof window !== 'undefined' ? loadFiltersFromStorage() : {};
+    
     return {
         books: [],
         isLoading: false,
         error: null,
-        filters: {}, // Start with empty filters to avoid hydration mismatch
+        filters: storedFilters, // Initialize with stored filters directly
         sort: { by: 'hasAudio', order: 'desc' },
         viewMode: 'grid',
         selectedBook: null,
@@ -75,7 +78,7 @@ function createInitialState(): LibraryState {
             perPage: -1,
             total: 0,
         },
-        isFiltersReady: false, // Filters not loaded yet
+        isFiltersReady: typeof window !== 'undefined', // Ready immediately on client
     };
 }
 
@@ -113,31 +116,24 @@ function libraryReducer(state: LibraryState, action: LibraryAction): LibraryStat
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 
 export function LibraryProvider({ children }: { children: React.ReactNode }) {
-    const [state, dispatch] = useReducer(libraryReducer, createInitialState());
-    const [isReady, setIsReady] = React.useState(false);
+    // Use lazy initialization to ensure localStorage is read on client-side only, once
+    const [state, dispatch] = useReducer(libraryReducer, undefined, createInitialState);
+    const [isReady, setIsReady] = React.useState(typeof window !== 'undefined');
     
     // Track last saved filters to avoid unnecessary writes
-    const lastSavedFilters = React.useRef<string>('{}');
+    // Initialize with current filters from state (which were loaded during createInitialState)
+    const lastSavedFilters = React.useRef<string>(JSON.stringify({
+        hasAudio: state.filters.hasAudio,
+        search: state.filters.search,
+    }));
     
-    // Load filters from localStorage BEFORE first render using useLayoutEffect
-    // This runs synchronously after DOM mutations but before browser paint
+    // Mark as ready on mount (filters already loaded during state initialization)
     React.useLayoutEffect(() => {
-        if (typeof window !== 'undefined') {
-            const storedFilters = loadFiltersFromStorage();
-            console.log('[LibraryContext] Loading filters from localStorage:', storedFilters);
-            if (Object.keys(storedFilters).length > 0) {
-                dispatch({ type: 'SET_FILTERS', payload: storedFilters });
-                lastSavedFilters.current = JSON.stringify({
-                    hasAudio: storedFilters.hasAudio,
-                    search: storedFilters.search,
-                });
-            }
-            // Mark filters as ready - this will trigger child effects to run
-            dispatch({ type: 'SET_FILTERS_READY', payload: true });
+        if (typeof window !== 'undefined' && !isReady) {
             setIsReady(true);
-            console.log('[LibraryContext] Filters loaded, isFiltersReady set to true');
+            console.log('[LibraryContext] Filters initialized from localStorage:', state.filters);
         }
-    }, []);
+    }, [isReady, state.filters]);
 
     // Persist filters to localStorage whenever they change
     // Only save if filters actually changed to avoid unnecessary writes
@@ -155,76 +151,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         }
     }, [state.filters.hasAudio, state.filters.search, isReady]);
 
-    const fetchBooks = useCallback(async (page: number = 1, displayPreviewsParam?: number) => {
-        dispatch({ type: 'SET_LOADING', payload: true });
-        dispatch({ type: 'SET_ERROR', payload: null });
-
-        try {
-            // Construct URL parameters
-            const params = new URLSearchParams({
-                page: page.toString(),
-                perPage: state.pagination.perPage.toString(),
-                sortBy: state.sort.by,
-                sortOrder: state.sort.order,
-                isVisible: '1'
-            });
-
-            // Add filter parameters if they exist
-            if (state.filters.search) {
-                params.append('search', state.filters.search);
-            }
-            if (state.filters.hasAudio !== undefined) {
-                params.append('hasAudio', state.filters.hasAudio.toString());
-            }
-
-            // Add displayPreviews parameter if provided directly (not from filters)
-            if (displayPreviewsParam !== undefined) {
-                params.append('displayPreviews', displayPreviewsParam.toString());
-            } else if (state.filters.displayPreviews !== undefined) {
-                params.append('displayPreviews', state.filters.displayPreviews.toString());
-            }
-
-            // Log request for debugging
-            console.log('Fetching books with params:', params.toString());
-
-            // Make the request
-            const response = await fetch(`/api/books?${params}`);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            // Validate response data
-            if (!data || !Array.isArray(data.books)) {
-                throw new Error('Invalid response format');
-            }
-
-            // Update state with fetched data
-            dispatch({ type: 'SET_BOOKS', payload: data.books });
-
-            // Update pagination if provided
-            if (data.pagination) {
-                dispatch({
-                    type: 'SET_PAGINATION',
-                    payload: {
-                        page: data.pagination.page,
-                        perPage: data.pagination.perPage,
-                        total: data.pagination.total,
-                    },
-                });
-            }
-        } catch (error) {
-            console.error('Error fetching books:', error);
-            dispatch({
-                type: 'SET_ERROR',
-                payload: error instanceof Error ? error : new Error('Failed to fetch books')
-            });
-        } finally {
-            dispatch({ type: 'SET_LOADING', payload: false });
-        }
-    }, [state.pagination.perPage, state.sort, state.filters]);
+    // Note: Book fetching is handled by useBookData hook in components
+    // Context only manages filter state, not data fetching
 
     const selectBook = useCallback((book: Book | null) => {
         dispatch({ type: 'SET_SELECTED_BOOK', payload: book });
@@ -235,18 +163,16 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             type: 'SET_FILTERS',
             payload: { ...state.filters, ...filters },
         });
-        // Reset to first page when filters change
-        fetchBooks(1).catch(console.error);
-    }, [state.filters, fetchBooks]);
+        // Data fetching is handled by useBookData hook which watches filter changes
+    }, [state.filters]);
 
     const updateSort = useCallback((sort: Partial<LibrarySort>) => {
         dispatch({
             type: 'SET_SORT',
             payload: { ...state.sort, ...sort },
         });
-        // Reset to first page when sort changes
-        fetchBooks(1).catch(console.error);
-    }, [state.sort, fetchBooks]);
+        // Data fetching is handled by useBookData hook which watches sort changes
+    }, [state.sort]);
 
     const setViewMode = useCallback((mode: ViewMode) => {
         dispatch({ type: 'SET_VIEW_MODE', payload: mode });
@@ -256,14 +182,12 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     const value = React.useMemo<LibraryContextType>(() => ({
         state,
         dispatch,
-        fetchBooks,
         selectBook,
         updateFilters,
         updateSort,
         setViewMode,
     }), [
         state,
-        fetchBooks,
         selectBook,
         updateFilters,
         updateSort,

@@ -69,9 +69,7 @@ export function useBookData({
    * Fetches books from the API using the book API service
    */
   const fetchBooks = useCallback(
-    async (page: number = 1, append: boolean = false, searchTerm?: string) => {
-      const isMounted = { current: true };
-
+    async (page: number = 1, append: boolean = false) => {
       try {
         if (!append) {
           setIsLoading(true);
@@ -80,57 +78,46 @@ export function useBookData({
         }
 
         // Use the centralized API service
-        const filterOverride = searchTerm !== undefined ? { ...filters, search: searchTerm } : filters;
         const data: BookResponse = await bookApiService.fetchBooks({
           page,
           perPage,
           sortBy: sort.by,
           sortOrder: sort.order,
           displayPreviews,
-          filters: filterOverride,
+          filters,
         });
 
-        if (isMounted.current) {
-          if (append) {
-            setBooks((prev) => [...prev, ...data.books]);
-          } else {
-            setBooks(data.books);
-          }
-
-          if (data.pagination) {
-            setPagination({
-              page: data.pagination.page,
-              perPage: data.pagination.perPage,
-              total: data.pagination.total,
-              totalPages:
-                data.pagination.totalPages ||
-                Math.ceil(data.pagination.total / data.pagination.perPage),
-            });
-          }
-
-          setError(null);
+        if (append) {
+          setBooks((prev) => [...prev, ...data.books]);
+        } else {
+          setBooks(data.books);
         }
+
+        if (data.pagination) {
+          setPagination({
+            page: data.pagination.page,
+            perPage: data.pagination.perPage,
+            total: data.pagination.total,
+            totalPages:
+              data.pagination.totalPages ||
+              Math.ceil(data.pagination.total / data.pagination.perPage),
+          });
+        }
+
+        setError(null);
       } catch (err) {
-        if (isMounted.current) {
-          const errorObj = err instanceof Error ? err : new Error('Failed to fetch books');
-          setError(errorObj);
-          if (onError) {
-            onError('Failed to load books. Please try again.');
-          }
+        const errorObj = err instanceof Error ? err : new Error('Failed to fetch books');
+        setError(errorObj);
+        if (onError) {
+          onError('Failed to load books. Please try again.');
         }
       } finally {
-        if (isMounted.current) {
-          setIsLoading(false);
-          setIsLoadingMore(false);
-          if (isInitialLoad) {
-            setIsInitialLoad(false);
-          }
+        setIsLoading(false);
+        setIsLoadingMore(false);
+        if (isInitialLoad) {
+          setIsInitialLoad(false);
         }
       }
-
-      return () => {
-        isMounted.current = false;
-      };
     },
     [displayPreviews, filters, perPage, sort.by, sort.order, isInitialLoad, onError]
   );
@@ -167,19 +154,21 @@ export function useBookData({
     
     console.log('[useBookData] Effect triggered with filters:', { search: filters.search, hasAudio: filters.hasAudio, isFiltersReady });
     
-    let isMounted = true;
+    let cancelled = false;
 
     const loadBooks = async () => {
       console.log('[useBookData] Fetching books with filters:', { search: filters.search, hasAudio: filters.hasAudio });
-      await fetchBooks(1, false);
+      if (!cancelled) {
+        await fetchBooks(1, false);
+      }
     };
 
     loadBooks();
 
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, [displayPreviews, filters.search, filters.hasAudio, sort.by, sort.order, perPage, isFiltersReady]);
+  }, [displayPreviews, filters.search, filters.hasAudio, sort.by, sort.order, perPage, isFiltersReady, fetchBooks]);
 
   return {
     books,

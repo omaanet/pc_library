@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useLayoutEffect } from 'react';
 
 export interface UseBookSearchParams {
   onSearch: (searchTerm: string) => void;
@@ -11,8 +11,6 @@ export interface UseBookSearchReturn {
   searchTerm: string;
   handleSearch: (value: string) => void;
   handleSearchBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
-  isValidSearch: (value: string) => boolean;
-  setSearchTerm: (value: string) => void;
 }
 
 /**
@@ -48,14 +46,13 @@ export function useBookSearch({
   minSearchLength = 3,
   initialSearchTerm,
 }: UseBookSearchParams): UseBookSearchReturn {
-  // Initialize with initialSearchTerm from context (which loads from localStorage)
+  // Initialize directly with initialSearchTerm from context (already loaded from localStorage)
   const [searchTerm, setSearchTerm] = useState<string>(initialSearchTerm || '');
-  const [lastSearched, setLastSearched] = useState<string>('');
+  const [lastSearched, setLastSearched] = useState<string>(initialSearchTerm || '');
   
   // Use ref instead of state to avoid memory leaks
   const debounceTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  const isInitialMount = useRef(true);
-  const hasInitializedFromContext = useRef(false);
+  const hasHydratedRef = useRef(false);
 
   /**
    * Validates search term (must be empty or meet minimum length requirement)
@@ -137,26 +134,19 @@ export function useBookSearch({
     [isValidSearch, performSearch]
   );
 
-  // Sync from context ONLY once when initialSearchTerm is first available
-  // This handles localStorage restoration without interfering with user typing
-  useEffect(() => {
-    if (!hasInitializedFromContext.current && initialSearchTerm !== undefined) {
-      console.log('[useBookSearch] Initial sync from context:', initialSearchTerm);
+  // Hydrate from context once during initial render (handles SSR -> client transition)
+  // useLayoutEffect runs synchronously after DOM updates but before browser paint
+  useLayoutEffect(() => {
+    if (!hasHydratedRef.current && initialSearchTerm && initialSearchTerm !== searchTerm) {
+      console.log('[useBookSearch] Hydrating from context:', initialSearchTerm);
       setSearchTerm(initialSearchTerm);
-      hasInitializedFromContext.current = true;
-      
-      // Trigger initial search if term is valid
-      if (initialSearchTerm && isValidSearch(initialSearchTerm)) {
-        console.log('[useBookSearch] Triggering initial search');
-        setLastSearched(initialSearchTerm);
-        onSearch(initialSearchTerm);
-      }
-      isInitialMount.current = false;
+      setLastSearched(initialSearchTerm);
+      hasHydratedRef.current = true;
     }
-  }, [initialSearchTerm, isValidSearch, onSearch]);
+  }, [initialSearchTerm, searchTerm]);
 
   // Cleanup timeout on unmount
-  useEffect(() => {
+  useLayoutEffect(() => {
     return () => {
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
@@ -168,7 +158,5 @@ export function useBookSearch({
     searchTerm,
     handleSearch,
     handleSearchBlur,
-    isValidSearch,
-    setSearchTerm,
   };
 }
