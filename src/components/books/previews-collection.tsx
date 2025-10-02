@@ -11,7 +11,7 @@ export function PreviewsCollection() {
 
     return (
         <div className="rounded-xl border bg-card p-6">
-            <div className="flex flex-row items-center justify-center mb-8">
+            <div className="flex flex-row items-center justify-center mb-4 sm:mb-8">
                 <BookIcon className="h-8 w-8 -mt-1 mx-2" />
                 <div className="text-xl font-semibold mx-2 text-center">Racconti In Anteprima</div>
             </div>
@@ -35,7 +35,7 @@ export function PreviewsCollection() {
                             </Button>
                         </div>
                     ) : !Array.isArray(books) || books.length === 0 ? (
-                        <div className="py-4 text-muted-foreground">Al momento non sono disponibili anteprime dei libri.</div>
+                        <div className="p-0 text-muted-foreground">Al momento non sono disponibili anteprime dei libri.</div>
                     ) : (
                         books.map((book, index) => (
                             <PreviewCover key={`${book.id}-${index}`} mounted={mounted} book={book} index={index} itemsVerticalAlign="items-start" />

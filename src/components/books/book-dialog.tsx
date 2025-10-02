@@ -159,13 +159,13 @@ export function BookDialogSimple({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="p-2 sm:p-4 overflow-hidden !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0">
+            <DialogContent className="p-2 sm:p-4 sm:pt-0 overflow-hidden !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0">
                 {/* Header with Title and Audio Length */}
                 <DialogHeader className="space-y-0 p-0 sm:p-0 sm:pb-0">
                     <DialogTitle className="mt-2 sm:mt-0 text-lg font-medium text-cyan-300 line-clamp-2">
                         {book.title}
                     </DialogTitle>
-                    <DialogDescription className="text-xs text-muted-foreground flex items-center justify-center">
+                    <DialogDescription className="pb-2 sm:pb-0 text-xs text-muted-foreground flex items-center justify-center">
                         {book.hasAudio && book.audioLength ? (
                             <>
                                 <Headphones className="h-3 w-3 mr-1" />
@@ -214,8 +214,8 @@ export function BookDialogSimple({
                                         <div className="flex-1">
                                             <LinkButton url={`/read-book/${book.id}`}
                                                 icon={BookOpen}
-                                                className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate">
-                                                Leggi Racconto on-line
+                                                className="w-full px-3 py-1 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate">
+                                                Leggi Racconto<span className="hidden sm:inline"> on-line</span>
                                             </LinkButton>
                                         </div>
 
@@ -223,7 +223,7 @@ export function BookDialogSimple({
                                             <Button
                                                 onClick={handleRequestPdf}
                                                 disabled={isPdfRequesting}
-                                                className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 shadow select-none transition-colors duration-200 truncate">
+                                                className="w-full px-3 py-1 text-xs font-normal text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 shadow select-none transition-colors duration-200 truncate">
                                                 {isPdfRequesting ? (
                                                     <>
                                                         <Loader2 className="h-5 w-5 mr-2 animate-spin" />
@@ -232,7 +232,7 @@ export function BookDialogSimple({
                                                 ) : (
                                                     <>
                                                         <MailOpen className="h-3 w-3 mr-1" />
-                                                        Richiedi il PDF del Racconto
+                                                        Richiedi il PDF<span className="hidden sm:inline"> del Racconto</span>
                                                     </>
                                                 )}
                                             </Button>
