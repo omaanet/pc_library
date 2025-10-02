@@ -260,7 +260,7 @@ export function BookDialogSimple({
                         </div>
 
                         {/* Book Extract - Auto height with scrolling when needed */}
-                        <div className="overflow-y-auto mt-1 sm:mt-2 px-0 max-h-[25vh] sm:max-h-[30vh]">
+                        <div className="overflow-y-auto mt-1 sm:mt-2 px-0 max-h-[25vh] sm:max-h-[30vh] z-0">
                             <BookExtract extract={book.extract} />
                         </div>
                     </div>

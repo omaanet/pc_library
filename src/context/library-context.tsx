@@ -62,14 +62,13 @@ function saveFiltersToStorage(filters: Partial<LibraryFilters>): void {
 
 // Create initial state with a function to handle SSR properly
 function createInitialState(): LibraryState {
-    // Load filters from localStorage immediately during state initialization
-    const storedFilters = typeof window !== 'undefined' ? loadFiltersFromStorage() : {};
-    
+    // Always start with empty filters to match server-side render
+    // Filters will be loaded from localStorage in useEffect after hydration
     return {
         books: [],
         isLoading: false,
         error: null,
-        filters: storedFilters, // Initialize with stored filters directly
+        filters: {}, // Always start empty to avoid hydration mismatch
         sort: { by: 'hasAudio', order: 'desc' },
         viewMode: 'grid',
         selectedBook: null,
@@ -78,7 +77,7 @@ function createInitialState(): LibraryState {
             perPage: -1,
             total: 0,
         },
-        isFiltersReady: typeof window !== 'undefined', // Ready immediately on client
+        isFiltersReady: false, // Not ready until after hydration
     };
 }
 
@@ -118,22 +117,26 @@ const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 export function LibraryProvider({ children }: { children: React.ReactNode }) {
     // Use lazy initialization to ensure localStorage is read on client-side only, once
     const [state, dispatch] = useReducer(libraryReducer, undefined, createInitialState);
-    const [isReady, setIsReady] = React.useState(typeof window !== 'undefined');
+    const [isReady, setIsReady] = React.useState(false);
     
     // Track last saved filters to avoid unnecessary writes
-    // Initialize with current filters from state (which were loaded during createInitialState)
     const lastSavedFilters = React.useRef<string>(JSON.stringify({
         hasAudio: state.filters.hasAudio,
         search: state.filters.search,
     }));
     
-    // Mark as ready on mount (filters already loaded during state initialization)
-    React.useLayoutEffect(() => {
+    // Load filters from localStorage after hydration
+    React.useEffect(() => {
         if (typeof window !== 'undefined' && !isReady) {
+            const storedFilters = loadFiltersFromStorage();
+            if (Object.keys(storedFilters).length > 0) {
+                dispatch({ type: 'SET_FILTERS', payload: storedFilters });
+                console.log('[LibraryContext] Filters loaded from localStorage:', storedFilters);
+            }
+            dispatch({ type: 'SET_FILTERS_READY', payload: true });
             setIsReady(true);
-            console.log('[LibraryContext] Filters initialized from localStorage:', state.filters);
         }
-    }, [isReady, state.filters]);
+    }, [isReady]);
 
     // Persist filters to localStorage whenever they change
     // Only save if filters actually changed to avoid unnecessary writes

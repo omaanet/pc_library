@@ -21,17 +21,17 @@ export default function HomePage() {
                 onAuthClick={() => setIsAuthModalOpen(true)}
             />
 
-            <main className="flex-1 mx-5 sm:mx-auto w-full">
+            <main className="flex-1 mx-5 sm:container sm:mx-auto">
 
                 {/* Hero Section */}
                 <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">
                     <div className="container mx-auto space-y-2">
                         <div className="space-y-4 text-center">
-                            <h1 className="text-3xl font-medium tracking-tight md:tracking-normal sm:text-5xl text-sky-600 dark:text-sky-400">
+                            <h1 className="text-2xl font-medium tracking-tight md:tracking-normal sm:text-5xl text-sky-600 dark:text-sky-400">
                                 Racconti in Voce e Caratteri<br />Espressioni di Scrittura Creativa
                             </h1>
 
-                            <p className="mx-auto max-w-5xl text-lg tracking-tight md:tracking-normal text-sky-500 dark:text-sky-300">
+                            <p className="mx-auto max-w-5xl text-sm md:text-lg tracking-tight md:tracking-normal text-sky-500 dark:text-sky-300">
                                 <span className="inline-block mt-4">Una variegata raccolta narrativa di fantasia.</span><br />
                                 <span className="inline-block">Sito web dedicato alla lettura a scopo benefico.</span><br />
                                 <span className="inline-block mt-4 text-emerald-600 dark:text-emerald-400">Un libero contributo da destinarsi a scelta del lettore a favore di:<br />Organizzazioni Non Profit, Associazioni di Volontariato, Fondazioni o a cause specifiche.</span>
@@ -43,7 +43,7 @@ export default function HomePage() {
 
                 {/* Collection Section */}
                 <section id="collection" className="w-full py-12 sm:py-16">
-                    <div className="w-full container">
+                    <div className="w-full container-fluid sm:container">
                         <BookCollectionWrapper displayPreviews={SITE_CONFIG.DISPLAY_PREVIEWS.NON_PREVIEW_ONLY} />
                     </div>
                 </section>

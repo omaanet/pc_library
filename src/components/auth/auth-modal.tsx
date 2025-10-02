@@ -45,6 +45,9 @@ export function AuthModal({
     // For redirection countdown after registration with new auth flow
     const [redirectCountdown, setRedirectCountdown] = React.useState<number | null>(null);
     const router = useRouter();
+    
+    // Ref for login email input
+    const loginEmailRef = React.useRef<HTMLInputElement>(null);
 
     // Reset state when modal closes
     React.useEffect(() => {
@@ -63,6 +66,17 @@ export function AuthModal({
         setRedirectCountdown(null);
         dispatch({ type: 'SET_ERROR', payload: null });
     }, [open]);
+
+    // Focus email input when dialog opens on login tab
+    React.useEffect(() => {
+        if (open && activeTab === 'login') {
+            // Small delay to ensure the dialog is fully rendered
+            const timer = setTimeout(() => {
+                loginEmailRef.current?.focus();
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [open, activeTab]);
 
     // Handle countdown for redirect
     React.useEffect(() => {
@@ -167,6 +181,7 @@ export function AuthModal({
                             <div className="space-y-2">
                                 <Label htmlFor="login-email">Email</Label>
                                 <Input
+                                    ref={loginEmailRef}
                                     id="login-email"
                                     type="email"
                                     autoComplete="email"
@@ -174,7 +189,6 @@ export function AuthModal({
                                     disabled={isLoading}
                                     value={loginData.email}
                                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                                    autoFocus
                                 />
                             </div>
                             {/* Only show password field for old auth flow */}
