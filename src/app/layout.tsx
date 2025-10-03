@@ -1,14 +1,9 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 import { Providers } from '@/providers/providers';
 import { Toaster } from '@/components/ui/toaster';
+import { baseFont, displayFont } from '@/config/fonts';
 import '@/styles/globals.css';
-
-const inter = Inter({
-    subsets: ['latin'],
-    variable: '--font-inter',
-});
 
 export const metadata: Metadata = {
     title: {
@@ -36,7 +31,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={inter.className}>
+            <body className={`${baseFont.className} ${displayFont.variable}`}>
                 <Providers>
                     <div className="relative min-h-screen flex flex-col">
                         {children}

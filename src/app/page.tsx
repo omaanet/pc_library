@@ -9,6 +9,7 @@ import { CopyrightFooter } from '@/components/shared/copyright-footer';
 import { PreviewsCollection } from '@/components/books/previews-collection';
 import { BookErrorBoundary } from '@/components/books/book-error-boundary';
 import { SITE_CONFIG } from '@/config/site-config';
+import { displayFontClass } from '@/config/fonts';
 
 export default function HomePage() {
     const { state: { isAuthenticated, user } } = useAuth();
@@ -27,9 +28,12 @@ export default function HomePage() {
                 <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">
                     <div className="container mx-auto space-y-2">
                         <div className="space-y-4 text-center">
-                            <h1 className="text-2xl font-medium tracking-tight md:tracking-normal sm:text-5xl text-sky-600 dark:text-sky-400">
-                                Racconti in Voce e Caratteri<br />Espressioni di Scrittura Creativa
+                            <h1 className={`text-2xl font-medium tracking-tight md:tracking-normal sm:text-6xl text-sky-600 dark:text-sky-400 ${displayFontClass}`}>
+                                Racconti in Voce e Caratteri
                             </h1>
+                            <h2 className={`text-2xl font-medium tracking-tight md:tracking-normal sm:text-5xl text-sky-600 dark:text-sky-400 ${displayFontClass}`}>
+                                Espressioni di Scrittura Creativa
+                            </h2>
 
                             <p className="mx-auto max-w-5xl text-sm md:text-lg tracking-tight md:tracking-normal text-sky-500 dark:text-sky-300">
                                 <span className="inline-block mt-4">Una variegata raccolta narrativa di fantasia.</span><br />
