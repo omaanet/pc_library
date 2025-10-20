@@ -30,12 +30,23 @@ export default function BookComments({ bookId, isAuthenticated, userName, onLogi
     const listRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
+        const controller = new AbortController();
+
         setLoading(true);
-        fetch(`/api/books/${bookId}/comments`)
+        fetch(`/api/books/${bookId}/comments`, { signal: controller.signal })
             .then(res => res.json())
             .then(json => setComments(json.comments || []))
-            .catch(() => setError('Errore nel caricamento dei commenti'))
+            .catch((error) => {
+                // Ignore abort errors (component unmounted)
+                if (error.name === 'AbortError') return;
+                setError('Errore nel caricamento dei commenti');
+            })
             .finally(() => setLoading(false));
+
+        // Cleanup function
+        return () => {
+            controller.abort();
+        };
     }, [bookId]);
 
     const handleToggleExpand = React.useCallback(async (commentId: string) => {

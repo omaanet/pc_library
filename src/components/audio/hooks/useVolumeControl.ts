@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, RefObject } from 'react';
 
 interface UseVolumeControlProps {
-    audioRef: RefObject<HTMLAudioElement>;
+    audioRef: RefObject<HTMLAudioElement | null>;
     initialVolume: number; // 0-100
 }
 
@@ -12,8 +12,8 @@ interface UseVolumeControlReturn {
     volume: number;
     muted: boolean;
     showVolumeSlider: boolean;
-    volumeSliderRef: RefObject<HTMLDivElement>;
-    volumeButtonRef: RefObject<HTMLButtonElement>;
+    volumeSliderRef: RefObject<HTMLDivElement | null>;
+    volumeButtonRef: RefObject<HTMLButtonElement | null>;
     toggleMute: () => void;
     handleVolumeChange: (val: number) => void;
     handleVolumeButtonClick: () => void;

@@ -9,7 +9,7 @@ export interface BookCollectionFiltersProps {
     audioFilter: boolean | undefined;
     onAudioFilterChange: (checked: boolean) => void;
     disabled?: boolean;
-    searchInputRef?: React.RefObject<HTMLInputElement>;
+    searchInputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 /**

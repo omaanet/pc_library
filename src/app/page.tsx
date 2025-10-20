@@ -22,16 +22,16 @@ export default function HomePage() {
                 onAuthClick={() => setIsAuthModalOpen(true)}
             />
 
-            <main className="flex-1 mx-5 sm:container sm:mx-auto">
+            <main className="flex-1 mx-2 sm:container sm:mx-auto">
 
                 {/* Hero Section */}
                 <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">
                     <div className="container mx-auto space-y-2">
-                        <div className="space-y-4 text-center">
-                            <h1 className={`text-2xl font-medium tracking-tight md:tracking-normal sm:text-6xl text-sky-600 dark:text-sky-400 ${displayFontClass}`}>
+                        <div className="space-y-1 sm:space-y-4 text-center">
+                            <h1 className={`text-4xl font-medium tracking-tight md:tracking-normal sm:text-6xl text-sky-600 dark:text-sky-400 ${displayFontClass}`}>
                                 Racconti in Voce e Caratteri
                             </h1>
-                            <h2 className={`text-2xl font-medium tracking-tight md:tracking-normal sm:text-5xl text-sky-600 dark:text-sky-400 ${displayFontClass}`}>
+                            <h2 className={`text-4xl font-medium tracking-tight md:tracking-normal sm:text-5xl text-sky-600 dark:text-sky-400 ${displayFontClass}`}>
                                 Espressioni di Scrittura Creativa
                             </h2>
 

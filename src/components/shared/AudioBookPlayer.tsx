@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import HTML5Player from "@/components/audio/HTML5Player";
 import { Skeleton } from '@/components/ui/skeleton';
-import { Book } from "@/types";
+import { Book, AudioBook } from "@/types";
 
 export interface AudioBookPlayerProps {
     book: Book | null;
@@ -10,22 +10,32 @@ export interface AudioBookPlayerProps {
 }
 
 const AudioBookPlayer = ({ book, autoPlay = false }: AudioBookPlayerProps) => {
-    const [audiobook, setAudiobook] = useState<any>(null);
+    const [audiobook, setAudiobook] = useState<AudioBook | null>(null);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (!book || !book.hasAudio) return;
+
+        const controller = new AbortController();
+
         setLoading(true);
-        fetch(`/api/audiobooks/${book.id}`)
+        fetch(`/api/audiobooks/${book.id}`, { signal: controller.signal })
             .then(res => res.ok ? res.json() : null)
             .then(data => {
                 setAudiobook(data && data.media_id ? data : null);
                 setLoading(false);
             })
-            .catch(() => {
+            .catch((error) => {
+                // Ignore abort errors (component unmounted)
+                if (error.name === 'AbortError') return;
                 setAudiobook(null);
                 setLoading(false);
             });
+
+        // Cleanup function
+        return () => {
+            controller.abort();
+        };
     }, [book]);
 
     if (!book || !book.hasAudio) return null;

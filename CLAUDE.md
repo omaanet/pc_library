@@ -6,28 +6,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Primary development server:**
 ```bash
-npm run dev        # Next.js dev server with Turbopack on port 3005
-npm run dev2       # Next.js dev server without Turbopack on port 3005
-npm run devENV     # Dev server with environment variable validation
+pnpm dev        # Next.js dev server with Turbopack on port 3005
+pnpm dev2       # Next.js dev server without Turbopack on port 3005
+pnpm devENV     # Dev server with environment variable validation
 ```
 
 **Build and deployment:**
 ```bash
-npm run build      # Production build
-npm run start      # Start production server on port 3006
-npm run lint       # ESLint code quality checks
-npm run check-env  # Validate environment variables
+pnpm build         # Production build (can use --turbo for beta Turbopack builds)
+pnpm start         # Start production server on port 3006
+pnpm lint          # ESLint code quality checks (next lint deprecated in 15.5+)
+pnpm check-env     # Validate environment variables
 ```
+
+**Note:** This project uses **pnpm**, not npm. Always use pnpm for package management.
 
 ## Core Technology Stack
 
-- **Framework:** Next.js 15.0.3 with React 19 RC
+- **Framework:** Next.js 15.5.6 with React 19.2.0 (stable) and Turbopack
 - **Database:** Neon PostgreSQL (serverless) with direct SQL queries
-- **Styling:** Tailwind CSS 3.4.17 + shadcn/ui + Radix UI primitives
-- **State Management:** React Context + TanStack Query (React Query)
-- **Forms:** React Hook Form 7.56.4 + Zod 3.24.4 validation
-- **Media:** Mux player for audiobooks, JSZip for EPUB handling
+- **Styling:** Tailwind CSS 3.4.18 + shadcn/ui + Radix UI primitives
+- **State Management:** React Context + TanStack Query (React Query v5.90.5)
+- **Forms:** React Hook Form 7.65.0 + Zod 3.24.4 validation
+- **Media:** Mux player for audiobooks, Sharp 0.33.5 for image optimization
 - **Email:** Nodemailer 6.10.1
+- **TypeScript:** 5.9.3
 
 ## Architecture Overview
 
@@ -116,23 +119,36 @@ src/app/api/
 - Books have `has_audio` flag and optional `media_id` for Mux integration
 - Audiobook data fetched and populated when `has_audio` is true
 
-### EPUB Reader Implementation
+### Image-Based Page Reader Implementation
 
 **Location:** `src/app/read-book/[book_id]/`
 
+**Architecture:**
+- Custom image-based page reader (not EPUB)
+- Loads PNG page images from Wasabi S3 CDN
+- Image URLs: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/bookshelf/{bookId}/pages/page-{pageNum}-or8.png`
+- Page count stored in database (`pagesCount` field)
+
 **Key features:**
-- Client-side EPUB rendering with JSZip
-- Reading progress persistence with custom hooks
+- Single and double page viewing modes
+- Pinch-to-zoom and pan gestures (touch and mouse)
+- Fullscreen mode support
+- Keyboard navigation (Arrow keys, +/- for zoom)
+- Page preloading for smooth navigation
+- Reading progress persistence via `useReadingProgress.ts`
 - Theme customization via `useReaderTheme.ts`
-- Progress tracking via `useReadingProgress.ts`
+
+**PDF Downloads:**
+- Separate `/api/download-book/[book_id]` endpoint
+- Downloads PDF files from CDN (not EPUB)
 
 ### Configuration Files
 
 **`next.config.ts`:**
 - Image optimization disabled (`unoptimized: true`)
 - Console.log removal in production (keeps error, warn, info, debug, trace)
-- Custom security headers for `/api/covers/*` and `/epub/*` routes
-- CSP policies for images and EPUB content
+- Custom security headers for `/api/covers/*` routes
+- CSP policies for cover images
 
 **`middleware.ts`:**
 - Session-based authentication validation
@@ -218,3 +234,16 @@ This is an Italian audiobook/ebook platform ("Racconti in Voce e Caratteri"). Al
 - Next.js image optimization is disabled (`unoptimized: true`)
 - Custom Sharp-based optimization in `/api/covers/` route
 - Always validate image dimensions and paths in middleware
+
+**React 19 Type Changes:**
+- RefObject types must include `| null` (e.g., `RefObject<HTMLElement | null>`)
+- `useRef` requires explicit initial values for non-nullable types
+- Buffer objects need `.buffer as ArrayBuffer` when passed to Response constructor
+- Stricter type checking overall - ensure all types are properly defined
+
+**Next.js 15.5+ Updates:**
+- Turbopack for production builds now in beta (`next build --turbo`)
+- Node.js middleware runtime is stable
+- `next lint` command deprecated (still works but shows warnings)
+- TypeScript route type improvements available
+- Improved performance and bug fixes over 15.0.3

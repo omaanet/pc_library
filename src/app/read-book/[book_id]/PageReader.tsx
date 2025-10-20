@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Minimize, /*Minimize2,*/ ChevronLeft, ChevronRight, Fullscreen } from "lucide-react";
+import { Minimize, ChevronLeft, ChevronRight, Fullscreen } from "lucide-react";
 import { Book } from "@/types";
-// import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { User } from "@/types";
 import { useLogger } from '@/lib/logging';
 
@@ -42,6 +41,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const [zoomLevel, setZoomLevel] = useState(CONFIG.zoomLevel);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [imagesLoaded, setImagesLoaded] = useState<Record<number, string>>({});
+    const [imagesFailed, setImagesFailed] = useState<Record<number, boolean>>({});
     const [isDragging, setIsDragging] = useState(false);
     const [initialTranslateX, setInitialTranslateX] = useState(0);
     const [initialTranslateY, setInitialTranslateY] = useState(0);
@@ -57,9 +57,6 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const lastTapTime = useRef<number>(0);
     const pinchInitialMidpoint = useRef<{ x: number; y: number } | null>(null);
     const pinchInitialTranslate = useRef<{ x: number; y: number } | null>(null);
-
-    // User preferences
-    // const { preferences } = useUserPreferences();
 
     // Get total pages from book data
     const totalPages = book.pagesCount || 10; // Default to 10 pages if not specified
@@ -134,16 +131,29 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 return;
             }
 
+            // If we already know this image failed, resolve with placeholder immediately
+            if (imagesFailed[pageNum]) {
+                resolve('failed');
+                return;
+            }
+
             const img = new Image();
 
             img.onload = () => {
                 setImagesLoaded((prev) => ({ ...prev, [pageNum]: img.src }));
+                setImagesFailed((prev) => ({ ...prev, [pageNum]: false }));
                 resolve(img.src);
             };
 
             img.onerror = () => {
-                console.error(`Failed to load image for page ${pageNum}`);
-                reject(new Error(`Failed to load image for page ${pageNum}`));
+                logger.warning(`Failed to load image for page ${pageNum}`, {
+                    pageNum,
+                    bookId,
+                    imagePath: getImagePath(pageNum)
+                });
+                // Mark image as failed and resolve (don't reject) to prevent breaking the flow
+                setImagesFailed((prev) => ({ ...prev, [pageNum]: true }));
+                resolve('failed');
             };
 
             img.src = getImagePath(pageNum);
@@ -159,17 +169,18 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
         setIsLoading(true);
 
         try {
-            // Load all visible pages in parallel
+            // Load all visible pages in parallel (now resolves even on failure)
             await Promise.all(newVisiblePages.map((pageNum) => loadImage(pageNum)));
 
-            // Update visible pages only after all images are loaded
+            // Update visible pages (will show placeholders for failed images)
             setVisiblePages(newVisiblePages);
 
             // Preload additional pages in the background
             preloadImages(pagesToPreload);
         } catch (error) {
-            console.error("Error loading visible images:", error);
-            // Still show pages even if there was an error loading some
+            // This should rarely happen now since loadImage resolves on error
+            logger.error("Unexpected error loading visible images", { error });
+            // Still show pages
             setVisiblePages(newVisiblePages);
         } finally {
             setIsLoading(false);
@@ -572,11 +583,6 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
 
     // Initialize event listeners and load initial pages
     useEffect(() => {
-        // const debugDiv = document.getElementById('debug');
-        // if (debugDiv) {
-        //     debugDiv.textContent = `Current page updated: ${currentPage}/${totalPages}`;
-        // }
-
         // Event listeners for drag handling
         const handleDocumentMouseMove = (e: MouseEvent) => doDrag(e);
         const handleDocumentTouchMove = (e: TouchEvent) => doDrag(e);
@@ -719,7 +725,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             {/* Sidebar */}
             <div
                 ref={sidebarRef}
-                className="fixed top-0 right-0 w-[250px] h-full bg-white z-[10] flex flex-col p-6 transition-transform duration-300 ease-in-out shadow-md"
+                className="fixed top-0 right-0 w-[250px] h-full bg-white z-[10] flex flex-col pt-20 pb-6 px-6 transition-transform duration-300 ease-in-out shadow-md"
                 style={getSidebarStyle()}
             >
                 <button
@@ -826,23 +832,52 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                     >
                         {visiblePages.map((pageNum) => (
                             <div key={pageNum} className="h-full flex justify-center items-center select-none">
-                                <img
-                                    src={imagesLoaded[pageNum] || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1.4"%3E%3C/svg%3E'}
-                                    alt={`Pagina ${pageNum}`}
-                                    className="max-h-full max-w-full object-contain shadow-md bg-white pointer-events-none select-none"
-                                    draggable="false"
-                                    data-page={pageNum}
-                                    loading="eager"
-                                    onLoad={() => {
-                                        // When an image loads, ensure it's marked as loaded in our state
-                                        if (!imagesLoaded[pageNum]) {
-                                            setImagesLoaded(prev => ({
-                                                ...prev,
-                                                [pageNum]: getImagePath(pageNum)
-                                            }));
-                                        }
-                                    }}
-                                />
+                                {imagesFailed[pageNum] ? (
+                                    // Show placeholder for failed images
+                                    <div className="max-h-full max-w-full flex flex-col items-center justify-center bg-gray-100 shadow-md p-8 rounded">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="w-16 h-16 text-gray-400 mb-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                            />
+                                        </svg>
+                                        <p className="text-gray-600 text-center font-medium">Immagine non disponibile</p>
+                                        <p className="text-gray-500 text-sm mt-2">Pagina {pageNum}</p>
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={imagesLoaded[pageNum] || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1.4"%3E%3C/svg%3E'}
+                                        alt={`Pagina ${pageNum}`}
+                                        className="max-h-full max-w-full object-contain shadow-md bg-white pointer-events-none select-none"
+                                        draggable="false"
+                                        data-page={pageNum}
+                                        loading="eager"
+                                        onLoad={() => {
+                                            // When an image loads, ensure it's marked as loaded in our state
+                                            if (!imagesLoaded[pageNum]) {
+                                                setImagesLoaded(prev => ({
+                                                    ...prev,
+                                                    [pageNum]: getImagePath(pageNum)
+                                                }));
+                                            }
+                                        }}
+                                        onError={() => {
+                                            // Handle inline image load failures as well
+                                            if (!imagesFailed[pageNum]) {
+                                                logger.warning(`Image load failed in render for page ${pageNum}`);
+                                                setImagesFailed(prev => ({ ...prev, [pageNum]: true }));
+                                            }
+                                        }}
+                                    />
+                                )}
                             </div>
                         ))}
                     </div>

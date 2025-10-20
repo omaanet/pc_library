@@ -8,8 +8,8 @@ interface VolumeControlProps {
     volume: number;
     muted: boolean;
     showVolumeSlider: boolean;
-    volumeSliderRef: RefObject<HTMLDivElement>;
-    volumeButtonRef: RefObject<HTMLButtonElement>;
+    volumeSliderRef: RefObject<HTMLDivElement | null>;
+    volumeButtonRef: RefObject<HTMLButtonElement | null>;
     onVolumeButtonClick: () => void;
     onVolumeChange: (val: number) => void;
 }

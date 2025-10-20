@@ -4,8 +4,7 @@ import { getCommentsByBookId, addComment } from '@/lib/db-comments';
 import { getSessionUser } from '@/lib/auth-utils';
 
 // GET /api/books/[id]/comments — fetch threaded comments
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function GET(req: NextRequest, context: any) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id: bookId } = await context.params;
 
     if (typeof bookId !== 'string') {
@@ -16,8 +15,7 @@ export async function GET(req: NextRequest, context: any) {
 }
 
 // POST /api/books/[id]/comments — add a comment or reply
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function POST(req: NextRequest, context: any) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id: bookId } = await context.params;
 
     if (typeof bookId !== 'string') {

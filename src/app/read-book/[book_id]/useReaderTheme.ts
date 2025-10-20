@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 /**
- * Hook for managing EPUB reader theme (font, size, line height) in localStorage.
+ * Hook for managing page reader theme (font, size, line height) in localStorage.
  * @param bookId string
  */
 export interface ReaderStyleConfig {

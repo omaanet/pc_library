@@ -47,10 +47,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Initialize auth state from stored session
     React.useEffect(() => {
+        const controller = new AbortController();
+
         const initializeAuth = async () => {
             dispatch({ type: 'SET_LOADING', payload: true });
             try {
-                const response = await fetch('/api/auth/session');
+                const response = await fetch('/api/auth/session', { signal: controller.signal });
                 if (response.ok) {
                     const data = await response.json();
                     if (data.user) {
@@ -59,6 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     }
                 }
             } catch (errorCaught) {
+                // Ignore abort errors (component unmounted)
+                if (errorCaught instanceof Error && errorCaught.name === 'AbortError') {
+                    return;
+                }
                 console.error('Failed to initialize auth:', errorCaught);
             } finally {
                 dispatch({ type: 'SET_LOADING', payload: false });
@@ -66,6 +72,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         initializeAuth();
+
+        // Cleanup function
+        return () => {
+            controller.abort();
+        };
     }, []);
 
     const login = useCallback(async (credentials: LoginCredentials) => {

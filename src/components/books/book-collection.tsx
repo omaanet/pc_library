@@ -162,7 +162,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     }
 
     return (
-        <div className="w-full max-w-[2000px] mx-auto px-2 sm:px-4 space-y-4 sm:space-y-6">
+        <div className="w-full max-w-[2000px] mx-auto px-1 sm:px-4 space-y-4 sm:space-y-6">
             {/* Controls Section */}
             <BookCollectionControls />
 

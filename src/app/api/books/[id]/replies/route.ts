@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRepliesByParentId } from '@/lib/db-comments';
 
 // GET /api/books/[id]/replies?parentId=xxx
-export async function GET(req: NextRequest, context: any) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     const { id: bookId } = await context.params;
     const { searchParams } = new URL(req.url);
     const parentId = searchParams.get('parentId');

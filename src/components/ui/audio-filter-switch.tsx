@@ -21,7 +21,7 @@ export const AudioFilterSwitch: React.FC<AudioFilterSwitchProps> = ({
     return (
         <div
             className={cn(
-                'flex flex-row flex-nowrap items-center gap-2 select-none group',
+                'flex flex-row flex-nowrap items-center gap-2 select-none group pe-2',
                 disabled && 'opacity-70',
                 className
             )}

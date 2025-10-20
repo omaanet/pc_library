@@ -33,7 +33,6 @@ export async function GET(
         const formattedTitle = normalizeItalianTitleWithOptions(book.title)
 
         // Construct the CDN URL for the PDF
-        // const pdfUrl = `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/bookshelf/${bookId}/${formattedTitle}.pdf`
         const pdfUrl = `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/bookshelf/${formattedTitle}`
 
         // Fetch the PDF file from the CDN

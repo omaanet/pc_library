@@ -2,24 +2,53 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-// import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookForm } from '@/components/temp/books/book-form';
-import { BookTable } from '@/components/temp/books/book-table';
-import { AudioTrackForm } from '@/components/temp/books/audio-track-form';
+import { BookForm } from '@/components/admin/books/book-form';
+import { BookTable } from '@/components/admin/books/book-table';
+import { AudioTrackForm } from '@/components/admin/books/audio-track-form';
 import { UsersTable } from '@/components/admin/users-table';
-import { useBooks } from '@/hooks/temp/use-books';
+import { useBooks } from '@/hooks/admin/use-books';
 import { Book } from '@/types';
 import { z } from 'zod';
 import Link from 'next/link';
+import { IMAGE_CONFIG } from '@/lib/image-utils';
+
+// Book form validation schema (matches BookForm component schema)
+const bookFormSchema = z.object({
+    title: z.string().min(1, 'Title is required'),
+    coverImage: z.string().default(IMAGE_CONFIG.placeholder.token),
+    pagesCount: z.number().int().min(1).optional(),
+    displayOrder: z.number().int().nullable().optional(),
+    publishingDate: z.date({
+        required_error: 'Publishing date is required',
+    }),
+    summary: z.string().nullable().optional(),
+    hasAudio: z.boolean().default(false),
+    audioLength: z.number().min(1).nullable().optional(),
+    extract: z.string().nullable().optional(),
+    rating: z.number().min(1).max(5).nullable().optional(),
+    isPreview: z.boolean().default(false),
+    isVisible: z.boolean().default(true),
+    audiobook: z.object({
+        mediaId: z.string().nullable().optional()
+    }).optional(),
+    mediaId: z.string().nullable().optional(),
+    mediaTitle: z.string().nullable().optional(),
+    mediaUid: z.string().nullable().optional(),
+    previewPlacement: z.string().nullable().optional(),
+});
+
+type BookFormValues = z.infer<typeof bookFormSchema>;
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/context/auth-context';
 
 export default function AddBookPage() {
-    // const router = useRouter();
-    // const { state, dispatch } = useAuth();
+    const router = useRouter();
+    const { state } = useAuth();
     const [activeTab, setActiveTab] = useState('manage');
     const [editingBook, setEditingBook] = useState<Book | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,36 +70,50 @@ export default function AddBookPage() {
     const {
         books,
         loading,
-        error,
         fetchBooks,
         createBook,
         updateBook,
         deleteBook
     } = useBooks();
 
+    // Admin authorization check
+    useEffect(() => {
+        if (!state.isLoading) {
+            if (!state.isAuthenticated || !state.user?.isAdmin) {
+                router.push('/');
+            }
+        }
+    }, [state.isAuthenticated, state.user, state.isLoading, router]);
+
     // Check if we should show audio tracks tab
     useEffect(() => {
         setShowAudioTracks(editingBook?.hasAudio || false);
     }, [editingBook]);
 
-    useEffect(() => {
-        if (activeTab === 'test') {
-            fetch('/api/test')
-                .then(res => res.json())
-                .then(data => setEnvVars(data));
-        }
-    }, [activeTab]);
-
     // Handle form submission
-    const handleSubmit = async (values: z.infer<any>) => {
+    const handleSubmit = async (values: BookFormValues) => {
         // console.log('handleSubmit - Form values:', values);
         setIsSubmitting(true);
 
         try {
-            // Format the date to ISO string
+            // Format the date to ISO string and convert null to undefined for optional fields
+            // Convert boolean isVisible to number (0 or 1) for database compatibility
             const formattedValues = {
                 ...values,
                 publishingDate: values.publishingDate.toISOString(),
+                audioLength: values.audioLength ?? undefined,
+                displayOrder: values.displayOrder ?? undefined,
+                rating: values.rating ?? undefined,
+                summary: values.summary ?? undefined,
+                extract: values.extract ?? undefined,
+                mediaId: values.mediaId ?? undefined,
+                mediaTitle: values.mediaTitle ?? undefined,
+                mediaUid: values.mediaUid ?? undefined,
+                previewPlacement: (values.previewPlacement as 'left' | 'right' | null | undefined) ?? undefined,
+                isVisible: values.isVisible ? 1 : 0,
+                audiobook: values.audiobook ? {
+                    mediaId: values.audiobook.mediaId ?? null
+                } : undefined,
             };
 
             // If editingBook exists and has an ID, update it. Otherwise, create a new book
@@ -130,12 +173,15 @@ export default function AddBookPage() {
 
     // Handle clone book
     const handleClone = (book: Book) => {
-        // Create a deep copy of the book and remove the ID to ensure it's treated as a new book
-        const { id, ...bookWithoutId } = JSON.parse(JSON.stringify(book));
+        // Create a copy of the book and remove the ID to ensure it's treated as a new book
+        const { id, ...bookWithoutId } = book;
         // Add " (Cloned)" to the title to indicate it's a clone
-        bookWithoutId.title = `${book.title} (Cloned)`;
+        const clonedBook: Omit<Book, 'id'> = {
+            ...bookWithoutId,
+            title: `${book.title} (Cloned)`,
+        };
         // Set the cloned book for editing
-        setEditingBook(bookWithoutId as Book);
+        setEditingBook(clonedBook as Book);
         setActiveTab('add');
     };
 
@@ -154,6 +200,22 @@ export default function AddBookPage() {
             setEditingBook(undefined);
         }
     };
+
+    // Show loading state while checking authentication
+    if (state.isLoading) {
+        return (
+            <div className="container mx-auto p-10 flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <p className="text-lg text-muted-foreground">Verifica autorizzazione...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Don't render content if not authorized (will redirect)
+    if (!state.isAuthenticated || !state.user?.isAdmin) {
+        return null;
+    }
 
     return (
         <div className="container mx-auto p-10">

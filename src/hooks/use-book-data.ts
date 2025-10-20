@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { BookResponse } from '@/types';
+import type { Book, BookResponse } from '@/types';
 import type { LibraryFilters, LibrarySort } from '@/types/context';
 import { bookApiService } from '@/lib/services/book-api-service';
 
@@ -13,7 +13,7 @@ export interface UseBookDataParams {
 }
 
 export interface UseBookDataReturn {
-  books: any[];
+  books: Book[];
   isLoading: boolean;
   isLoadingMore: boolean;
   isInitialLoad: boolean;
@@ -53,7 +53,7 @@ export function useBookData({
   isFiltersReady = true, // Default to true for backwards compatibility
   onError,
 }: UseBookDataParams): UseBookDataReturn {
-  const [books, setBooks] = useState<any[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);

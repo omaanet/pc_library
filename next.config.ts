@@ -15,27 +15,6 @@ const nextConfig: NextConfig = {
                 ? { exclude: ['error', 'warn', 'info', 'debug', 'trace'] }
                 : false,
     },
-    // Configure webpack to handle EPUB files as static assets
-    // webpack(config) {
-    //     config.module.rules.push({
-    //         test: /\.epub$/,
-    //         type: 'asset/resource',
-    //         generator: {
-    //             filename: 'static/[path][name][ext]',
-    //         },
-    //     });
-    //     return config;
-    // },
-    // Exclude EPUB files from Turbo processing using correct types
-    // experimental: {
-    //     turbo: {
-    //         // Use resolveAlias for excluding file types
-    //         resolveAlias: {
-    //             // This tells Turbo to treat .epub files as external/static resources
-    //             '*.epub': { type: 'static' }
-    //         }
-    //     },
-    // },
     async headers() {
         return [
             {
@@ -72,61 +51,6 @@ const nextConfig: NextConfig = {
                     },
                 ],
             },
-            {
-                source: "/epub/:path*.epub", // Add headers for EPUB API routes
-                headers: [
-                    {
-                        key: "Content-Security-Policy",
-                        value: "default-src 'self'; script-src 'self'; frame-src 'self'; sandbox allow-same-origin allow-scripts allow-popups;"
-                    },
-                    {
-                        key: "Content-Disposition",
-                        value: "attachment; filename=\"book.epub\"",
-                        // value: "inline", // Ensures images display in browser
-                    },
-                    {
-                        key: "X-Content-Type-Options",
-                        value: "nosniff",
-                    },
-                    {
-                        key: "Content-Type",
-                        value: "application/epub+zip",
-                    },
-                    {
-                        key: "Cache-Control",
-                        value: "no-transform, no-store", // Prevent transformations and caching
-                    },
-                    {
-                        key: "Transfer-Encoding",
-                        value: "identity",
-                    },
-                    {
-                        key: "Content-Encoding",
-                        value: "identity", // Disable compression for these routes
-                    },
-                    {
-                        key: "X-Frame-Options",
-                        value: "SAMEORIGIN",
-                    },
-                ],
-            },
-            // {
-            //     source: "/api/epub/:path*", // Add headers for EPUB API routes
-            //     headers: [
-            //         {
-            //             key: "Content-Type",
-            //             value: "application/epub+zip",
-            //         },
-            //         {
-            //             key: "Cache-Control",
-            //             value: "no-transform", // Prevent transformations by CDNs or proxies
-            //         },
-            //         {
-            //             key: "Content-Encoding",
-            //             value: "identity", // Disable compression for these routes
-            //         },
-            //     ],
-            // },
         ];
     },
 };

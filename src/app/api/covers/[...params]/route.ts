@@ -207,7 +207,7 @@ export async function GET(
                 quality: Number(searchParams.get('q')) || 80
             });
 
-            return new Response(buffer, {
+            return new Response(buffer.buffer as ArrayBuffer, {
                 headers: {
                     'Content-Type': 'image/png',
                     'Cache-Control': CACHE_CONTROL.public,
@@ -230,7 +230,7 @@ export async function GET(
         } catch {
             // File doesn't exist, generate a placeholder
             const buffer = await generatePlaceholder(dimensions);
-            return new Response(buffer, {
+            return new Response(buffer.buffer as ArrayBuffer, {
                 headers: {
                     'Content-Type': 'image/png',
                     'Cache-Control': CACHE_CONTROL.public,
@@ -246,7 +246,7 @@ export async function GET(
             Number(req.nextUrl.searchParams.get('q')) || 80
         );
 
-        return new Response(buffer, {
+        return new Response(buffer.buffer as ArrayBuffer, {
             headers: {
                 'Content-Type': 'image/webp',
                 'Cache-Control': CACHE_CONTROL.public,

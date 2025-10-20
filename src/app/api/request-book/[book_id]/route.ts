@@ -11,8 +11,6 @@ export async function POST(
     try {
         // Get the book ID from params
         const bookId = (await params).book_id;
-        // Parse request body if needed
-        // const body = await req.json();
 
         // Verify user is authenticated
         const user = await getSessionUser(req);

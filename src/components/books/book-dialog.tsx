@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/context/auth-context';
-// import Image from 'next/image';
 import { Headphones, X, BookOpen, Download, MailOpen, Loader2 } from 'lucide-react';
 import {
     Dialog,
@@ -13,13 +12,10 @@ import {
     DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-// import { ScrollArea } from '@/components/ui/scroll-area';
-// import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatAudioLength, cn } from '@/lib/utils';
-// import { DEFAULT_COVER_SIZES } from '@/types/images';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
-import type { Book /*, AudioBook */ } from '@/types';
+import type { Book } from '@/types';
 import BookComments from './book-comments';
 import { BookExtract } from './book-extract';
 import AudioBookPlayer from '../shared/AudioBookPlayer';

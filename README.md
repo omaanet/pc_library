@@ -12,16 +12,16 @@ A modern Next.js web application for reading and listening to creative fiction s
 - **📱 Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **🔍 Advanced Search & Filtering**: Filter books by category, rating, and availability
 - **💬 Comments System**: Engage with stories through comments and replies
-- **📖 EPUB Reader**: Read books in EPUB format with progress tracking
+- **📖 Image-Based Page Reader**: Read books with single/double page views, zoom, and pan controls
 - **⚡ Performance**: Leveraging Next.js 15 with Turbopack for fast development
 - **🗄️ PostgreSQL Database**: Powered by Neon serverless PostgreSQL
 
 ## 🛠️ Tech Stack
 
 ### Core Framework
-- **Next.js 15.0.3** - React framework with App Router
-- **React 19 RC** - UI library
-- **TypeScript 5.8.3** - Type safety
+- **Next.js 15.5.6** - React framework with App Router and Turbopack
+- **React 19.2.0** - UI library (stable release)
+- **TypeScript 5.9.3** - Type safety
 
 ### UI & Styling
 - **Tailwind CSS 3.4.17** - Utility-first CSS framework
@@ -37,7 +37,6 @@ A modern Next.js web application for reading and listening to creative fiction s
 ### Media & Content
 - **@mux/mux-player-react** - Video/audio player for audiobooks
 - **Sharp** - Image optimization
-- **JSZip** - EPUB file handling
 - **DOMPurify** - HTML sanitization
 
 ### Forms & Validation
@@ -56,7 +55,7 @@ A modern Next.js web application for reading and listening to creative fiction s
 
 ## 📋 Prerequisites
 
-- **Node.js** 18.x or higher
+- **Node.js** 18.18.0 or higher (Node.js 20+ recommended)
 - **pnpm** 8.x or higher
 - **PostgreSQL database** (Neon recommended)
 - **SMTP server** for email functionality
@@ -134,9 +133,9 @@ pnpm devENV
 |---------|-------------|
 | `pnpm dev` | Start development server with Turbopack on port 3005 |
 | `pnpm dev2` | Start development server without Turbopack |
-| `pnpm build` | Build production bundle |
+| `pnpm build` | Build production bundle (can use `--turbo` flag for beta Turbopack builds) |
 | `pnpm start` | Start production server on port 3006 |
-| `pnpm lint` | Run ESLint |
+| `pnpm lint` | Run ESLint (Note: `next lint` is deprecated in Next.js 15.5+) |
 | `pnpm check-env` | Verify environment variables |
 
 ## 📁 Project Structure
@@ -268,20 +267,22 @@ The application uses a comprehensive theming system:
 - Audio length display
 - Preview audio support
 
-## 📖 EPUB Reader
+## 📖 Image-Based Page Reader
 
-- Client-side EPUB rendering
+- PNG page images loaded from Wasabi S3 CDN
+- Single and double page viewing modes
+- Pinch-to-zoom and pan gestures
+- Fullscreen mode support
+- Keyboard navigation (arrows, +/- for zoom)
+- Page preloading for smooth experience
 - Reading progress persistence
-- Swipe navigation
-- Customizable styling
-- Bookmark support
+- PDF download functionality
 
 ## 🔧 Configuration Files
 
 ### `next.config.ts`
 - Image optimization settings
-- Security headers
-- EPUB file handling
+- Security headers for cover images
 - Console log removal in production
 
 ### `tailwind.config.ts`

@@ -15,7 +15,6 @@ import {
     Copy
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-// import { getCoverImageUrl } from '@/lib/image-utils';
 import { Book } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

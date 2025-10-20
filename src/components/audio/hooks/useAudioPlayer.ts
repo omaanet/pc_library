@@ -10,7 +10,7 @@ interface UseAudioPlayerProps {
 }
 
 interface UseAudioPlayerReturn {
-    audioRef: RefObject<HTMLAudioElement>;
+    audioRef: RefObject<HTMLAudioElement | null>;
     isPlaying: boolean;
     currentTime: number;
     duration: number;

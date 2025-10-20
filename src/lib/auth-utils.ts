@@ -1,18 +1,21 @@
 // src/lib/auth-utils.ts
-import { NextApiRequest } from 'next';
+import { NextRequest } from 'next/server';
 import { getUserById } from './user-db';
 
+// Request type that supports both NextRequest (App Router) and request objects with cookies
+type RequestWithCookies = NextRequest | { cookies: { session?: string } };
+
 // Get the user from the session cookie
-// Supports both NextApiRequest (Pages Router) and NextRequest (App Router)
-export async function getSessionUser(req: any) {
+// Supports both NextRequest (App Router) and other request types with cookies
+export async function getSessionUser(req: RequestWithCookies) {
     try {
         let sessionCookieValue: string | undefined = undefined;
-        
-        // App Router: NextRequest (has cookies.get)
-        if (typeof req.cookies?.get === 'function') {
+
+        // App Router: NextRequest (has cookies as RequestCookies with get method)
+        if (req instanceof NextRequest) {
             sessionCookieValue = req.cookies.get('session')?.value;
         } else if (req.cookies) {
-            // Pages Router or other request types
+            // Other request types with plain cookies object
             sessionCookieValue = req.cookies.session;
         }
         

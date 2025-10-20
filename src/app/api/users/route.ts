@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getNeonClient } from '@/lib/db';
 import { SITE_CONFIG } from '@/config/site-config';
+import { requireAdmin } from '@/lib/admin-auth';
+import { handleApiError } from '@/lib/api-error-handler';
 
 export interface UsersQueryParams {
     page?: number;
@@ -15,6 +17,9 @@ export interface UsersQueryParams {
 export async function GET(request: Request) {
     console.log('[Users API] Request received');
     try {
+        // Require admin authorization
+        await requireAdmin();
+
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get('page') || String(SITE_CONFIG.PAGINATION.DEFAULT_PAGE));
         let perPage = parseInt(searchParams.get('perPage') || String(SITE_CONFIG.PAGINATION.DEFAULT_PER_PAGE));
@@ -46,7 +51,7 @@ export async function GET(request: Request) {
 
         // Build WHERE conditions
         const whereConditions: string[] = [];
-        const params: any[] = [];
+        const params: (string | boolean | number)[] = [];
         let paramIndex = 1;
 
         if (search) {
@@ -96,18 +101,24 @@ export async function GET(request: Request) {
 
         const orderBy = sortColumnMap[sortBy] || 'created_at';
 
+        // Validate sortOrder to prevent SQL injection
+        const validSortOrders = ['asc', 'desc'];
+        const safeSortOrder = validSortOrders.includes(sortOrder.toLowerCase())
+            ? sortOrder.toUpperCase()
+            : 'DESC';
+
         const query = `
-      SELECT 
-        id, 
-        email, 
-        full_name as "fullName", 
-        is_activated as "isActivated", 
+      SELECT
+        id,
+        email,
+        full_name as "fullName",
+        is_activated as "isActivated",
         CASE WHEN is_admin = 1 THEN true ELSE false END as "isAdmin",
         created_at as "createdAt",
         updated_at as "updatedAt"
-      FROM users 
+      FROM users
       ${whereClause}
-      ORDER BY ${orderBy} ${sortOrder.toUpperCase()} 
+      ORDER BY ${orderBy} ${safeSortOrder} 
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
 
@@ -130,31 +141,6 @@ export async function GET(request: Request) {
 
     } catch (error) {
         console.error('[Users API] Error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        const errorStack = error instanceof Error ? error.stack : undefined;
-
-        // Type assertion for error properties
-        const typedError = error as Error & {
-            name?: string;
-            code?: string;
-            statusCode?: number;
-        };
-
-        console.error('[Users API] Error details:', {
-            message: errorMessage,
-            stack: errorStack,
-            name: typedError.name,
-            code: typedError.code,
-            statusCode: typedError.statusCode
-        });
-
-        return NextResponse.json(
-            {
-                error: 'Failed to fetch users',
-                details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
-                stack: process.env.NODE_ENV === 'development' ? errorStack : undefined
-            },
-            { status: 500 }
-        );
+        return handleApiError(error, 'Failed to fetch users', 500);
     }
 }

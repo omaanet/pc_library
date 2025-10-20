@@ -13,7 +13,7 @@ export interface Book {
     title: string;
     coverImage: string;
     publishingDate: string;
-    summary: string;
+    summary?: string;
     hasAudio: boolean;
     audioLength?: number; // Kept for backward compatibility
     extract?: string;
@@ -48,8 +48,22 @@ export interface AudioBook {
 }
 
 export interface UserPreferences {
-    emailNotifications?: any;
-    reading?: any;
+    emailNotifications?: {
+        newBooks?: boolean;
+        newReleases?: boolean;
+        readingReminders?: boolean;
+        recommendations?: boolean;
+        updates?: boolean;
+        newsletter?: boolean;
+    };
+    reading?: {
+        autoplay?: boolean;
+        defaultView?: 'single' | 'double';
+        defaultZoom?: number;
+        fontSize?: number;
+        lineHeight?: number | string;
+        fontFamily?: string;
+    };
     theme?: 'light' | 'dark' | 'system';
     language?: string;
     fontSize?: number;

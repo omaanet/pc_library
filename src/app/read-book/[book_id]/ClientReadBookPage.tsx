@@ -5,7 +5,6 @@ import type { Book } from '@/types';
 import { BackButton } from './BackButton';
 import { useAuth } from '@/context/auth-context';
 import dynamic from 'next/dynamic';
-// import { AuthModal } from '@/components/auth/auth-modal';
 
 interface ClientReadBookPageProps {
     bookId: string;

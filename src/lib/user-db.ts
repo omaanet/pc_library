@@ -2,7 +2,6 @@
 import { getNeonClient, getFirstRow } from './db';
 import { User } from '@/types';
 import crypto from 'crypto';
-// import { generateRandomPassword } from './utils';
 
 /**
  * Check if a user with the given email exists

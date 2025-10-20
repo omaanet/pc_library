@@ -4,7 +4,7 @@ import { BookGridCard } from './book-grid-card';
 import { BookListCard } from './book-list-card';
 
 export interface BookCollectionGridProps {
-  books: any[];
+  books: Book[];
   viewMode: ViewMode;
   onSelectBook: (book: Book | null) => void;
 }

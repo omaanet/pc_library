@@ -51,7 +51,6 @@ db/books - Copy.db3
 db/dump.sql
 db/dump-REMOVE-postgreSQL.sql
 
-public/_epub
 db
 !src/lib/db
 scripts/check-env.js
@@ -62,3 +61,6 @@ scripts/check-env.js
 # CLAUDE.md
 
 .env*
+
+AUDIT.md
+CLAUDE.md

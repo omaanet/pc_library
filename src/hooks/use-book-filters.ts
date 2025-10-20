@@ -23,7 +23,7 @@ export function useBookFilters({
         setViewMode,
     } = useLibrary();
 
-    const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+    const debounceTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
     const [isDebouncing, setIsDebouncing] = useState(false);
 
     // Cleanup timeout on unmount

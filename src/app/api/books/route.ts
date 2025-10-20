@@ -5,6 +5,7 @@ import { saveOrUpdateAudioBook } from '@/lib/services/audiobooks-service';
 import { validateObject } from '@/lib/validation';
 import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
+import { requireAdmin } from '@/lib/admin-auth';
 
 /**
  * GET /api/books
@@ -87,7 +88,33 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        // Require admin authorization
+        await requireAdmin();
+
         const bookData = await request.json();
+
+        // Manually validate audiobook field (since it can be an object, not just a string)
+        if (bookData.audiobook !== undefined && bookData.audiobook !== null) {
+            if (typeof bookData.audiobook === 'object' && !Array.isArray(bookData.audiobook)) {
+                // Valid object - check mediaId if present
+                if ('mediaId' in bookData.audiobook) {
+                    const mediaId = bookData.audiobook.mediaId;
+                    if (mediaId !== null && mediaId !== undefined && typeof mediaId !== 'string') {
+                        throw new ApiError(
+                            HttpStatus.BAD_REQUEST,
+                            'Validation failed',
+                            { audiobook: ['mediaId must be null, undefined, or a string'] }
+                        );
+                    }
+                }
+            } else if (typeof bookData.audiobook !== 'string') {
+                throw new ApiError(
+                    HttpStatus.BAD_REQUEST,
+                    'Validation failed',
+                    { audiobook: ['Value must be an object or string'] }
+                );
+            }
+        }
 
         // Define validation schema for book data
         const validationSchema = {
@@ -99,16 +126,16 @@ export async function POST(request: Request) {
                 sanitize: true
             },
             coverImage: {
-                type: 'url' as const,
-                required: true
+                type: 'string' as const,
+                required: false
             },
             publishingDate: {
                 type: 'date' as const,
-                required: true
+                required: false
             },
             summary: {
                 type: 'string' as const,
-                required: true,
+                required: false,
                 minLength: 10,
                 maxLength: 5000,
                 sanitize: true
@@ -122,10 +149,7 @@ export async function POST(request: Request) {
                 required: false,
                 customValidator: (value: any) => value === null || value === undefined || (typeof value === 'number' && value > 0)
             },
-            audiobook: {
-                type: 'string' as const, // We'll validate the nested structure separately
-                required: false
-            },
+            // audiobook field is validated manually above (not included in schema)
             audioMediaId: {
                 type: 'string' as const,
                 required: false,
@@ -175,6 +199,11 @@ export async function POST(request: Request) {
 
         // Use sanitized data for database operations
         const sanitizedData = validation.sanitizedData;
+        
+        // Add the manually validated audiobook field back to sanitizedData
+        if (bookData.audiobook !== undefined) {
+            sanitizedData.audiobook = bookData.audiobook;
+        }
 
         const newBook = await createBook(sanitizedData);
         if (!newBook) {

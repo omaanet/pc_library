@@ -17,6 +17,8 @@ export default function ActivationPage() {
     const logger = useLogger('ActivationPage');
 
     useEffect(() => {
+        const controller = new AbortController();
+
         const activateAccount = async () => {
             try {
                 logger.info('Starting account activation process', { tokenExists: !!token });
@@ -26,6 +28,7 @@ export default function ActivationPage() {
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ token }),
+                    signal: controller.signal,
                 });
 
                 const data = await response.json();
@@ -60,6 +63,12 @@ export default function ActivationPage() {
                     setMessage(data.error || 'Impossibile attivare l\'account. Riprova o contatta il supporto.');
                 }
             } catch (error) {
+                // Ignore abort errors (component unmounted)
+                if (error instanceof Error && error.name === 'AbortError') {
+                    logger.info('Account activation request aborted (component unmounted)');
+                    return;
+                }
+
                 // Log unexpected errors with full details
                 logger.error('Unexpected error during account activation', error, {
                     token: token.substring(0, 4) + '...', // Log partial token for debugging
@@ -81,7 +90,12 @@ export default function ActivationPage() {
             setStatus('error');
             setMessage('Sei già autenticato. Disconnettiti prima di attivare un nuovo account.');
         }
-    }, [token]);
+
+        // Cleanup function
+        return () => {
+            controller.abort();
+        };
+    }, [token, state.isAuthenticated, dispatch, router, logger]);
 
     return (
         <div className="flex h-screen items-center justify-center px-4">

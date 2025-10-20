@@ -29,7 +29,7 @@ export default function OptionsSidebar({ open, onClose }: OptionsSidebarProps) {
 
     return (
         <div
-            className={`fixed z-[1010] top-0 right-0 h-full w-72 bg-background shadow-lg z-50 transition-transform duration-300 ease-in-out border-l border-border flex flex-col ${open ? 'translate-x-0' : 'translate-x-full'}`}
+            className={`fixed z-[1010] top-0 right-0 h-full w-72 bg-background shadow-lg transition-transform duration-300 ease-in-out border-l border-border flex flex-col ${open ? 'translate-x-0' : 'translate-x-full'}`}
             style={{ minHeight: '100vh' }}
             aria-hidden={!open}
         >

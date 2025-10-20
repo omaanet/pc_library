@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getBookById, updateBook, deleteBook, getAudioBookById, deleteAudioBook } from '@/lib/db';
 import { saveOrUpdateAudioBook, fetchAudioBook } from '@/lib/services/audiobooks-service';
 import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET(
     request: NextRequest,
@@ -45,6 +46,9 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        // Require admin authorization
+        await requireAdmin();
+
         const id = (await params).id;
         const book = await request.json();
 
@@ -98,6 +102,9 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        // Require admin authorization
+        await requireAdmin();
+
         const id = (await params).id;
 
         // First, check if the book exists and has an associated audiobook
