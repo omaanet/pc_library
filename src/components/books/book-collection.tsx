@@ -16,6 +16,7 @@ import { BookCollectionGrid } from './book-collection-grid';
 import { BookCollectionLoadMore } from './book-collection-load-more';
 import { BookCollectionError } from './book-collection-error';
 import { BookCollectionEmpty } from './book-collection-empty';
+import { SITE_CONFIG } from '@/config/site-config';
 
 // Number of books to preload images for
 const PRELOAD_COUNT = 4;
@@ -41,7 +42,7 @@ interface BookCollectionProps {
 export function BookCollection({ displayPreviews }: BookCollectionProps) {
     // Context: Global state shared across app
     const {
-        state: { viewMode, selectedBook, filters, sort, pagination, isFiltersReady },
+        state: { viewMode, selectedBook, filters, sort, pagination },
         selectBook,
         updateFilters,
     } = useLibrary();
@@ -69,18 +70,13 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     const {
         books,
         isLoading,
-        isLoadingMore,
         isInitialLoad,
         error,
-        pagination: localPagination,
-        loadMore,
         retry,
+        refresh,
     } = useBookData({
         displayPreviews,
-        filters,
         sort,
-        perPage: pagination.perPage,
-        isFiltersReady,
         onError,
     });
 
@@ -94,6 +90,8 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
 
     const { searchTerm, handleSearch, handleSearchBlur } = useBookSearch({
         onSearch,
+        debounceMs: 250,
+        minSearchLength: 0,
         initialSearchTerm: filters.search,
     });
 
@@ -107,12 +105,57 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         [updateFilters]
     );
 
+    const pageSize = useMemo(() => {
+        return pagination.perPage > 0
+            ? pagination.perPage
+            : SITE_CONFIG.PAGINATION.DEFAULT_PER_PAGE;
+    }, [pagination.perPage]);
+
+    const normalizedSearchTerm = useMemo(() => searchTerm.trim().toLowerCase(), [searchTerm]);
+
+    const filteredBooks = useMemo(() => {
+        let result = books;
+
+        if (filters.hasAudio) {
+            result = result.filter((book) => book.hasAudio);
+        }
+
+        if (normalizedSearchTerm.length > 0) {
+            result = result.filter((book) => book.title.toLowerCase().includes(normalizedSearchTerm));
+        }
+
+        return result;
+    }, [books, filters.hasAudio, normalizedSearchTerm]);
+
+    const [visibleCount, setVisibleCount] = useState(() => pageSize);
+
+    useEffect(() => {
+        setVisibleCount(pageSize);
+    }, [pageSize, normalizedSearchTerm, filters.hasAudio]);
+
+    useEffect(() => {
+        setVisibleCount((prev) => {
+            if (filteredBooks.length === 0) return pageSize;
+            return Math.min(prev, filteredBooks.length);
+        });
+    }, [filteredBooks.length, pageSize]);
+
+    const visibleBooks = useMemo(() => {
+        return filteredBooks.slice(0, visibleCount);
+    }, [filteredBooks, visibleCount]);
+
+    const handleLoadMore = useCallback(() => {
+        setVisibleCount((prev) => Math.min(prev + pageSize, filteredBooks.length));
+    }, [filteredBooks.length, pageSize]);
+
+    const hasMore = visibleCount < filteredBooks.length;
+
     // Preload book cover images for visible books
     useEffect(() => {
-        if (!books || books.length === 0) return;
+        if (!visibleBooks || visibleBooks.length === 0) return;
 
         // Only preload a limited number of books
-        const booksToPreload = books.slice(0, PRELOAD_COUNT);
+        const booksToPreload = visibleBooks.slice(0, PRELOAD_COUNT);
 
         // Skip already loaded images
         const unloadedBooks = booksToPreload.filter((book) => {
@@ -140,7 +183,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         });
 
         Promise.all(preloadImages).catch(console.error);
-    }, [books, loadedImages]);
+    }, [visibleBooks, loadedImages]);
 
     // Focus search input on initial mount only
     useEffect(() => {
@@ -150,7 +193,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const showLoadingState = isLoading && !isLoadingMore;
+    const showLoadingState = isLoading;
 
     // Early return for error state
     if (error) {
@@ -164,7 +207,10 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     return (
         <div className="w-full max-w-[2000px] mx-auto px-1 sm:px-4 space-y-4 sm:space-y-6">
             {/* Controls Section */}
-            <BookCollectionControls />
+            <BookCollectionControls
+                onRefresh={refresh}
+                isRefreshing={!isInitialLoad && isLoading}
+            />
 
             {/* Filters Section */}
             <BookCollectionFilters
@@ -180,18 +226,20 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
             {/* Books Grid/List */}
             <div className="min-h-[600px] transition-opacity duration-300">
                 {isInitialLoad && showLoadingState ? (
-                    <BookGridSkeleton count={localPagination?.perPage || 8} />
+                    <BookGridSkeleton count={pageSize} />
                 ) : (
                     <div className="space-y-6 w-full">
-                        {books && books.length > 0 ? (
+                        {filteredBooks.length > 0 ? (
                             <>
-                                <BookCollectionGrid books={books} viewMode={viewMode} onSelectBook={selectBook} />
+                                <BookCollectionGrid books={visibleBooks} viewMode={viewMode} onSelectBook={selectBook} />
 
                                 {/* Load More */}
                                 <BookCollectionLoadMore
-                                    hasMore={localPagination.total > books.length}
-                                    isLoading={isLoadingMore}
-                                    onLoadMore={loadMore}
+                                    hasMore={hasMore}
+                                    isLoading={false}
+                                    onLoadMore={handleLoadMore}
+                                    shownCount={visibleBooks.length}
+                                    totalCount={filteredBooks.length}
                                 />
                             </>
                         ) : (

@@ -1,21 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Book, BookResponse } from '@/types';
-import type { LibraryFilters, LibrarySort } from '@/types/context';
+import type { LibrarySort } from '@/types/context';
 import { bookApiService } from '@/lib/services/book-api-service';
 
 export interface UseBookDataParams {
   displayPreviews: number;
-  filters: LibraryFilters;
   sort: LibrarySort;
-  perPage: number;
-  isFiltersReady?: boolean; // Flag to indicate filters have been loaded from storage
   onError?: (message: string) => void;
 }
 
 export interface UseBookDataReturn {
   books: Book[];
   isLoading: boolean;
-  isLoadingMore: boolean;
   isInitialLoad: boolean;
   error: Error | null;
   pagination: {
@@ -24,8 +20,8 @@ export interface UseBookDataReturn {
     total: number;
     totalPages: number;
   };
-  loadMore: () => Promise<void>;
   retry: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 /**
@@ -47,15 +43,11 @@ export interface UseBookDataReturn {
  */
 export function useBookData({
   displayPreviews,
-  filters,
   sort,
-  perPage,
-  isFiltersReady = true, // Default to true for backwards compatibility
   onError,
 }: UseBookDataParams): UseBookDataReturn {
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [pagination, setPagination] = useState({
@@ -65,33 +57,31 @@ export function useBookData({
     totalPages: 0,
   });
 
+  const activeRequestIdRef = useRef(0);
+
   /**
    * Fetches books from the API using the book API service
    */
   const fetchBooks = useCallback(
-    async (page: number = 1, append: boolean = false) => {
+    async () => {
       try {
-        if (!append) {
-          setIsLoading(true);
-        } else {
-          setIsLoadingMore(true);
-        }
+        const requestId = ++activeRequestIdRef.current;
+        setIsLoading(true);
 
         // Use the centralized API service
         const data: BookResponse = await bookApiService.fetchBooks({
-          page,
-          perPage,
+          page: 1,
+          perPage: -1,
           sortBy: sort.by,
           sortOrder: sort.order,
           displayPreviews,
-          filters,
         });
 
-        if (append) {
-          setBooks((prev) => [...prev, ...data.books]);
-        } else {
-          setBooks(data.books);
+        if (requestId !== activeRequestIdRef.current) {
+          return;
         }
+
+        setBooks(data.books);
 
         if (data.pagination) {
           setPagination({
@@ -113,71 +103,39 @@ export function useBookData({
         }
       } finally {
         setIsLoading(false);
-        setIsLoadingMore(false);
-        if (isInitialLoad) {
-          setIsInitialLoad(false);
-        }
+        setIsInitialLoad(false);
       }
     },
-    [displayPreviews, filters, perPage, sort.by, sort.order, isInitialLoad, onError]
+    [displayPreviews, sort.by, sort.order, onError]
   );
-
-  /**
-   * Load more books (pagination)
-   */
-  const loadMore = useCallback(async () => {
-    if (isLoading || isLoadingMore || pagination.page >= pagination.totalPages) {
-      return;
-    }
-
-    await fetchBooks(pagination.page + 1, true);
-  }, [isLoading, isLoadingMore, pagination.page, pagination.totalPages, fetchBooks]);
 
   /**
    * Retry loading books after an error
    */
   const retry = useCallback(async () => {
     setError(null);
-    await fetchBooks(1, false);
+    await fetchBooks();
+  }, [fetchBooks]);
+
+  const refresh = useCallback(async () => {
+    await fetchBooks();
   }, [fetchBooks]);
 
   // Initial load and reload when dependencies change
   useEffect(() => {
     // Skip fetch on server-side rendering
     if (typeof window === 'undefined') return;
-    
-    // Wait for filters to be loaded from localStorage before fetching
-    if (!isFiltersReady) {
-      console.log('[useBookData] Waiting for filters to be ready...');
-      return;
-    }
-    
-    console.log('[useBookData] Effect triggered with filters:', { search: filters.search, hasAudio: filters.hasAudio, isFiltersReady });
-    
-    let cancelled = false;
 
-    const loadBooks = async () => {
-      console.log('[useBookData] Fetching books with filters:', { search: filters.search, hasAudio: filters.hasAudio });
-      if (!cancelled) {
-        await fetchBooks(1, false);
-      }
-    };
-
-    loadBooks();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [displayPreviews, filters.search, filters.hasAudio, sort.by, sort.order, perPage, isFiltersReady, fetchBooks]);
+    fetchBooks();
+  }, [displayPreviews, sort.by, sort.order, fetchBooks]);
 
   return {
     books,
     isLoading,
-    isLoadingMore,
     isInitialLoad,
     error,
     pagination,
-    loadMore,
     retry,
+    refresh,
   };
 }

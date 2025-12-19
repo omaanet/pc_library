@@ -1,10 +1,12 @@
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 
 export interface BookCollectionLoadMoreProps {
   hasMore: boolean;
   isLoading: boolean;
   onLoadMore: () => void;
+  shownCount: number;
+  totalCount: number;
 }
 
 /**
@@ -28,6 +30,8 @@ export function BookCollectionLoadMore({
   hasMore,
   isLoading,
   onLoadMore,
+  shownCount,
+  totalCount,
 }: BookCollectionLoadMoreProps) {
   if (!hasMore) {
     return null;
@@ -39,14 +43,20 @@ export function BookCollectionLoadMore({
         variant="outline"
         onClick={onLoadMore}
         disabled={isLoading}
+        className="h-auto py-3"
       >
         {isLoading ? (
-          <>
+          <div className="flex items-center">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Caricamento...
-          </>
+          </div>
         ) : (
-          'Carica altro'
+          <div className="flex flex-col items-center leading-tight">
+            <div className="text-sm font-medium">
+              {shownCount} di {totalCount}
+            </div>
+            <ChevronDown className="h-5 w-5" />
+          </div>
         )}
       </Button>
     </div>
