@@ -29,6 +29,16 @@ export function formatAudioLength(seconds: number): string {
     return parts.join(' ');
 }
 
+export function isBookNew(publishingDate: string, newDays: number): boolean {
+    const publishedMs = Date.parse(publishingDate);
+    if (!Number.isFinite(publishedMs)) return false;
+
+    const nowMs = Date.now();
+    const windowMs = newDays * 24 * 60 * 60 * 1000;
+
+    return publishedMs <= nowMs && publishedMs >= (nowMs - windowMs);
+}
+
 /**
  * Generate a random password
  */

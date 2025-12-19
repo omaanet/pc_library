@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatAudioLength, cn } from '@/lib/utils';
+import { formatAudioLength, cn, isBookNew } from '@/lib/utils';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 import type { Book } from '@/types';
 import BookComments from './book-comments';
@@ -21,6 +21,7 @@ import { BookExtract } from './book-extract';
 import AudioBookPlayer from '../shared/AudioBookPlayer';
 import { LinkButton } from '@/components/ui/LinkButton';
 import { useToast } from '@/components/ui/use-toast';
+import { SITE_CONFIG } from '@/config/site-config';
 
 interface BookDialogProps {
     book: Book | null;
@@ -41,6 +42,21 @@ const renderAudioBadge = (book: Book | null, visible: boolean) => {
             visible ? "opacity-100" : "opacity-0"
         )}>
             <Headphones className="h-3 w-3 sm:h-4 sm:w-4" />
+        </div>
+    );
+};
+
+const renderNewBadge = (book: Book | null, visible: boolean) => {
+    if (!book) return null;
+    if (!isBookNew(book.publishingDate, SITE_CONFIG.BOOK_BADGES.NEW_DAYS)) return null;
+
+    return (
+        <div className={cn(
+            "absolute -top-1 -left-1 rounded bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white",
+            "backdrop-blur-sm transition-opacity duration-200 z-10",
+            visible ? "opacity-100" : "opacity-0"
+        )}>
+            NEW
         </div>
     );
 };
@@ -202,6 +218,7 @@ export function BookDialogSimple({
                                         onError={() => setImageLoaded(true)}
                                     />
                                     {renderAudioBadge(book, imageLoaded)}
+                                    {renderNewBadge(book, imageLoaded)}
                                 </div>
 
                                 {/* Actions - horizontal, compact for vertical space */}
@@ -345,6 +362,7 @@ export function BookDialog({
                                                     // unoptimized
                                                     />
                                                     {renderAudioBadge(book, imageLoaded)}
+                                                    {renderNewBadge(book, imageLoaded)}
                                                 </div>
                                             </div>
 

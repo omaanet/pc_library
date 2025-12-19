@@ -3,7 +3,8 @@
 import * as React from 'react';
 import Image from 'next/image';
 import { Headphones } from 'lucide-react';
-import { formatDate, formatAudioLength, cn } from '@/lib/utils';
+import { formatDate, formatAudioLength, cn, isBookNew } from '@/lib/utils';
+import { SITE_CONFIG } from '@/config/site-config';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 import { DEFAULT_COVER_SIZES, getImageSizeString } from '@/types/images';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,10 @@ interface BookListCardProps {
 export function BookListCard({ book, onSelect, className }: BookListCardProps) {
     // Track image loading state
     const [imageLoaded, setImageLoaded] = React.useState(false);
+
+    const isNew = React.useMemo(() => {
+        return isBookNew(book.publishingDate, SITE_CONFIG.BOOK_BADGES.NEW_DAYS);
+    }, [book.publishingDate]);
 
     // Get image dimensions for list view
     const { width, height } = DEFAULT_COVER_SIZES.list;
@@ -73,8 +78,19 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                     <Headphones className="h-5 w-5" />
                 </div>
             )}
+
+            {/* NEW badge */}
+            {isNew && (
+                <div className={cn(
+                    "absolute top-1 left-1 rounded bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white",
+                    "backdrop-blur-sm transition-opacity duration-200",
+                    imageLoaded ? "opacity-100" : "opacity-0"
+                )}>
+                    NEW
+                </div>
+            )}
         </div>
-    ), [imageUrl, book.title, book.hasAudio, imageLoaded, width, height, onSelect, book]);
+    ), [imageUrl, book.title, book.hasAudio, isNew, imageLoaded, width, height, onSelect, book]);
 
     // Memoize metadata to prevent unnecessary re-renders
     const metadata = React.useMemo(() => (

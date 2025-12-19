@@ -203,6 +203,11 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
             : 'ORDER BY publishing_date DESC NULLS LAST'; // Final fallback if config is invalid
     }
 
+    const newPriorityClause = `CASE WHEN publishing_date::timestamptz <= NOW() AND publishing_date::timestamptz >= NOW() - INTERVAL '${SITE_CONFIG.BOOK_BADGES.NEW_DAYS} days' THEN 1 ELSE 0 END DESC`;
+    if (orderByClause.startsWith('ORDER BY ')) {
+        orderByClause = `ORDER BY ${newPriorityClause}, ${orderByClause.slice('ORDER BY '.length)}`;
+    }
+
     // Pagination
     const offset = (page - 1) * perPage;
     const limitClause = perPage > 0 ? `LIMIT $${params.length + 1} OFFSET $${params.length + 2}` : '';
