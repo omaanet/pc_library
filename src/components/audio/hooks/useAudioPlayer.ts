@@ -23,6 +23,7 @@ interface UseAudioPlayerReturn {
  */
 export function useAudioPlayer({ autoPlay, currentTrack, onTrackEnd }: UseAudioPlayerProps): UseAudioPlayerReturn {
     const audioRef = useRef<HTMLAudioElement>(null);
+    const prevTrackRef = useRef(currentTrack);
     const [isPlaying, setIsPlaying] = useState<boolean>(autoPlay);
     const [currentTime, setCurrentTime] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
@@ -55,13 +56,14 @@ export function useAudioPlayer({ autoPlay, currentTrack, onTrackEnd }: UseAudioP
 
     // Handle track changes
     useEffect(() => {
-        if (audioRef.current) {
+        if (audioRef.current && prevTrackRef.current !== currentTrack) {
             audioRef.current.load();
             if (isPlaying) {
                 audioRef.current.play().catch(error => {
                     setIsPlaying(false);
                 });
             }
+            prevTrackRef.current = currentTrack;
         }
     }, [currentTrack, isPlaying]);
 

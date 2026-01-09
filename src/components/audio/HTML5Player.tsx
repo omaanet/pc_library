@@ -55,7 +55,7 @@ const HTML5Player = ({ tracks, autoPlay = false, initialVolume = 25 }: HTML5Play
     return (
         <div>
             <div className="audio-player w-full">
-                <audio ref={audioRef} muted={muted || volume === 0} preload="auto" autoPlay={autoPlay}>
+                <audio ref={audioRef} muted={muted || volume === 0} preload="auto">
                     <source src={tracks[currentTrack].url} type="audio/mpeg" />
                     Your browser does not support the audio element.
                 </audio>
