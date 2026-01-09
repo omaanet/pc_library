@@ -1,6 +1,3 @@
-// src/components/audio/components/VolumeControl.tsx
-// Volume control button and slider component
-
 import { Volume2, VolumeX } from 'lucide-react';
 import { RefObject } from 'react';
 
@@ -26,6 +23,8 @@ export function VolumeControl({
     onVolumeButtonClick,
     onVolumeChange
 }: VolumeControlProps) {
+    const displayVolume = muted ? 0 : volume;
+
     return (
         <div className="relative ms-3">
             <button
@@ -40,51 +39,72 @@ export function VolumeControl({
             {showVolumeSlider && (
                 <div
                     ref={volumeSliderRef}
-                    className="absolute top-full left-1/2 -translate-x-1/2 flex flex-col items-center z-50 mt-2"
-                    style={{ minHeight: 60 }}
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 flex flex-col items-center z-50 mb-0 px-4 py-2 rounded-[5px] bg-gray-800/90 backdrop-blur-sm shadow-xl border border-white/10"
+                    style={{ width: '28px' }}
                 >
-                    <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={muted ? 0 : volume}
-                        onChange={e => onVolumeChange(Number(e.target.value))}
-                        className="volume-slider"
-                        style={{
-                            WebkitAppearance: 'slider-vertical',
-                            height: 60,
-                        }}
-                    />
-                    <div className="text-xs mt-1 bg-gray-800 text-white rounded px-1 py-0.5 select-none" style={{ fontSize: '0.75rem' }}>
-                        {Math.round((muted ? 0 : volume) * 100)}%
+                    <span className="text-[8px] text-white/90 font-bold mb-1 select-none leading-none">
+                        {Math.round(displayVolume * 100)}%
+                    </span>
+                    <div className="relative h-[60px] w-3 flex items-center justify-center overflow-hidden rounded-[2px]">
+                        <input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            value={displayVolume}
+                            onChange={e => onVolumeChange(Number(e.target.value))}
+                            className="volume-slider-vertical"
+                            style={{
+                                '--volume-percent': `${displayVolume * 100}%`
+                            } as React.CSSProperties}
+                        />
                     </div>
                 </div>
             )}
             <style jsx>{`
-              .volume-slider {
-                writing-mode: vertical-lr;
-                width: 24px;
-                height: 60px;
-                accent-color: #10b981;
-                margin: 0 4px;
+              .volume-slider-vertical {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 60px;
+                height: 12px;
+                background: #374151;
+                border-radius: 2px;
+                outline: none;
+                margin: 0;
+                transform: rotate(-90deg);
                 cursor: pointer;
-                background: transparent;
+                position: absolute;
               }
-              .volume-slider::-webkit-slider-thumb {
-                background: #10b981;
-                border-radius: 50%;
-                border: none;
+
+              /* Track fill effect - Horizontal gradient before rotation */
+              .volume-slider-vertical {
+                background: linear-gradient(
+                  to right,
+                  #10b981 0%,
+                  #10b981 var(--volume-percent),
+                  #374151 var(--volume-percent),
+                  #374151 100%
+                );
               }
-              .volume-slider::-moz-range-thumb {
+
+              .volume-slider-vertical::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 12px;
+                height: 12px;
                 background: #10b981;
+                border: 1px solid #064e3b;
                 border-radius: 50%;
-                border: none;
+                cursor: pointer;
               }
-              .volume-slider::-ms-thumb {
+
+              .volume-slider-vertical::-moz-range-thumb {
+                width: 12px;
+                height: 12px;
                 background: #10b981;
+                border: 1px solid #064e3b;
                 border-radius: 50%;
-                border: none;
+                cursor: pointer;
               }
             `}</style>
         </div>
