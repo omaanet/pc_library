@@ -8,7 +8,8 @@ interface AudioControlsProps {
     onPlayPause: () => void;
     onNext: () => void;
     onPrev: () => void;
-    disableNavigation: boolean;
+    disablePrev: boolean;
+    disableNext: boolean;
 }
 
 /**
@@ -19,14 +20,17 @@ export function AudioControls({
     onPlayPause,
     onNext,
     onPrev,
-    disableNavigation
+    disablePrev,
+    disableNext
 }: AudioControlsProps) {
     return (
-        <div className="player-controls flex flex-row flex-1 items-center justify-center relative">
+        <div className="player-controls flex flex-row flex-1 items-center justify-center relative gap-3">
             <button
                 onClick={onPrev}
-                disabled={disableNavigation}
-                className="control-button hover:text-yellow-400"
+                disabled={disablePrev}
+                className={`control-button hover:text-yellow-400 transition-all duration-200 ${
+                    disablePrev ? 'visibility-hidden pointer-events-none opacity-0' : ''
+                }`}
             >
                 <ArrowLeft size={20} />
             </button>
@@ -34,7 +38,7 @@ export function AudioControls({
             <div className="flex items-center">
                 <button
                     onClick={onPlayPause}
-                    className={`p-2 rounded-full mx-3 ${isPlaying ? 'bg-emerald-500 hover:bg-emerald-400 ' : 'bg-cyan-600 hover:bg-cyan-400'} text-white hover:text-black transition-colors duration-300 ease-in-out`}
+                    className={`p-2 rounded-full ${isPlaying ? 'bg-emerald-500 hover:bg-emerald-400 ' : 'bg-cyan-600 hover:bg-cyan-400'} text-white hover:text-black transition-colors duration-300 ease-in-out`}
                     title={isPlaying ? "Pause" : "Play"}
                 >
                     {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
@@ -43,8 +47,10 @@ export function AudioControls({
 
             <button
                 onClick={onNext}
-                disabled={disableNavigation}
-                className="control-button hover:text-yellow-400"
+                disabled={disableNext}
+                className={`control-button hover:text-yellow-400 transition-all duration-200 ${
+                    disableNext ? 'visibility-hidden pointer-events-none opacity-0' : ''
+                }`}
             >
                 <ArrowRight size={20} />
             </button>

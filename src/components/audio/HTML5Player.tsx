@@ -85,14 +85,21 @@ const HTML5Player = ({ tracks, autoPlay = false, initialVolume = 25 }: HTML5Play
                     </div>
                 </div>
 
-                <div className="flex items-center justify-center mt-1">
+                <div className="grid grid-cols-[auto_1fr_auto] items-center mt-1">
+                    <div className="text-sm text-gray-400">
+                        {currentTrack + 1}/{tracks.length}
+                    </div>
                     <AudioControls
                         isPlaying={isPlaying}
                         onPlayPause={handlePlayPause}
                         onNext={handleNext}
                         onPrev={handlePrev}
-                        disableNavigation={tracks.length <= 1}
+                        disablePrev={tracks.length <= 1 || currentTrack <= 0}
+                        disableNext={tracks.length <= 1 || currentTrack >= tracks.length - 1}
                     />
+                    <div className="text-sm text-gray-400 invisible">
+                        {currentTrack + 1}/{tracks.length}
+                    </div>
                 </div>
 
                 {showPlaylist && tracks.length > 1 && (

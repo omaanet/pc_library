@@ -29,20 +29,20 @@ export function useTrackNavigation({ tracks, onTrackChange }: UseTrackNavigation
     };
 
     const handleEnd = (): void => {
-        if (tracks.length <= 1) return;
-        const nextTrack = (currentTrack + 1) % tracks.length;
+        if (tracks.length <= 1 || currentTrack >= tracks.length - 1) return;
+        const nextTrack = currentTrack + 1;
         setCurrentTrack(nextTrack);
     };
 
     const handleNext = (): void => {
-        if (tracks.length <= 1) return;
-        const nextTrack = (currentTrack + 1) % tracks.length;
+        if (tracks.length <= 1 || currentTrack >= tracks.length - 1) return;
+        const nextTrack = currentTrack + 1;
         setCurrentTrack(nextTrack);
     };
 
     const handlePrev = (): void => {
-        if (tracks.length <= 1) return;
-        const prevTrack = (currentTrack - 1 + tracks.length) % tracks.length;
+        if (tracks.length <= 1 || currentTrack <= 0) return;
+        const prevTrack = currentTrack - 1;
         setCurrentTrack(prevTrack);
     };
 
