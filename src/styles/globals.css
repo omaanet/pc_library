@@ -35,6 +35,10 @@
         --ring: 196, 83%, 55%;
 
         --radius: 1.00rem;
+
+        /* Icon Colors Light Mode */
+        --gold: #b8860b;
+        --text: #1a1a1a;
     }
 
     .dark {
@@ -68,6 +72,35 @@
         --ring: 198, 60%, 35%;
 
         --theme-color-title: hsl(205, 84%, 27%);
+
+        /* Icon Colors Dark Mode */
+        --gold: #d4af37;
+        --text: #e0e0e0;
+    }
+}
+
+@layer utilities {
+    /* Icon Global Animation: Draw Lines */
+    @keyframes draw {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    /* Icon Global Animation: Glow */
+    .glow-anim {
+        animation: glowPulse 2s infinite alternate;
+    }
+
+    @keyframes glowPulse {
+        from {
+            stroke: var(--text);
+            filter: drop-shadow(0 0 0 transparent);
+        }
+        to {
+            stroke: var(--gold);
+            filter: drop-shadow(0 0 5px var(--gold));
+        }
     }
 }
 
@@ -78,6 +111,16 @@
 
     body {
         @apply bg-background text-foreground;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+        html {
+            scroll-behavior: auto;
+        }
     }
 }
 

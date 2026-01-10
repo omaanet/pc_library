@@ -54,7 +54,6 @@ db/dump-REMOVE-postgreSQL.sql
 db
 !src/lib/db
 scripts/check-env.js
-.claude/settings.local.json
 
 #^*.md
 #to_implement.md
@@ -66,3 +65,5 @@ AUDIT.md
 CLAUDE.md
 favicon.svg
 logo.svg
+.windsurf
+.claude
