@@ -2,7 +2,15 @@
 
 import * as React from 'react';
 import { useAuth } from '@/context/auth-context';
-import { useUserPreferences } from '@/hooks/use-user-preferences';
+import { useTheme } from 'next-themes';
+import { 
+    usePreferencesStore, 
+    useViewMode, 
+    useLanguage, 
+    useReadingPreferences,
+    useReaderPreferences,
+    useAccessibilityPreferences 
+} from '@/stores/preferences-store';
 import { RootNav } from '@/components/layout/root-nav';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -37,39 +45,58 @@ import { CopyrightFooter } from '@/components/shared/copyright-footer';
 export default function SettingsPage() {
     const { state: { user, isAuthenticated } } = useAuth();
     const router = useRouter();
+    const { setTheme, theme } = useTheme();
+    
+    // Zustand store actions
     const {
-        preferences,
-        isLoading,
-        updatePreference,
-        error
-    } = useUserPreferences();
-
-    const btnHoverClass = preferences.theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200';
-    const currentFontSize = fontSize(preferences.reading?.fontSize);
+        setViewMode,
+        setLanguage,
+        updateReadingPrefs,
+        updateReaderPrefs,
+        updateAccessibilityPrefs,
+        resetPreferences,
+    } = usePreferencesStore();
+    
+    // Zustand store values
+    const viewMode = useViewMode();
+    const language = useLanguage();
+    const readingPrefs = useReadingPreferences();
+    const readerPrefs = useReaderPreferences();
+    const accessibilityPrefs = useAccessibilityPreferences();
 
     const [isSaving, setIsSaving] = React.useState(false);
 
-    const handlePreferenceChange = async <K extends keyof typeof preferences>(
-        key: K,
-        value: (typeof preferences)[K]
-    ) => {
+    // Handle theme change
+    const handleThemeChange = (newTheme: string) => {
+        setTheme(newTheme);
+        toast({
+            title: 'Tema aggiornato',
+            description: 'Il tema è stato salvato correttamente.',
+        });
+    };
+
+    // Handle other preference changes
+    const handlePreferenceChange = async (action: () => void, description: string) => {
         setIsSaving(true);
         try {
-            await updatePreference(key, value);
+            action();
             toast({
-                title: 'Preferences updated',
-                description: 'Your settings have been saved successfully.',
+                title: 'Preferenze aggiornate',
+                description,
             });
         } catch (error) {
             toast({
-                title: 'Error',
-                description: 'Failed to update preferences. Please try again.',
+                title: 'Errore',
+                description: 'Impossibile aggiornare le preferenze. Riprova.',
                 variant: 'destructive',
             });
         } finally {
             setIsSaving(false);
         }
     };
+
+    const currentFontSize = fontSize(readingPrefs.fontSize);
+    const btnHoverClass = theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200';
 
     if (!user) {
         return (
@@ -141,10 +168,8 @@ export default function SettingsPage() {
                                 <div className="space-y-2">
                                     <Label htmlFor="theme">Tema</Label>
                                     <Select
-                                        value={preferences.theme}
-                                        onValueChange={(value) =>
-                                            handlePreferenceChange('theme', value as typeof preferences.theme)
-                                        }
+                                        value={theme || 'system'}
+                                        onValueChange={handleThemeChange}
                                     >
                                         <SelectTrigger id="theme">
                                             <SelectValue placeholder="Seleziona tema" />
@@ -156,12 +181,17 @@ export default function SettingsPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                {/* <div className="space-y-2">
+                                
+                                {/* Hidden but keep code for future use
+                                <div className="space-y-2">
                                     <Label htmlFor="view-mode">Vista predefinita</Label>
                                     <Select
-                                        value={preferences.viewMode}
-                                        onValueChange={(value) =>
-                                            handlePreferenceChange('viewMode', value as typeof preferences.viewMode)
+                                        value={viewMode}
+                                        onValueChange={(value) => 
+                                            handlePreferenceChange(
+                                                () => setViewMode(value as 'grid' | 'list' | 'detailed'),
+                                                'La vista è stata salvata correttamente.'
+                                            )
                                         }
                                     >
                                         <SelectTrigger id="view-mode">
@@ -170,9 +200,32 @@ export default function SettingsPage() {
                                         <SelectContent>
                                             <SelectItem value="grid">Griglia</SelectItem>
                                             <SelectItem value="list">Lista</SelectItem>
+                                            <SelectItem value="detailed">Dettagliata</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </div> */}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="language">Lingua</Label>
+                                    <Select
+                                        value={language}
+                                        onValueChange={(value) => 
+                                            handlePreferenceChange(
+                                                () => setLanguage(value),
+                                                'La lingua è stata salvata correttamente.'
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="language">
+                                            <SelectValue placeholder="Seleziona lingua" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="it">Italiano</SelectItem>
+                                            <SelectItem value="en">English</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                */}
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -187,6 +240,55 @@ export default function SettingsPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
+                                {/* Reader View Mode */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="reader-view-mode">Modalità di visualizzazione</Label>
+                                    <Select
+                                        value={readerPrefs.viewMode}
+                                        onValueChange={(value) => 
+                                            handlePreferenceChange(
+                                                () => updateReaderPrefs({
+                                                    viewMode: value as 'single' | 'double',
+                                                }),
+                                                'La modalità di visualizzazione è stata aggiornata.'
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="reader-view-mode">
+                                            <SelectValue placeholder="Seleziona modalità" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="single">Pagina singola</SelectItem>
+                                            <SelectItem value="double">Pagina doppia</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Reader Zoom Level */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="reader-zoom">Livello di zoom: {readerPrefs.zoomLevel}%</Label>
+                                    <Slider
+                                        value={[readerPrefs.zoomLevel]}
+                                        onValueChange={(value) => {
+                                            updateReaderPrefs({ zoomLevel: value[0] });
+                                            toast({
+                                                title: 'Preferenze aggiornate',
+                                                description: 'Il livello di zoom è stato aggiornato.',
+                                            });
+                                        }}
+                                        min={50}
+                                        max={200}
+                                        step={10}
+                                        className="w-full"
+                                    />
+                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                        <span>50%</span>
+                                        <span>100%</span>
+                                        <span>200%</span>
+                                    </div>
+                                </div>
+
+                                {/* Hidden reading preferences for future use
                                 <div className="space-y-2">
                                     <Label htmlFor="font-size">Dimensione carattere</Label>
                                     <div className="flex items-center justify-start space-x-7">
@@ -194,10 +296,12 @@ export default function SettingsPage() {
                                             <button
                                                 className={`border rounded w-8 h-8 flex items-center justify-center text-base ${btnHoverClass}`}
                                                 onClick={() =>
-                                                    handlePreferenceChange('reading', {
-                                                        ...preferences.reading,
-                                                        fontSize: Math.max(currentFontSize - 10, 10),
-                                                    })
+                                                    handlePreferenceChange(
+                                                        () => updateReadingPrefs({
+                                                            fontSize: Math.max(currentFontSize - 10, 10),
+                                                        }),
+                                                        'La dimensione del carattere è stata aggiornata.'
+                                                    )
                                                 }
                                             >
                                                 A-
@@ -206,10 +310,12 @@ export default function SettingsPage() {
                                             <button
                                                 className={`border rounded w-8 h-8 flex items-center justify-center text-base ${btnHoverClass}`}
                                                 onClick={() =>
-                                                    handlePreferenceChange('reading', {
-                                                        ...preferences.reading,
-                                                        fontSize: Math.min(currentFontSize + 10, 400),
-                                                    })
+                                                    handlePreferenceChange(
+                                                        () => updateReadingPrefs({
+                                                            fontSize: Math.min(currentFontSize + 10, 400),
+                                                        }),
+                                                        'La dimensione del carattere è stata aggiornata.'
+                                                    )
                                                 }
                                             >
                                                 A+
@@ -218,141 +324,159 @@ export default function SettingsPage() {
                                         <button
                                             className={`border rounded w-8 h-8 flex items-center justify-center ${btnHoverClass}`}
                                             onClick={() =>
-                                                handlePreferenceChange('reading', {
-                                                    ...preferences.reading,
-                                                    fontSize: currentFontSize,
-                                                })
+                                                handlePreferenceChange(
+                                                    () => updateReadingPrefs({
+                                                        fontSize: 100,
+                                                    }),
+                                                    'La dimensione del carattere è stata reimpostata.'
+                                                )
                                             }
                                             aria-label="Reimposta dimensione carattere"
                                         >
                                             <RefreshCw className="text-base h-4 w-4" />
                                         </button>
                                     </div>
-                                    {/* <Select
-                                        value={preferences.reading.fontSize}
-                                        onValueChange={(value) =>
-                                            handlePreferenceChange('reading', {
-                                                ...preferences.reading,
-                                                fontSize: value as typeof preferences.reading.fontSize,
-                                            })
-                                        }
-                                    >
-                                        <SelectTrigger id="font-size">
-                                            <SelectValue placeholder="Select font size" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="small">Small</SelectItem>
-                                            <SelectItem value="medium">Medium</SelectItem>
-                                            <SelectItem value="large">Large</SelectItem>
-                                            <SelectItem value="x-large">Extra Large</SelectItem>
-                                        </SelectContent>
-                                    </Select> */}
                                 </div>
-                                {/* <div className="space-y-2">
-                                    <Label htmlFor="line-spacing">Line Spacing</Label>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="line-spacing">Spaziatura righe</Label>
                                     <Select
-                                        value={preferences.reading.lineSpacing}
-                                        onValueChange={(value) =>
-                                            handlePreferenceChange('reading', {
-                                                ...preferences.reading,
-                                                lineSpacing: value as typeof preferences.reading.lineSpacing,
-                                            })
+                                        value={readingPrefs.lineHeight}
+                                        onValueChange={(value) => 
+                                            handlePreferenceChange(
+                                                () => updateReadingPrefs({
+                                                    lineHeight: value as 'tight' | 'normal' | 'relaxed',
+                                                }),
+                                                'La spaziatura delle righe è stata aggiornata.'
+                                            )
                                         }
                                     >
                                         <SelectTrigger id="line-spacing">
-                                            <SelectValue placeholder="Select line spacing" />
+                                            <SelectValue placeholder="Seleziona spaziatura" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="tight">Tight</SelectItem>
-                                            <SelectItem value="normal">Normal</SelectItem>
-                                            <SelectItem value="relaxed">Relaxed</SelectItem>
+                                            <SelectItem value="tight">Stretta</SelectItem>
+                                            <SelectItem value="normal">Normale</SelectItem>
+                                            <SelectItem value="relaxed">Rilassata</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="font-family">Font Family</Label>
+                                    <Label htmlFor="font-family">Font</Label>
                                     <Select
-                                        value={preferences.reading.fontFamily}
-                                        onValueChange={(value) =>
-                                            handlePreferenceChange('reading', {
-                                                ...preferences.reading,
-                                                fontFamily: value as typeof preferences.reading.fontFamily,
-                                            })
+                                        value={readingPrefs.fontFamily}
+                                        onValueChange={(value) => 
+                                            handlePreferenceChange(
+                                                () => updateReadingPrefs({
+                                                    fontFamily: value,
+                                                }),
+                                                'Il font è stato aggiornato.'
+                                            )
                                         }
                                     >
                                         <SelectTrigger id="font-family">
-                                            <SelectValue placeholder="Select font family" />
+                                            <SelectValue placeholder="Seleziona font" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="inter">Inter</SelectItem>
-                                            <SelectItem value="merriweather">Merriweather</SelectItem>
-                                            <SelectItem value="roboto">Roboto</SelectItem>
-                                            <SelectItem value="openDyslexic">OpenDyslexic</SelectItem>
+                                            <SelectItem value="default">Predefinito</SelectItem>
+                                            <SelectItem value="serif">Serif</SelectItem>
+                                            <SelectItem value="sans-serif">Sans Serif</SelectItem>
+                                            <SelectItem value="monospace">Monospace</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </div> */}
+                                </div>
+                                */}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    {/* Notification Settings */}
-                    {/* <TabsContent value="notifications">
+                    {/* Accessibility Settings - Hidden but keep code */}
+                    {/* <TabsContent value="accessibility">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Notification Settings</CardTitle>
+                                <CardTitle>Accessibilità</CardTitle>
                                 <CardDescription>
-                                    Manage your email notification preferences
+                                    Opzioni per migliorare l'accessibilità dell'interfaccia
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label>New Releases</Label>
+                                        <Label>Riduci animazioni</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            Get notified about new books in your favorite genres
+                                            Riduci le animazioni e le transizioni nell'interfaccia
                                         </p>
                                     </div>
                                     <Switch
-                                        checked={preferences.emailNotifications.newReleases}
+                                        checked={accessibilityPrefs.reduceAnimations}
                                         onCheckedChange={(checked) =>
-                                            handlePreferenceChange('emailNotifications', {
-                                                ...preferences.emailNotifications,
-                                                newReleases: checked,
-                                            })
+                                            handlePreferenceChange(
+                                                () => updateAccessibilityPrefs({
+                                                    reduceAnimations: checked,
+                                                }),
+                                                'Le impostazioni di accessibilità sono state aggiornate.'
+                                            )
                                         }
                                     />
                                 </div>
+
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label>Reading Reminders</Label>
+                                        <Label>Alto contrasto</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            Receive reminders to continue reading your books
+                                            Aumenta il contrasto dei colori per migliore leggibilità
                                         </p>
                                     </div>
                                     <Switch
-                                        checked={preferences.emailNotifications.readingReminders}
+                                        checked={accessibilityPrefs.highContrast}
                                         onCheckedChange={(checked) =>
-                                            handlePreferenceChange('emailNotifications', {
-                                                ...preferences.emailNotifications,
-                                                readingReminders: checked,
-                                            })
+                                            handlePreferenceChange(
+                                                () => updateAccessibilityPrefs({
+                                                    highContrast: checked,
+                                                }),
+                                                'Le impostazioni di accessibilità sono state aggiornate.'
+                                            )
                                         }
                                     />
                                 </div>
+
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label>Book Recommendations</Label>
+                                        <Label>Testo grande</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            Get personalized book recommendations
+                                            Usa un testo più grande in tutta l'applicazione
                                         </p>
                                     </div>
                                     <Switch
-                                        checked={preferences.emailNotifications.recommendations}
+                                        checked={accessibilityPrefs.largeText}
                                         onCheckedChange={(checked) =>
-                                            handlePreferenceChange('emailNotifications', {
-                                                ...preferences.emailNotifications,
-                                                recommendations: checked,
-                                            })
+                                            handlePreferenceChange(
+                                                () => updateAccessibilityPrefs({
+                                                    largeText: checked,
+                                                }),
+                                                'Le impostazioni di accessibilità sono state aggiornate.'
+                                            )
+                                        }
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label>Riduci movimento</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Riduci il movimento degli elementi nell'interfaccia
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        checked={accessibilityPrefs.reducedMotion}
+                                        onCheckedChange={(checked) =>
+                                            handlePreferenceChange(
+                                                () => updateAccessibilityPrefs({
+                                                    reducedMotion: checked,
+                                                }),
+                                                'Le impostazioni di accessibilità sono state aggiornate.'
+                                            )
                                         }
                                     />
                                 </div>
@@ -361,7 +485,7 @@ export default function SettingsPage() {
                     </TabsContent> */}
                 </Tabs>
 
-                {(isLoading || isSaving) && (
+                {isSaving && (
                     <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg flex items-center space-x-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span>Salvataggio delle modifiche...</span>

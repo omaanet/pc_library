@@ -2,11 +2,15 @@
 import * as React from "react";
 import { RefreshCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useUserPreferences } from '@/hooks/use-user-preferences';
+import { 
+    usePreferencesStore, 
+    useReadingPreferences 
+} from '@/stores/preferences-store';
 
 interface OptionsSidebarProps {
     open: boolean;
     onClose: () => void;
+    setTheme?: (theme: string) => void;
 }
 
 export function fontSize(rawSize?: string | number): number {
@@ -19,13 +23,24 @@ export function fontSize(rawSize?: string | number): number {
     return 100;
 }
 
-export default function OptionsSidebar({ open, onClose }: OptionsSidebarProps) {
+export default function OptionsSidebar({ open, onClose, setTheme }: OptionsSidebarProps) {
     // Determine hover background based on current or system theme
-    const { resolvedTheme } = useTheme();
-    const { preferences, updatePreference } = useUserPreferences();
-    const currentFontSize = fontSize(preferences.reading?.fontSize);
-    const effectiveTheme = preferences.theme === 'system' ? resolvedTheme : (preferences.theme || 'light');
+    const { resolvedTheme, theme } = useTheme();
+    const { updateReadingPrefs } = usePreferencesStore();
+    const readingPrefs = useReadingPreferences();
+    const currentFontSize = fontSize(readingPrefs.fontSize);
+    const effectiveTheme = theme === 'system' ? resolvedTheme : (theme || 'light');
     const btnHoverClass = effectiveTheme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200';
+
+    const handleFontSizeChange = (newFontSize: number) => {
+        updateReadingPrefs({ fontSize: newFontSize });
+    };
+
+    const handleThemeChange = (newTheme: string) => {
+        if (setTheme) {
+            setTheme(newTheme);
+        }
+    };
 
     return (
         <div
@@ -48,8 +63,8 @@ export default function OptionsSidebar({ open, onClose }: OptionsSidebarProps) {
                     <span className="block mb-2 font-medium">Tema</span>
                     <select
                         className="w-full border rounded p-2"
-                        value={preferences.theme}
-                        onChange={e => updatePreference('theme', e.target.value as typeof preferences.theme)}
+                        value={theme || 'system'}
+                        onChange={e => handleThemeChange(e.target.value)}
                     >
                         <option value="system">Sistema</option>
                         <option value="light">Chiaro</option>
@@ -78,30 +93,21 @@ export default function OptionsSidebar({ open, onClose }: OptionsSidebarProps) {
                             <button
                                 className={`border rounded w-8 h-8 flex items-center justify-center text-base ${btnHoverClass}`}
                                 onClick={() =>
-                                    updatePreference('reading', {
-                                        ...preferences.reading,
-                                        fontSize: Math.max(currentFontSize - 10, 10),
-                                    })
+                                    handleFontSizeChange(Math.max(currentFontSize - 10, 10))
                                 }
                             >A-</button>
                             <span className="w-10 text-center text-base">{currentFontSize}%</span>
                             <button
                                 className={`border rounded w-8 h-8 flex items-center justify-center text-base ${btnHoverClass}`}
                                 onClick={() =>
-                                    updatePreference('reading', {
-                                        ...preferences.reading,
-                                        fontSize: Math.min(currentFontSize + 10, 400),
-                                    })
+                                    handleFontSizeChange(Math.min(currentFontSize + 10, 400))
                                 }
                             >A+</button>
                         </div>
                         <button
                             className={`border rounded w-8 h-8 flex items-center justify-center ${btnHoverClass}`}
                             onClick={() =>
-                                updatePreference('reading', {
-                                    ...preferences.reading,
-                                    fontSize: 100,
-                                })
+                                handleFontSizeChange(100)
                             }
                             aria-label="Reimposta dimensione carattere"
                         >

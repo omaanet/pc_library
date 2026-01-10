@@ -32,7 +32,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${baseFont.className} ${displayFont.variable}`}>
-                <div className="grain-overlay" aria-hidden="true" />
+                {/* <div className="grain-overlay" aria-hidden="true" /> */}
                 <Providers>
                     <div className="relative min-h-screen flex flex-col">
                         {children}

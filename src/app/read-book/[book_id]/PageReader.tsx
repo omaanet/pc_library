@@ -5,6 +5,10 @@ import { Minimize, ChevronLeft, ChevronRight, Fullscreen } from "lucide-react";
 import { Book } from "@/types";
 import { User } from "@/types";
 import { useLogger } from '@/lib/logging';
+import { 
+    useReaderPreferences, 
+    usePreferencesStore 
+} from '@/stores/preferences-store';
 
 interface PageReaderProps {
     book: Book;
@@ -15,17 +19,22 @@ interface PageReaderProps {
 export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const source = 'PageReader';
     const logger = useLogger(source);
-    // Configuration
+    
+    // Get reader preferences from Zustand store
+    const readerPrefs = useReaderPreferences();
+    const { updateReaderPrefs } = usePreferencesStore();
+    
+    // Configuration - use values from store as defaults
     const CONFIG = {
-        viewMode: "double" as "single" | "double", // 'single' or 'double'
-        zoomLevel: 100, // percentage
+        viewMode: readerPrefs.viewMode || "double" as "single" | "double",
+        zoomLevel: readerPrefs.zoomLevel || 100,
         pageStart: 1,
-        pageGap: 5, // distance between pages in double view mode (px)
-        sidebarCollapsed: true, // whether sidebar starts collapsed (true) or expanded (false)
+        pageGap: 5,
+        sidebarCollapsed: true,
         imagePrefix: undefined,
         sourceCDN: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/bookshelf/${bookId}/pages/page-`,
         imageExt: "-or8.png",
-        preloadBuffer: 4, // Number of pages to preload ahead and behind
+        preloadBuffer: 4,
     };
 
     // References to DOM elements
@@ -35,10 +44,8 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const sidebarOverlayRef = useRef<HTMLDivElement>(null);
     const toggleSidebarBtnRef = useRef<HTMLButtonElement>(null);
 
-    // State variables
+    // State variables - sync with store
     const [currentPage, setCurrentPage] = useState(Math.max(1, CONFIG.pageStart ?? 1));
-    const [viewMode, setViewMode] = useState<"single" | "double">(CONFIG.viewMode);
-    const [zoomLevel, setZoomLevel] = useState(CONFIG.zoomLevel);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [imagesLoaded, setImagesLoaded] = useState<Record<number, string>>({});
     const [imagesFailed, setImagesFailed] = useState<Record<number, boolean>>({});
@@ -53,12 +60,42 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [visiblePages, setVisiblePages] = useState<number[]>([]);
     const pinchInitialDistance = useRef<number | null>(null);
-    const pinchInitialZoom = useRef<number>(CONFIG.zoomLevel);
+    const pinchInitialZoom = useRef<number>(readerPrefs.zoomLevel || 100);
     const lastTapTime = useRef<number>(0);
     const pinchInitialMidpoint = useRef<{ x: number; y: number } | null>(null);
     const pinchInitialTranslate = useRef<{ x: number; y: number } | null>(null);
 
-    // Get total pages from book data
+    // Update store when viewMode changes
+    const handleViewModeChange = useCallback((newMode: 'single' | 'double') => {
+        updateReaderPrefs({ viewMode: newMode });
+        resetTranslation();
+
+        // Adjust current page for double view (ensure we start on odd page)
+        if (newMode === "double" && currentPage % 2 === 0) {
+            setCurrentPage((prev) => Math.max(1, prev - 1));
+        }
+
+        // Add transition effect
+        if (pagesContainerRef.current) {
+            pagesContainerRef.current.style.transition = 'opacity 0.2s ease-in-out';
+            pagesContainerRef.current.style.opacity = '0';
+            setTimeout(() => {
+                if (pagesContainerRef.current) {
+                    pagesContainerRef.current.style.opacity = '1';
+                    setTimeout(() => {
+                        if (pagesContainerRef.current) {
+                            pagesContainerRef.current.style.transition = 'none';
+                        }
+                    }, 220);
+                }
+            }, 20);
+        }
+    }, [updateReaderPrefs, currentPage]);
+
+    // Update store when zoomLevel changes
+    const handleZoomLevelChange = useCallback((newZoom: number) => {
+        updateReaderPrefs({ zoomLevel: newZoom });
+    }, [updateReaderPrefs]);
     const totalPages = book.pagesCount || 10; // Default to 10 pages if not specified
 
     // Format page number with leading zeros based on total pages
@@ -79,7 +116,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const getVisiblePages = () => {
         const visiblePages: number[] = [];
 
-        if (viewMode === "single") {
+        if (readerPrefs.viewMode === "single") {
             visiblePages.push(currentPage);
         } else {
             // Double page view
@@ -233,7 +270,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
 
         // Update page after a small delay to allow for animation
         setTimeout(() => {
-            if (viewMode === "single") {
+            if (readerPrefs.viewMode === "single") {
                 setCurrentPage((prev) => prev - 1);
             } else {
                 // In double page mode, go back by 2 pages
@@ -265,7 +302,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
 
         // Update page after a small delay to allow for animation
         setTimeout(() => {
-            if (viewMode === "single") {
+            if (readerPrefs.viewMode === "single") {
                 setCurrentPage((prev) => prev + 1);
             } else {
                 // In double page mode, advance by 2 pages
@@ -276,15 +313,9 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
 
     // Set view mode (single or double)
     const setViewModeHandler = (mode: "single" | "double") => {
-        if (viewMode === mode) return;
+        if (readerPrefs.viewMode === mode) return;
 
-        setViewMode(mode);
-        resetTranslation();
-
-        // Adjust current page for double view (ensure we start on odd page)
-        if (mode === "double" && currentPage % 2 === 0) {
-            setCurrentPage((prev) => Math.max(1, prev - 1));
-        }
+        handleViewModeChange(mode);
     };
 
     // Reset translation to center
@@ -308,9 +339,8 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             }, 220); // Slightly shorter than animation to ensure it completes
         }
 
-        setZoomLevel(prevZoom => {
-            return Math.max(10, Math.min(300, prevZoom + amount));
-        });
+        const newZoom = Math.max(10, Math.min(300, readerPrefs.zoomLevel + amount));
+        handleZoomLevelChange(newZoom);
     };
 
     // Reset zoom to 100% and recenter with smooth transition
@@ -326,7 +356,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             }, 350);
         }
 
-        setZoomLevel(CONFIG.zoomLevel);
+        handleZoomLevelChange(100);
         setCurrentTranslateX(0);
         setCurrentTranslateY(0);
     };
@@ -390,7 +420,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             const [t1, t2] = [e.touches[0], e.touches[1]];
             const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
             pinchInitialDistance.current = dist;
-            pinchInitialZoom.current = zoomLevel;
+            pinchInitialZoom.current = readerPrefs.zoomLevel;
 
             // Calculate and store initial midpoint and translation for pinch origin
             const initialMidX = (t1.clientX + t2.clientX) / 2;
@@ -445,7 +475,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             const scaleFactor = currentDist / pinchInitialDistance.current;
 
             const newZoomLevel = Math.max(10, Math.min(300, pinchInitialZoom.current * scaleFactor));
-            setZoomLevel(newZoomLevel);
+            handleZoomLevelChange(newZoomLevel);
 
             // Calculate current midpoint
             const currentMidX = (t1.clientX + t2.clientX) / 2;
@@ -617,17 +647,17 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 viewerContainerRef.current.removeEventListener('wheel', handleViewerContainerWheel);
             }
         };
-    }, [isDragging, currentPage, viewMode, zoomLevel]); // Re-run when these values change
+    }, [isDragging, currentPage, readerPrefs.viewMode, readerPrefs.zoomLevel]); // Re-run when these values change
 
     // Load images when page or view mode changes
     useEffect(() => {
         lazyLoadImages();
-    }, [currentPage, viewMode]);
+    }, [currentPage, readerPrefs.viewMode]);
 
     // Apply transform style to container
     const getTransformStyle = () => {
         return {
-            transform: `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0) scale(${zoomLevel / 100})`,
+            transform: `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0) scale(${readerPrefs.zoomLevel / 100})`,
             transformOrigin: 'center center',
             // Transition applied directly in the adjustZoom function when needed
         };
@@ -654,7 +684,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     // Get page info text
     const getPageInfoText = () => {
         const visiblePages = getVisiblePages();
-        return viewMode === 'single'
+        return readerPrefs.viewMode === 'single'
             ? `Pagina ${visiblePages[0]} di ${totalPages}`
             : `Pagine ${visiblePages.join('-')} di ${totalPages}`;
     };
@@ -751,7 +781,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                     <div className="flex justify-center w-full mt-2.5">
                         <div className="grid grid-cols-2 gap-0 w-full">
                             <button
-                                className={`py-3 px-4 flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white border-none rounded-l cursor-pointer transition-colors ${viewMode === 'single' ? 'bg-sky-700' : ''}`}
+                                className={`py-3 px-4 flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white border-none rounded-l cursor-pointer transition-colors ${readerPrefs.viewMode === 'single' ? 'bg-sky-700' : ''}`}
                                 onClick={() => setViewModeHandler('single')}
                                 title="Una pagina"
                             >
@@ -761,7 +791,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                                 </svg>
                             </button>
                             <button
-                                className={`py-3 px-4 flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white border-none rounded-r cursor-pointer transition-colors ${viewMode === 'double' ? 'bg-sky-700' : ''}`}
+                                className={`py-3 px-4 flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white border-none rounded-r cursor-pointer transition-colors ${readerPrefs.viewMode === 'double' ? 'bg-sky-700' : ''}`}
                                 onClick={() => setViewModeHandler('double')}
                                 title="Due pagine"
                             >
@@ -827,7 +857,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                     <div
                         className={`flex h-full justify-center items-center ${isLoading ? 'invisible' : ''}`}
                         style={{
-                            gap: viewMode === 'double' ? `${CONFIG.pageGap}px` : '0'
+                            gap: readerPrefs.viewMode === 'double' ? `${CONFIG.pageGap}px` : '0'
                         }}
                     >
                         {visiblePages.map((pageNum) => (
