@@ -36,8 +36,7 @@ export function RootNav({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
     return (
-        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-center px-4">
-            {/* border-b */}
+        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-center px-4 header-fading-border">
             <div className="container-fluid flex h-16 items-center justify-between mx-auto">
                 {/* Logo and Brand */}
                 <Link href="/" className="flex items-center">
