@@ -54,9 +54,10 @@ export function VolumeControl({
                             value={displayVolume}
                             onChange={e => onVolumeChange(Number(e.target.value))}
                             className="volume-slider-vertical"
+                            aria-label="Adjust volume"
                             style={{
-                                '--volume-percent': `${displayVolume * 100}%`
-                            } as React.CSSProperties}
+                                background: `linear-gradient(to right, #10b981 0%, #10b981 ${displayVolume * 100}%, #374151 ${displayVolume * 100}%, #374151 100%)`
+                            }}
                         />
                     </div>
                 </div>
@@ -67,7 +68,6 @@ export function VolumeControl({
                 appearance: none;
                 width: 60px;
                 height: 12px;
-                background: #374151;
                 border-radius: 2px;
                 outline: none;
                 margin: 0;
@@ -77,15 +77,7 @@ export function VolumeControl({
               }
 
               /* Track fill effect - Horizontal gradient before rotation */
-              .volume-slider-vertical {
-                background: linear-gradient(
-                  to right,
-                  #10b981 0%,
-                  #10b981 var(--volume-percent),
-                  #374151 var(--volume-percent),
-                  #374151 100%
-                );
-              }
+              /* Background is handled via inline style for dynamic updates */
 
               .volume-slider-vertical::-webkit-slider-thumb {
                 -webkit-appearance: none;
