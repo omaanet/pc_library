@@ -39,8 +39,16 @@
         /* Icon Colors Light Mode */
         --gold-main: hsl(46, 80%, 50%);
         --gold-highlight: hsl(46, 92%, 65%);
+        --gold-shadow: #bca04d;
         --text: hsl(0, 0%, 25%);
         --text-quill: hsl(0, 0, 0);
+        --Sparkles-1: hsl(42, 92%, 64%);
+        --Sparkles-2: hsl(187, 79%, 45%);
+
+        --Abstract-Profile-1: hsl(0, 0%, 40%);
+        --Abstract-Profile-Lb: hsl(187, 91%, 60%);
+        --Abstract-Profile-LA: #ff7f50;
+        --Abstract-Profile-Lc: hsl(156, 100%, 40%);
     }
 
     .dark {
@@ -116,6 +124,10 @@
         to {
             stroke-dashoffset: 0;
         }
+    }
+
+    .opacity-8 {
+        opacity: 0.8;
     }
 
     /* Icon Animation: Float */
