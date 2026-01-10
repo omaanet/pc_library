@@ -25,7 +25,7 @@ export function fontSize(rawSize?: string | number): number {
 
 export default function OptionsSidebar({ open, onClose, setTheme }: OptionsSidebarProps) {
     // Determine hover background based on current or system theme
-    const { resolvedTheme, theme } = useTheme();
+    const { resolvedTheme, theme, setTheme: internalSetTheme } = useTheme();
     const { updateReadingPrefs } = usePreferencesStore();
     const readingPrefs = useReadingPreferences();
     const currentFontSize = fontSize(readingPrefs.fontSize);
@@ -37,8 +37,11 @@ export default function OptionsSidebar({ open, onClose, setTheme }: OptionsSideb
     };
 
     const handleThemeChange = (newTheme: string) => {
+        // Use the passed setTheme prop if available, otherwise fall back to internal setTheme
         if (setTheme) {
             setTheme(newTheme);
+        } else {
+            internalSetTheme(newTheme);
         }
     };
 
