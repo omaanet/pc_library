@@ -66,4 +66,14 @@ export const SITE_CONFIG = {
         ['display_order', 'ASC'],
         ['publishing_date', 'DESC']
     ] as const,
+
+    /**
+     * Site metadata for copyright and attribution
+     */
+    METADATA: {
+        AUTHOR: 'Oscar e Paolo Mucchiati',
+        SITE_NAME: 'OMAA.net',
+        SITE_URL: 'https://www.omaa.it',
+        ESTABLISHED_YEAR: 2025,
+    },
 } as const;

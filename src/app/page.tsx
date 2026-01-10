@@ -62,11 +62,28 @@ export default function HomePage() {
             </main>
 
             {/* Footer */}
-            <footer className="w-full  border-t mt-10 py-6 md:py-0">
-                <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row mx-auto">
+            <footer className="w-full border-t mt-10 py-6 md:py-0">
+                <div className="container flex flex-col items-center justify-between gap-3 md:h-24 md:flex-row mx-auto">
                     <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
                         <CopyrightFooter lang="it" detailed />
                     </p>
+                    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" className="AbstractProfile float-anim">
+                        <g transform="translate(0 5.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" vectorEffect="non-scaling-stroke">
+                            {/* Abstract Profile */}
+                            <path d="M30 80 Q 25 50 40 40 Q 50 35 50 20" stroke="var(--Abstract-Profile-1)"></path>
+                            <g strokeWidth="2" stroke="var(--gold-main)">
+                                {/* Sound waves coming from "mouth" area */}
+                                <path d="M55 45 Q 65 45 75 35"></path>
+                                <path d="M55 55 Q 70 55 85 40" opacity="0.6"></path>
+                            </g>
+                            <g transform="translate(0 -2.5)" strokeWidth="0">
+                                {/* Letters floating up */}
+                                <text x="32.5" y="30" fontSize="14" fill="var(--Abstract-Profile-Lb)" opacity="0.675">b</text>
+                                <text x="44.5" y="17.5" fontSize="15.5" fill="var(--Abstract-Profile-LA)" opacity="0.675">A</text>
+                                <text x="64.5" y="21.5" fontSize="14" fill="var(--Abstract-Profile-Lc)" opacity="0.675">c</text>
+                            </g>
+                        </g>
+                    </svg>
                 </div>
             </footer>
 

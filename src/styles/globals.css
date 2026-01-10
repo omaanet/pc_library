@@ -37,8 +37,10 @@
         --radius: 1.00rem;
 
         /* Icon Colors Light Mode */
-        --gold: #b8860b;
-        --text: #1a1a1a;
+        --gold-main: hsl(46, 80%, 50%);
+        --gold-highlight: hsl(46, 92%, 65%);
+        --text: hsl(0, 0%, 25%);
+        --text-quill: hsl(0, 0, 0);
     }
 
     .dark {
@@ -74,37 +76,20 @@
         --theme-color-title: hsl(205, 84%, 27%);
 
         /* Icon Colors Dark Mode */
-        --gold: #d4af37;
-        --text: #e0e0e0;
-    }
-}
+        --gold-main: hsl(46, 59%, 50%);
+        --gold-highlight: hsl(46, 72%, 65%);
+        --gold-shadow: #6f5b1c;
+        --text: hsl(0, 0%, 88%);
+        --text-quill: hsl(0, 0%, 88%);
+        --Sparkles-1: hsl(42, 92%, 64%);
+        --Sparkles-2: hsl(187, 79%, 45%);
 
-@layer utilities {
-    /* Icon Global Animation: Draw Lines */
-    @keyframes draw {
-        to {
-            stroke-dashoffset: 0;
-        }
-    }
-
-    /* Icon Global Animation: Glow */
-    .glow-anim {
-        animation: glowPulse 2s infinite alternate;
+        --Abstract-Profile-1: hsl(0, 0%, 67%);
+        --Abstract-Profile-Lb: hsl(187, 91%, 70%);
+        --Abstract-Profile-LA: #ff7f50;
+        --Abstract-Profile-Lc: hsl(156, 100%, 50%);
     }
 
-    @keyframes glowPulse {
-        from {
-            stroke: var(--text);
-            filter: drop-shadow(0 0 0 transparent);
-        }
-        to {
-            stroke: var(--gold);
-            filter: drop-shadow(0 0 5px var(--gold));
-        }
-    }
-}
-
-@layer base {
     * {
         @apply border-border;
     }
@@ -116,11 +101,59 @@
     html {
         scroll-behavior: smooth;
     }
-    
+
     @media (prefers-reduced-motion: reduce) {
         html {
             scroll-behavior: auto;
         }
+    }
+}
+
+@layer utilities {
+
+    /* Icon Global Animation: Draw Lines */
+    @keyframes draw {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    /* Icon Animation: Float */
+    .float-anim {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    /* Icon Global Animation: Glow */
+    .glow-anim {
+        animation: glowPulse 2s infinite alternate;
+    }
+
+    @keyframes glowPulse {
+        from {
+            stroke: var(--gold-highlight);
+            filter: drop-shadow(0 0 0 transparent);
+        }
+
+        to {
+            stroke: var(--gold-main);
+            filter: drop-shadow(0 0 5px var(--gold-highlight));
+        }
+    }
+
+    .AbstractProfile {
+        height: 5.875rem;
     }
 }
 

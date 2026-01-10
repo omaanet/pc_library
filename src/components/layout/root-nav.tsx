@@ -36,11 +36,22 @@ export function RootNav({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-center px-4">
+        <header className="sticky top-0 z-50 w-full border2-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-center px-4">
             <div className="container-fluid flex h-16 items-center justify-between mx-auto">
                 {/* Logo and Brand */}
                 <Link href="/" className="flex items-center">
-                    <Library className="h-6 w-6" />
+                    {/* <Library className="h-6 w-6" /> */}
+                    <svg width="55" height="65" viewBox="0 0 80 110" fill="none" stroke="currentColor" className="mt-3">
+                        <g transform="translate(-20.5 -5.5)" strokeWidth="4" shapeRendering="geometricPrecision" vectorEffect="non-scaling-stroke">
+                            {/* Feather Quill */}
+                            <path d="M20.5 90.5 C 20 90, 40 50, 80 10 C 80 10, 60 40, 50 60" stroke="var(--text-quill)" strokeLinecap="round" strokeLinejoin="round"/>
+                            {/* The Ink turning into Wave */}
+                            <path d="M20.5 90.5 C 25 90, 30 95, 35 90 S 45 85, 50 90 S 60 95, 65 90" stroke="var(--gold-main)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
+                                <animate attributeName="d" values="M20 90.5 C 25 90, 30 95, 35 90 S 45 85, 50 90 S 60 95, 65 90; M20 90.5 C 25 88, 30 92, 35 90 S 45 88, 50 90 S 60 92, 65 90; M20 90.5 C 25 90, 30 95, 35 90 S 45 85, 50 90 S 60 95, 65 90" 
+                                    dur="2s" repeatCount="indefinite" />
+                            </path>
+                        </g>
+                    </svg>
                 </Link>
 
                 {/* Desktop Navigation */}

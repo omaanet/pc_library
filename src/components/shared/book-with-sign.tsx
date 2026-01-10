@@ -29,59 +29,72 @@ export function BookWithSign({
     isPaused = false,
     ...props
 }: BookWithSignProps) {
-    return (
-        <>
-            <style jsx>{`
-        .draw-path {
-          stroke-dasharray: 100;
-          stroke-dashoffset: var(--draw-offset, 100);
-          animation: draw var(--draw-duration, 3s) ease-in-out var(--draw-iters, infinite) alternate;
-          animation-play-state: var(--play-state, running);
-          stroke: var(--text);
-          stroke-width: 1.5;
-          fill: none;
-          will-change: stroke-dashoffset;
-        }
-        
-        .glow-anim {
-          animation-duration: var(--glow-duration, 2s);
-          animation-iteration-count: var(--glow-iters, infinite);
-          animation-play-state: var(--play-state, running);
-          stroke-width: 1.15;
-          fill: none;
-        }
+    const playState = isPaused ? 'paused' : 'running';
 
-        @media (prefers-reduced-motion: reduce) {
-          .draw-path, .glow-anim {
-            animation: none !important;
-            stroke-dashoffset: 0 !important;
-          }
-        }
-      `}</style>
-            <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                className={cn("animatedBookWithSign", className)}
-                xmlns="http://www.w3.org/2000/svg"
-                style={{
-                    '--draw-offset': drawOffset,
-                    '--draw-iters': drawIterations,
-                    '--draw-duration': drawDuration,
-                    '--glow-iters': glowIterations,
-                    '--glow-duration': glowDuration,
-                    '--play-state': isPaused ? 'paused' : 'running',
-                } as React.CSSProperties}
-                {...props}
-            >
+    const drawPathStyle: React.CSSProperties = {
+        strokeDasharray: 100,
+        strokeDashoffset: drawOffset,
+        animation: `draw ${drawDuration} ease-in-out ${drawIterations} alternate`,
+        animationPlayState: playState,
+        stroke: 'var(--text)',
+        strokeWidth: 1.125,
+        fill: 'none',
+        willChange: 'stroke-dashoffset',
+    };
+
+    const glowAnimStyle: React.CSSProperties = {
+        animation: `glowPulse ${glowDuration} ease-in-out ${glowIterations} alternate`,
+        animationPlayState: playState,
+        strokeWidth: 0.925,
+        fill: 'none',
+    };
+
+    return (
+        <svg
+            width="24"
+            height="24"
+            viewBox="3 0 24 24"
+            fill="none" stroke="currentColor"
+            className={cn("animatedBookWithSign", className)}
+            xmlns="http://www.w3.org/2000/svg"
+            {...props}
+        >
+            <style>
+                {`
+                @media (prefers-reduced-motion: reduce) {
+                    .draw-path, .glow-anim {
+                        animation: none !important;
+                        stroke-dashoffset: 0 !important;
+                    }
+                }
+                `}
+            </style>
+            <g strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" vectorEffect="non-scaling-stroke">
                 {/* Book cover */}
-                <path className="draw-path" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path className="draw-path" d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" style={{ animationDelay: drawDelay }} />
+                <path
+                    className="draw-path"
+                    d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
+                    style={drawPathStyle}
+                />
+                <path
+                    className="draw-path"
+                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                    style={{ ...drawPathStyle, animationDelay: drawDelay }}
+                />
                 {/* Sound waves coming out */}
-                <path className="glow-anim" d="M9 8c2 0 2 4 4 4" strokeLinecap="round" />
-                <path className="glow-anim" d="M9 6c4 0 4 8 8 8" strokeLinecap="round" style={{ animationDelay: glowDelay }} />
-            </svg>
-        </>
+                <path
+                    className="glow-anim"
+                    d="M9 8c2 0 2 4 4 4"
+                    strokeLinecap="round"
+                    style={glowAnimStyle}
+                />
+                <path
+                    className="glow-anim"
+                    d="M9 6c4 0 4 8 8 8"
+                    strokeLinecap="round"
+                    style={{ ...glowAnimStyle, animationDelay: glowDelay }}
+                />
+            </g>
+        </svg>
     );
 }
