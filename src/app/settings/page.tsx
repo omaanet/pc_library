@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from 'next-themes';
-import { 
+import {
     useReaderPreferences,
     useSetViewMode,
     useSetZoomLevel
@@ -42,11 +42,11 @@ export default function SettingsPage() {
     const { state: { user, isAuthenticated } } = useAuth();
     const router = useRouter();
     const { setTheme, theme } = useTheme();
-    
+
     // Reader preferences store actions
     const setViewMode = useSetViewMode();
     const setZoomLevel = useSetZoomLevel();
-    
+
     // Reader preferences store values
     const readerPrefs = useReaderPreferences();
 
@@ -165,7 +165,7 @@ export default function SettingsPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                
+
                                 {/* Hidden but keep code for future use
                                 <div className="space-y-2">
                                     <Label htmlFor="view-mode">Vista predefinita</Label>
@@ -229,7 +229,7 @@ export default function SettingsPage() {
                                     <Label htmlFor="reader-view-mode">Modalità di visualizzazione</Label>
                                     <Select
                                         value={readerPrefs.viewMode}
-                                        onValueChange={(value) => 
+                                        onValueChange={(value) =>
                                             handlePreferenceChange(
                                                 () => setViewMode(value as 'single' | 'double'),
                                                 'La modalità di visualizzazione è stata aggiornata.'
@@ -264,9 +264,9 @@ export default function SettingsPage() {
                                         className="w-full"
                                     />
                                     <div className="relative flex w-full text-xs text-muted-foreground">
-                                        <span className="absolute left-0 -translate-x-1/2">10%</span>
-                                        <span className="absolute left-[31.03%] -translate-x-1/2">100%</span>
-                                        <span className="absolute right-0 translate-x-1/2">300%</span>
+                                        <span className="absolute left-0">10%</span>
+                                        <span className="absolute left-[31.65%] -translate-x-1/2">100%</span>
+                                        <span className="absolute right-0">300%</span>
                                     </div>
                                 </div>
 
