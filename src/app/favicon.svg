@@ -1,7 +1,0 @@
-<svg viewBox="0 0 68 93" fill="none">
-	<rect width="100%" height="100%" fill="#141419"/>
-	<g transform="translate(-15.5 -5.5)" stroke-width="2.725" shape-rendering="geometricPrecision" vector-effect="non-scaling-stroke">
-		<path d="M20.5 91.25 C 25 90, 30 95, 35 90 S 45 85, 50 90 S 60 95, 65 90" stroke="#E6B61A" stroke-width="2.125" stroke-linecap="round" stroke-linejoin="round" />
-		<path d="M20.5 90.5 C 20 90, 40 50, 80 10 C 80 10, 60 40, 50 60" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-	</g>
-</svg>
