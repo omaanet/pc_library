@@ -358,7 +358,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             }, 350);
         }
 
-        handleZoomLevelChange(100 * 100);
+        handleZoomLevelChange(100);
         setCurrentTranslateX(0);
         setCurrentTranslateY(0);
     };
@@ -422,7 +422,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             const [t1, t2] = [e.touches[0], e.touches[1]];
             const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
             pinchInitialDistance.current = dist;
-            pinchInitialZoom.current = readerPrefs.zoomLevel;
+            pinchInitialZoom.current = (readerPrefs.zoomLevel || 1.0) * 100;
 
             // Calculate and store initial midpoint and translation for pinch origin
             const initialMidX = (t1.clientX + t2.clientX) / 2;
@@ -845,6 +845,9 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                             </button>
                         </div>
                     </div>
+                    <div className="flex justify-center w-full mt-2 text-lg font-semibold text-gray-800">
+                        {Math.round((readerPrefs.zoomLevel || 1.0) * 100)}%
+                    </div>
                 </div>
             </div>
 
@@ -857,9 +860,11 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 >
                     {/* Render Pages */}
                     <div
+                        ref={pagesContainerRef}
                         className={`flex h-full justify-center items-center ${isLoading ? 'invisible' : ''}`}
                         style={{
-                            gap: readerPrefs.viewMode === 'double' ? `${CONFIG.pageGap}px` : '0'
+                            gap: readerPrefs.viewMode === 'double' ? `${CONFIG.pageGap}px` : '0',
+                            ...getTransformStyle()
                         }}
                     >
                         {visiblePages.map((pageNum) => (
