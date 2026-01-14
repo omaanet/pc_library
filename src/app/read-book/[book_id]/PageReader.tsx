@@ -6,8 +6,9 @@ import { Book } from "@/types";
 import { User } from "@/types";
 import { useLogger } from '@/lib/logging';
 import { 
-    useReaderPreferences, 
-    usePreferencesStore 
+    useReaderPreferences,
+    useSetViewMode,
+    useSetZoomLevel
 } from '@/stores/preferences-store';
 
 interface PageReaderProps {
@@ -22,12 +23,13 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     
     // Get reader preferences from Zustand store
     const readerPrefs = useReaderPreferences();
-    const { updateReaderPrefs } = usePreferencesStore();
+    const setViewMode = useSetViewMode();
+    const setZoomLevel = useSetZoomLevel();
     
     // Configuration - use values from store as defaults
     const CONFIG = {
         viewMode: readerPrefs.viewMode || "double" as "single" | "double",
-        zoomLevel: readerPrefs.zoomLevel || 100,
+        zoomLevel: (readerPrefs.zoomLevel || 1.0) * 100,
         pageStart: 1,
         pageGap: 5,
         sidebarCollapsed: true,
@@ -60,14 +62,14 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [visiblePages, setVisiblePages] = useState<number[]>([]);
     const pinchInitialDistance = useRef<number | null>(null);
-    const pinchInitialZoom = useRef<number>(readerPrefs.zoomLevel || 100);
+    const pinchInitialZoom = useRef<number>((readerPrefs.zoomLevel || 1.0) * 100);
     const lastTapTime = useRef<number>(0);
     const pinchInitialMidpoint = useRef<{ x: number; y: number } | null>(null);
     const pinchInitialTranslate = useRef<{ x: number; y: number } | null>(null);
 
     // Update store when viewMode changes
     const handleViewModeChange = useCallback((newMode: 'single' | 'double') => {
-        updateReaderPrefs({ viewMode: newMode });
+        setViewMode(newMode);
         resetTranslation();
 
         // Adjust current page for double view (ensure we start on odd page)
@@ -90,12 +92,12 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 }
             }, 20);
         }
-    }, [updateReaderPrefs, currentPage]);
+    }, [setViewMode, currentPage]);
 
     // Update store when zoomLevel changes
     const handleZoomLevelChange = useCallback((newZoom: number) => {
-        updateReaderPrefs({ zoomLevel: newZoom });
-    }, [updateReaderPrefs]);
+        setZoomLevel(newZoom / 100);
+    }, [setZoomLevel]);
     const totalPages = book.pagesCount || 10; // Default to 10 pages if not specified
 
     // Format page number with leading zeros based on total pages
@@ -339,7 +341,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             }, 220); // Slightly shorter than animation to ensure it completes
         }
 
-        const newZoom = Math.max(10, Math.min(300, readerPrefs.zoomLevel + amount));
+        const newZoom = Math.max(10, Math.min(300, (readerPrefs.zoomLevel || 1.0) * 100 + amount));
         handleZoomLevelChange(newZoom);
     };
 
@@ -356,7 +358,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             }, 350);
         }
 
-        handleZoomLevelChange(100);
+        handleZoomLevelChange(100 * 100);
         setCurrentTranslateX(0);
         setCurrentTranslateY(0);
     };
@@ -657,7 +659,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     // Apply transform style to container
     const getTransformStyle = () => {
         return {
-            transform: `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0) scale(${readerPrefs.zoomLevel / 100})`,
+            transform: `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0) scale(${readerPrefs.zoomLevel})`,
             transformOrigin: 'center center',
             // Transition applied directly in the adjustZoom function when needed
         };

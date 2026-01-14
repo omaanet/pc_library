@@ -4,12 +4,9 @@ import * as React from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from 'next-themes';
 import { 
-    usePreferencesStore, 
-    useViewMode, 
-    useLanguage, 
-    useReadingPreferences,
     useReaderPreferences,
-    useAccessibilityPreferences 
+    useSetViewMode,
+    useSetZoomLevel
 } from '@/stores/preferences-store';
 import { RootNav } from '@/components/layout/root-nav';
 import { useRouter } from 'next/navigation';
@@ -39,7 +36,6 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
-import { fontSize } from '@/app/read-book/[book_id]/OptionsSidebar';
 import { CopyrightFooter } from '@/components/shared/copyright-footer';
 
 export default function SettingsPage() {
@@ -47,22 +43,12 @@ export default function SettingsPage() {
     const router = useRouter();
     const { setTheme, theme } = useTheme();
     
-    // Zustand store actions
-    const {
-        setViewMode,
-        setLanguage,
-        updateReadingPrefs,
-        updateReaderPrefs,
-        updateAccessibilityPrefs,
-        resetPreferences,
-    } = usePreferencesStore();
+    // Reader preferences store actions
+    const setViewMode = useSetViewMode();
+    const setZoomLevel = useSetZoomLevel();
     
-    // Zustand store values
-    const viewMode = useViewMode();
-    const language = useLanguage();
-    const readingPrefs = useReadingPreferences();
+    // Reader preferences store values
     const readerPrefs = useReaderPreferences();
-    const accessibilityPrefs = useAccessibilityPreferences();
 
     const [isSaving, setIsSaving] = React.useState(false);
 
@@ -95,8 +81,6 @@ export default function SettingsPage() {
         }
     };
 
-    const currentFontSize = fontSize(readingPrefs.fontSize);
-    const btnHoverClass = theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200';
 
     if (!user) {
         return (
@@ -247,9 +231,7 @@ export default function SettingsPage() {
                                         value={readerPrefs.viewMode}
                                         onValueChange={(value) => 
                                             handlePreferenceChange(
-                                                () => updateReaderPrefs({
-                                                    viewMode: value as 'single' | 'double',
-                                                }),
+                                                () => setViewMode(value as 'single' | 'double'),
                                                 'La modalità di visualizzazione è stata aggiornata.'
                                             )
                                         }
@@ -266,11 +248,11 @@ export default function SettingsPage() {
 
                                 {/* Reader Zoom Level */}
                                 <div className="space-y-2">
-                                    <Label htmlFor="reader-zoom">Livello di zoom: {readerPrefs.zoomLevel}%</Label>
+                                    <Label htmlFor="reader-zoom">Livello di zoom: {Math.round(readerPrefs.zoomLevel * 100)}%</Label>
                                     <Slider
-                                        value={[readerPrefs.zoomLevel]}
+                                        value={[readerPrefs.zoomLevel * 100]}
                                         onValueChange={(value) => {
-                                            updateReaderPrefs({ zoomLevel: value[0] });
+                                            setZoomLevel(value[0] / 100);
                                             toast({
                                                 title: 'Preferenze aggiornate',
                                                 description: 'Il livello di zoom è stato aggiornato.',
@@ -288,201 +270,10 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
 
-                                {/* Hidden reading preferences for future use
-                                <div className="space-y-2">
-                                    <Label htmlFor="font-size">Dimensione carattere</Label>
-                                    <div className="flex items-center justify-start space-x-7">
-                                        <div className="flex items-center space-x-4">
-                                            <button
-                                                className={`border rounded w-8 h-8 flex items-center justify-center text-base ${btnHoverClass}`}
-                                                onClick={() =>
-                                                    handlePreferenceChange(
-                                                        () => updateReadingPrefs({
-                                                            fontSize: Math.max(currentFontSize - 10, 10),
-                                                        }),
-                                                        'La dimensione del carattere è stata aggiornata.'
-                                                    )
-                                                }
-                                            >
-                                                A-
-                                            </button>
-                                            <span className="w-10 text-center text-base">{currentFontSize}%</span>
-                                            <button
-                                                className={`border rounded w-8 h-8 flex items-center justify-center text-base ${btnHoverClass}`}
-                                                onClick={() =>
-                                                    handlePreferenceChange(
-                                                        () => updateReadingPrefs({
-                                                            fontSize: Math.min(currentFontSize + 10, 400),
-                                                        }),
-                                                        'La dimensione del carattere è stata aggiornata.'
-                                                    )
-                                                }
-                                            >
-                                                A+
-                                            </button>
-                                        </div>
-                                        <button
-                                            className={`border rounded w-8 h-8 flex items-center justify-center ${btnHoverClass}`}
-                                            onClick={() =>
-                                                handlePreferenceChange(
-                                                    () => updateReadingPrefs({
-                                                        fontSize: 100,
-                                                    }),
-                                                    'La dimensione del carattere è stata reimpostata.'
-                                                )
-                                            }
-                                            aria-label="Reimposta dimensione carattere"
-                                        >
-                                            <RefreshCw className="text-base h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="line-spacing">Spaziatura righe</Label>
-                                    <Select
-                                        value={readingPrefs.lineHeight}
-                                        onValueChange={(value) => 
-                                            handlePreferenceChange(
-                                                () => updateReadingPrefs({
-                                                    lineHeight: value as 'tight' | 'normal' | 'relaxed',
-                                                }),
-                                                'La spaziatura delle righe è stata aggiornata.'
-                                            )
-                                        }
-                                    >
-                                        <SelectTrigger id="line-spacing">
-                                            <SelectValue placeholder="Seleziona spaziatura" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="tight">Stretta</SelectItem>
-                                            <SelectItem value="normal">Normale</SelectItem>
-                                            <SelectItem value="relaxed">Rilassata</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="font-family">Font</Label>
-                                    <Select
-                                        value={readingPrefs.fontFamily}
-                                        onValueChange={(value) => 
-                                            handlePreferenceChange(
-                                                () => updateReadingPrefs({
-                                                    fontFamily: value,
-                                                }),
-                                                'Il font è stato aggiornato.'
-                                            )
-                                        }
-                                    >
-                                        <SelectTrigger id="font-family">
-                                            <SelectValue placeholder="Seleziona font" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="default">Predefinito</SelectItem>
-                                            <SelectItem value="serif">Serif</SelectItem>
-                                            <SelectItem value="sans-serif">Sans Serif</SelectItem>
-                                            <SelectItem value="monospace">Monospace</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                */}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    {/* Accessibility Settings - Hidden but keep code */}
-                    {/* <TabsContent value="accessibility">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Accessibilità</CardTitle>
-                                <CardDescription>
-                                    Opzioni per migliorare l'accessibilità dell'interfaccia
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label>Riduci animazioni</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Riduci le animazioni e le transizioni nell'interfaccia
-                                        </p>
-                                    </div>
-                                    <Switch
-                                        checked={accessibilityPrefs.reduceAnimations}
-                                        onCheckedChange={(checked) =>
-                                            handlePreferenceChange(
-                                                () => updateAccessibilityPrefs({
-                                                    reduceAnimations: checked,
-                                                }),
-                                                'Le impostazioni di accessibilità sono state aggiornate.'
-                                            )
-                                        }
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label>Alto contrasto</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Aumenta il contrasto dei colori per migliore leggibilità
-                                        </p>
-                                    </div>
-                                    <Switch
-                                        checked={accessibilityPrefs.highContrast}
-                                        onCheckedChange={(checked) =>
-                                            handlePreferenceChange(
-                                                () => updateAccessibilityPrefs({
-                                                    highContrast: checked,
-                                                }),
-                                                'Le impostazioni di accessibilità sono state aggiornate.'
-                                            )
-                                        }
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label>Testo grande</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Usa un testo più grande in tutta l'applicazione
-                                        </p>
-                                    </div>
-                                    <Switch
-                                        checked={accessibilityPrefs.largeText}
-                                        onCheckedChange={(checked) =>
-                                            handlePreferenceChange(
-                                                () => updateAccessibilityPrefs({
-                                                    largeText: checked,
-                                                }),
-                                                'Le impostazioni di accessibilità sono state aggiornate.'
-                                            )
-                                        }
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label>Riduci movimento</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Riduci il movimento degli elementi nell'interfaccia
-                                        </p>
-                                    </div>
-                                    <Switch
-                                        checked={accessibilityPrefs.reducedMotion}
-                                        onCheckedChange={(checked) =>
-                                            handlePreferenceChange(
-                                                () => updateAccessibilityPrefs({
-                                                    reducedMotion: checked,
-                                                }),
-                                                'Le impostazioni di accessibilità sono state aggiornate.'
-                                            )
-                                        }
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent> */}
                 </Tabs>
 
                 {isSaving && (
