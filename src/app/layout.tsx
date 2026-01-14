@@ -13,6 +13,16 @@ export const metadata: Metadata = {
     description: 'Sito web dedicato alla lettura a scopo benefico',
     keywords: ['racconti', 'audioracconti'],
     authors: [{ name: 'Piero Carbonetti' }],
+    icons: {
+        icon: [
+            { url: '/favicon.svg', type: 'image/svg+xml' },
+            { url: '/favicon.ico', sizes: 'any' },
+        ],
+        apple: [
+            { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+        ],
+    },
+    manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {

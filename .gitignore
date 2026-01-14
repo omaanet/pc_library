@@ -63,7 +63,6 @@ scripts/check-env.js
 
 AUDIT.md
 CLAUDE.md
-favicon.svg
-logo.svg
-.windsurf
 .claude
+# .windsurf
+.windsurf/plans
