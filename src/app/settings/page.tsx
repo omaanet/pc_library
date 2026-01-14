@@ -258,15 +258,15 @@ export default function SettingsPage() {
                                                 description: 'Il livello di zoom è stato aggiornato.',
                                             });
                                         }}
-                                        min={50}
-                                        max={200}
+                                        min={10}
+                                        max={300}
                                         step={10}
                                         className="w-full"
                                     />
-                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                        <span>50%</span>
-                                        <span>100%</span>
-                                        <span>200%</span>
+                                    <div className="relative flex w-full text-xs text-muted-foreground">
+                                        <span className="absolute left-0 -translate-x-1/2">10%</span>
+                                        <span className="absolute left-[31.03%] -translate-x-1/2">100%</span>
+                                        <span className="absolute right-0 translate-x-1/2">300%</span>
                                     </div>
                                 </div>
 
