@@ -6,6 +6,7 @@ import { validateObject } from '@/lib/validation';
 import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
 import { requireAdmin } from '@/lib/admin-auth';
+import { withCSRFProtection } from '@/lib/csrf-middleware';
 
 /**
  * GET /api/books
@@ -86,7 +87,7 @@ export async function GET(request: Request) {
     }
 }
 
-export async function POST(request: Request) {
+export const POST = withCSRFProtection(async function(request: Request) {
     try {
         // Require admin authorization
         await requireAdmin();
@@ -249,4 +250,4 @@ export async function POST(request: Request) {
         console.error('API Error creating book:', error);
         return handleApiError(error, 'Failed to create book', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-}
+});

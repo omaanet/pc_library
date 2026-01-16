@@ -1,6 +1,7 @@
 // src/app/api/user/preferences/route.ts
 import { NextResponse } from 'next/server';
 import { handleApiError, HttpStatus } from '@/lib/api-error-handler';
+import { withCSRFProtection } from '@/lib/csrf-middleware';
 
 // Define default preferences directly
 const defaultUserPreferences = {
@@ -22,7 +23,7 @@ export async function GET() {
     }
 }
 
-export async function PATCH(request: Request) {
+export const PATCH = withCSRFProtection(async function(request: Request) {
     try {
         const body = await request.json();
 
@@ -39,4 +40,4 @@ export async function PATCH(request: Request) {
         console.error('Error updating user preferences:', error);
         return handleApiError(error, 'Failed to update user preferences', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-}
+});

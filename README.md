@@ -87,8 +87,10 @@ NEXT_PUBLIC_APP_URL=http://localhost:3005
 PASSWORD_SALT=your-random-salt-string
 
 # Database
-DATABASE_URL=postgresql://user:password@host:port/database?sslmode=require
+DATABASE_URL=postgresql://user:password@host-pooler:port/database?sslmode=require
 ```
+
+**Note**: The DATABASE_URL should use Neon's pooled endpoint (contains `-pooler`) for optimal performance. Connection pooling enables up to 10,000 concurrent connections.
 
 #### Environment Variables Explained
 
@@ -345,6 +347,18 @@ Ensure all environment variables are set in your production environment, particu
 - Return consistent response formats
 - Handle errors gracefully
 - Use appropriate HTTP status codes
+
+## 🚀 Performance
+
+### Database Connection Pooling
+- Uses Neon's connection pooling via the `-pooler` endpoint
+- Supports up to 10,000 concurrent connections
+- Automatically enabled when DATABASE_URL contains `-pooler`
+
+### Debugging Mode
+- Database query debugging is enabled only in development
+- Production environments use the raw Neon client for optimal performance
+- Check console logs for connection pooling status on startup
 
 ## 🐛 Troubleshooting
 

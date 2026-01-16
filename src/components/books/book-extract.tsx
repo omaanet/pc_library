@@ -1,4 +1,4 @@
-import DOMPurify from 'dompurify';
+import { sanitizePlainText } from '@/lib/sanitization';
 
 interface BookExtractProps {
     extract: string | undefined;
@@ -7,9 +7,8 @@ interface BookExtractProps {
 export function BookExtract({ extract }: BookExtractProps) {
     if (!extract) return null;
 
-    extract = extract.replace(/\r/g, "");
-    extract = extract.replace(/\n/g, "<br/>");
-    const sanitizedExtract = DOMPurify.sanitize(extract);
+    // Sanitize the extract content using centralized utility
+    const sanitizedExtract = sanitizePlainText(extract);
 
     return (
         <div className="flex flex-col bg-muted/40 rounded px-2 sm:px-4 py-2 sm:py-4">

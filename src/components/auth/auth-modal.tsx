@@ -13,7 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import type { LoginCredentials, RegisterCredentials, RegisterResponse } from '@/types/context';
-import { USE_NEW_AUTH_FLOW } from '@/config/auth-config';
 
 interface AuthModalProps {
     open: boolean;
@@ -33,7 +32,6 @@ export function AuthModal({
     // Login form state
     const [loginData, setLoginData] = React.useState<LoginCredentials>({
         email: '',
-        password: '',
     });
 
     // Register form state
@@ -52,7 +50,7 @@ export function AuthModal({
     // Reset state when modal closes
     React.useEffect(() => {
         if (!open) {
-            setLoginData({ email: '', password: '' });
+            setLoginData({ email: '' });
             setRegisterData({ email: '', fullName: '' });
             setMessage(null);
             setRedirectCountdown(null);
@@ -97,12 +95,8 @@ export function AuthModal({
         setMessage(null);
 
         try {
-            // If using new auth flow, we only need email
-            if (USE_NEW_AUTH_FLOW) {
-                await login({ email: loginData.email });
-            } else {
-                await login(loginData);
-            }
+            await login({ email: loginData.email });
+            // Silent login - just close the modal without any success message
             onOpenChange(false);
         } catch (error_catched) {
             setMessage({ text: error_catched instanceof Error ? error_catched.message : 'Accesso fallito', type: 'error', tab: 'login' });
@@ -116,19 +110,11 @@ export function AuthModal({
         try {
             const response = await register(registerData);
 
-            // Handle different behavior for new auth flow
-            if (USE_NEW_AUTH_FLOW && response.redirectAfterSeconds) {
-                // For new auth flow, start countdown for redirection
+            // Start countdown for redirection (passwordless flow)
+            if (response.redirectAfterSeconds) {
                 setRedirectCountdown(response.redirectAfterSeconds);
                 setMessage({
                     text: 'Registrazione effettuata con successo! Sarai reindirizzato alla home page.',
-                    type: 'success',
-                    tab: 'register'
-                });
-            } else {
-                // For old auth flow, show standard success message
-                setMessage({
-                    text: 'Registrazione effettuata con successo! Controlla la tua email per attivare il tuo account.',
                     type: 'success',
                     tab: 'register'
                 });
@@ -141,7 +127,7 @@ export function AuthModal({
     let dialogTitle: string, dialogDescription: string;
     if (activeTab === 'login') {
         dialogTitle = "Accedi a Racconti in Voce e Caratteri";
-        dialogDescription = "Inserisci la tua email e password per accedere al tuo account";
+        dialogDescription = "Inserisci la tua email per accedere al tuo account";
     } else {
         dialogTitle = "Crea un Account";
         dialogDescription = "Registrati per accedere all'esperienza completa";
@@ -191,21 +177,6 @@ export function AuthModal({
                                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                                 />
                             </div>
-                            {/* Only show password field for old auth flow */}
-                            {!USE_NEW_AUTH_FLOW && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="login-password">Password</Label>
-                                    <Input
-                                        id="login-password"
-                                        type="password"
-                                        autoComplete="current-password"
-                                        required
-                                        disabled={isLoading}
-                                        value={loginData.password}
-                                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                                    />
-                                </div>
-                            )}
                             <Button type="submit" className="w-full" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Accedi

@@ -10,6 +10,9 @@ export type { BookQueryOptions, PaginatedResult } from './types';
 // Export utilities
 export { getFirstRow, extractRows } from './utils';
 
+// Export transaction utilities
+export { beginTransaction, withTransaction, executeTransactionQueries } from './transaction';
+
 // Export book queries
 export {
     getAllBooksOptimized,

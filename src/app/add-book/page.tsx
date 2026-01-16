@@ -219,8 +219,8 @@ export default function AddBookPage() {
 
     return (
         <div className="container mx-auto p-10">
-            <div className="mb-8 flex justify-between items-center">
-                <h1 className="text-3xl font-bold tracking-tight select-none">Book Management</h1>
+            <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold tracking-tight">Book Management</h1>
                 <Button asChild variant="outline">
                     <Link href="/" className="select-none">
                         Go Back to Home
@@ -232,7 +232,7 @@ export default function AddBookPage() {
                 Add, edit, and manage books in the library.
             </p>
 
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-8 space-y-4">
                 <TabsList className="relative">
                     {/* Group 1: Main Tabs */}
                     <div className="inline-flex items-center rounded-md bg-muted p-1">

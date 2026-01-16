@@ -9,7 +9,12 @@
     "start": "next start -p 3006",
     "lint": "next lint",
     "check-env": "node scripts/check-env.js",
-    "devENV": "node -r ./scripts/check-env.js ./node_modules/.bin/next dev --turbo -p 3005"
+    "devENV": "node -r ./scripts/check-env.js ./node_modules/.bin/next dev --turbo -p 3005",
+    "knip:json": "knip --reporter json > reports/knip.json || exit 0",
+    "knip:md": "knip --reporter markdown > reports/knip.md || exit 0",
+    "knip:compact": "knip --reporter compact || exit 0",
+    "knip:all": "pnpm run knip:json && pnpm run knip:md && pnpm run knip:compact",
+    "knip:timestamped": "node scripts/generate-knip-reports.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
@@ -48,6 +53,7 @@
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.65.0",
+    "recharts": "^3.6.0",
     "sharp": "^0.33.5",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
@@ -62,7 +68,9 @@
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.21",
     "baseline-browser-mapping": "^2.9.9",
+    "dotenv": "^17.2.3",
     "eslint-config-next": "15.5.6",
+    "knip": "^5.81.0",
     "postcss": "^8.5.6",
     "punycode-detector": "^1.0.4",
     "tailwindcss": "^3.4.18",

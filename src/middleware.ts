@@ -15,7 +15,6 @@ const PROTECTED_ROUTES = [
 const AUTH_ROUTES = [
     '/login',
     '/register',
-    '/activate',
 ];
 
 // Note: Security headers for cover images are configured in next.config.ts
@@ -173,8 +172,33 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // For all other routes, proceed normally
-    return NextResponse.next();
+    // For all other routes, proceed normally with security headers
+    const response = NextResponse.next();
+    
+    // Add security headers to prevent XSS and other attacks
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    
+    // Set Content Security Policy
+    const csp = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-inline needed for Next.js development
+        "style-src 'self' 'unsafe-inline'", // unsafe-inline needed for Tailwind CSS
+        "img-src 'self' data: https://s3.eu-south-1.wasabisys.com",
+        "font-src 'self' data:",
+        "connect-src 'self' https://s3.eu-south-1.wasabisys.com",
+        "media-src 'self' https://s3.eu-south-1.wasabisys.com",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'"
+    ].join('; ');
+    
+    response.headers.set('Content-Security-Policy', csp);
+    
+    return response;
 }
 
 // Helper to check if a route needs authentication
@@ -193,22 +217,7 @@ function isAuthRoute(pathname: string): boolean {
 
 export const config = {
     matcher: [
-        // Cover image routes
-        '/api/covers/:path*',
-        // Auth routes
-        '/activate/:path*',
-        '/login',
-        '/register',
-        // Protected routes
-        '/profile/:path*',
-        '/settings/:path*',
-        '/read-book/:path*',
-        '/add-book/:path*',
-        // '/library/my-books/:path*',
-        // Specific protected routes
-        '/profile',
-        '/settings',
-        '/read-book',
-        '/add-book',
+        // Apply to all paths except for static files and API routes that don't need headers
+        '/((?!_next/static|_next/image|favicon.ico).*)',
     ],
 };

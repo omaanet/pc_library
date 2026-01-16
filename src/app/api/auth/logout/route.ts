@@ -1,8 +1,9 @@
 // src/app/api/auth/logout/route.ts
 import { NextResponse } from 'next/server';
 import { handleApiError, HttpStatus } from '@/lib/api-error-handler';
+import { withCSRFProtection } from '@/lib/csrf-middleware';
 
-export async function POST() {
+export const POST = withCSRFProtection(async function() {
     try {
         // Create response for successful logout
         const response = NextResponse.json({
@@ -11,9 +12,10 @@ export async function POST() {
         });
 
         // Clear session cookie by setting expiry in the past
+        const isSecure = process.env.NODE_ENV === 'production';
         response.headers.set(
             'Set-Cookie',
-            'session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0'
+            `session=; Path=/; HttpOnly; SameSite=Strict; ${isSecure ? 'Secure;' : ''} Max-Age=0`
         );
 
         return response;
@@ -21,4 +23,4 @@ export async function POST() {
         console.error('Logout error:', error);
         return handleApiError(error, 'Logout failed', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-}
+});

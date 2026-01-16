@@ -22,6 +22,7 @@ import {
     Mail,
     Menu,
     UserCircle,
+    LogOut,
 } from 'lucide-react';
 
 export function RootNav({
@@ -44,10 +45,10 @@ export function RootNav({
                     <svg width="55" height="65" viewBox="0 0 80 110" fill="none" stroke="currentColor" className="mt-3">
                         <g transform="translate(-20.5 -5.5)" strokeWidth="4" shapeRendering="geometricPrecision" vectorEffect="non-scaling-stroke">
                             {/* Feather Quill */}
-                            <path d="M20.5 90.5 C 20 90, 40 50, 80 10 C 80 10, 60 40, 50 60" stroke="var(--text-quill)" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M20.5 90.5 C 20 90, 40 50, 80 10 C 80 10, 60 40, 50 60" stroke="var(--text-quill)" strokeLinecap="round" strokeLinejoin="round" />
                             {/* The Ink turning into Wave */}
                             <path d="M20.5 90.5 C 25 90, 30 95, 35 90 S 45 85, 50 90 S 60 95, 65 90" stroke="var(--gold-main)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
-                                <animate attributeName="d" values="M20 90.5 C 25 90, 30 95, 35 90 S 45 85, 50 90 S 60 95, 65 90; M20 90.5 C 25 88, 30 92, 35 90 S 45 88, 50 90 S 60 92, 65 90; M20 90.5 C 25 90, 30 95, 35 90 S 45 85, 50 90 S 60 95, 65 90" 
+                                <animate attributeName="d" values="M20 90.5 C 25 90, 30 95, 35 90 S 45 85, 50 90 S 60 95, 65 90; M20 90.5 C 25 88, 30 92, 35 90 S 45 88, 50 90 S 60 92, 65 90; M20 90.5 C 25 90, 30 95, 35 90 S 45 85, 50 90 S 60 95, 65 90"
                                     dur="2s" repeatCount="indefinite" />
                             </path>
                         </g>
@@ -90,7 +91,16 @@ export function RootNav({
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-3 text-xs sm:text-sm">
                                     <UserCircle className="h-5 w-5" />
-                                    <span className="font-medium">{state.user?.name || 'Utente'}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium">
+                                            {state.user?.name || state.user?.fullName || 'Utente'}
+                                        </span>
+                                        {state.user?.isAdmin && (
+                                            <span className="text-xs bg-yellow-400 text-black px-2 py-0.5 rounded-full font-semibold">
+                                                ADMIN
+                                            </span>
+                                        )}
+                                    </div>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -108,11 +118,25 @@ export function RootNav({
                                             <Link href="/add-book">Gestisci Racconti</Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
+
+                                        {state.user?.userLevel && state.user.userLevel > 0 && (
+                                            <>
+                                                <DropdownMenuItem asChild>
+                                                    <Link href="/user-statistics" className="font-bold text-red-500 hover:text-red-600">Statistiche</Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                            </>
+                                        )}
                                     </>
                                 )}
 
-                                <DropdownMenuItem onClick={() => logout()}>
-                                    Esci
+                                <DropdownMenuItem
+                                    onClick={() => logout()}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <LogOut className="h-4 w-4" />
+                                        <span>Esci</span>
+                                    </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -159,6 +183,16 @@ export function RootNav({
                                     onClick={() => setIsMobileMenuOpen(false)}
                                 >
                                     Aggiungi Racconto
+                                </Link>
+                                <Link
+                                    href="/user-statistics"
+                                    className={cn(
+                                        "text-sm font-medium transition-colors hover:text-primary",
+                                        pathname === "/user-statistics" && "text-primary"
+                                    )}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                    Stats
                                 </Link>
                             </>
                         ) : (

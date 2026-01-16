@@ -123,7 +123,7 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
 
     // Start building the query parts
     const whereConditions: string[] = [];
-    const params: any[] = [];
+    const params: (string | number | boolean)[] = [];
 
     // Handle visibility filter (using index on is_visible)
     if (isVisible !== undefined && isVisible !== -1) {
@@ -403,7 +403,7 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
     const client = getNeonClient();
     // Build the SET part of the query dynamically
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | boolean | null)[] = [];
     if (book.title !== undefined) {
         updates.push('title = $' + (updates.length + 1));
         values.push(book.title);

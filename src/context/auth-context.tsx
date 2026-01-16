@@ -11,8 +11,7 @@ import type {
     RegisterCredentials,
     RegisterResponse,
 } from '@/types/context';
-import type { UserPreferences } from '@/types';
-import { USE_NEW_AUTH_FLOW } from '@/config/auth-config';
+import type { UserPreferences } from '@/types/future-features';
 
 const initialState: AuthState = {
     user: null,
@@ -41,6 +40,38 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// CSRF token state
+let csrfToken: string | null = null;
+
+async function getCSRFToken(): Promise<string> {
+    if (!csrfToken) {
+        const response = await fetch('/api/csrf-token');
+        if (!response.ok) {
+            throw new Error('Failed to fetch CSRF token');
+        }
+        const data = await response.json();
+        csrfToken = data.token;
+    }
+    return csrfToken || ''; // Fallback to empty string if somehow null
+}
+
+// Function to make authenticated API requests with CSRF protection
+async function makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
+    const headers = new Headers(options.headers);
+    
+    // Add CSRF token for state-changing requests
+    if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method)) {
+        const token = await getCSRFToken();
+        headers.set('x-csrf-token', token);
+    }
+    
+    return fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
+    });
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [state, dispatch] = useReducer(authReducer, initialState);
@@ -85,10 +116,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_AUTHENTICATED', payload: false });
 
         try {
-            const response = await fetch('/api/auth/login', {
+            const response = await makeAuthenticatedRequest('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(credentials),
+                body: JSON.stringify({ email: credentials.email }),
             });
 
             if (!response.ok) {
@@ -113,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_AUTHENTICATED', payload: false });
 
         try {
-            const response = await fetch('/api/auth/register', {
+            const response = await makeAuthenticatedRequest('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials),
@@ -126,19 +157,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             const data = await response.json() as RegisterResponse;
             
-            // If using new auth flow, user is immediately authenticated
-            if (USE_NEW_AUTH_FLOW) {
-                // Refresh auth state to get the user data
-                const userResponse = await fetch('/api/auth/session');
-                if (userResponse.ok) {
-                    const userData = await userResponse.json();
-                    if (userData.user) {
-                        dispatch({ type: 'SET_USER', payload: userData.user });
-                        dispatch({ type: 'SET_AUTHENTICATED', payload: true });
-                    }
+            // User is immediately authenticated in passwordless flow
+            // Refresh auth state to get the user data
+            const userResponse = await fetch('/api/auth/session');
+            if (userResponse.ok) {
+                const userData = await userResponse.json();
+                if (userData.user) {
+                    dispatch({ type: 'SET_USER', payload: userData.user });
+                    dispatch({ type: 'SET_AUTHENTICATED', payload: true });
                 }
             }
-            // For old auth flow, don't set user here as they need to verify email first
             
             return data;
         } catch (error) {
@@ -152,12 +180,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = useCallback(async () => {
         dispatch({ type: 'SET_LOADING', payload: true });
         try {
-            const response = await fetch('/api/auth/logout', { method: 'POST' });
+            const response = await makeAuthenticatedRequest('/api/auth/logout', { method: 'POST' });
             if (!response.ok) {
                 throw new Error('Logout fallito');
             }
             dispatch({ type: 'SET_USER', payload: null });
             dispatch({ type: 'SET_AUTHENTICATED', payload: false });
+            // Reset CSRF token on logout
+            csrfToken = null;
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error as Error });
             throw error;
@@ -171,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         dispatch({ type: 'SET_LOADING', payload: true });
         try {
-            const response = await fetch('/api/user/preferences', {
+            const response = await makeAuthenticatedRequest('/api/user/preferences', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(preferences),

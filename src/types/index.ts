@@ -1,12 +1,9 @@
 /**
- * Audiobook information associated with a book.
- * Contains media metadata for books that have audio versions.
- * Used as an optional property in the Book interface.
+ * Current Application Types
+ * 
+ * These are the actively used type definitions in the current version.
+ * Future feature types have been moved to ./future-features.ts
  */
-export interface AudioBookInfo {
-    /** Mux media ID for the audiobook, null if not available */
-    mediaId: string | null;
-}
 
 export interface Book {
     id: string;
@@ -47,56 +44,13 @@ export interface AudioBook {
     updated_at?: string;
 }
 
-export interface UserPreferences {
-    emailNotifications?: {
-        newBooks?: boolean;
-        newReleases?: boolean;
-        readingReminders?: boolean;
-        recommendations?: boolean;
-        updates?: boolean;
-        newsletter?: boolean;
-    };
-    reading?: {
-        autoplay?: boolean;
-        defaultView?: 'single' | 'double';
-        defaultZoom?: number;
-        fontSize?: number;
-        lineHeight?: number | string;
-        fontFamily?: string;
-    };
-    theme?: 'light' | 'dark' | 'system';
-    language?: string;
-    fontSize?: number;
-    viewMode?: 'list' | 'grid' | 'detailed';
-    notifications?: {
-        email: boolean;
-        push: boolean;
-        SMS: boolean;
-    };
-    accessibility?: {
-        largeText?: boolean;
-        reduceAnimations?: boolean;
-        highContrast?: boolean;
-        reducedMotion?: boolean;
-    };
-    lastUpdated?: Date;
-}
-
-export interface UserStats {
-    totalBooksRead: number;
-    totalReadingTime: number; // in hours
-    totalAudioTime: number; // in hours
-    completedBooks: number;
-    readingStreak: number;
-    lastReadDate: string;
-}
-
 export interface User {
-    isAdmin?: boolean;
     id: number;
     email: string;
     fullName: string; // maps to full_name in DB
     isActivated: boolean; // maps to is_activated in DB
+    isAdmin?: boolean;
+    userLevel?: number;
     name: string; // Derived from fullName
     // The following fields are optional as they might not be present in all contexts
     verification_token?: string;
@@ -117,3 +71,7 @@ export interface BookResponse {
         totalPages: number;
     };
 }
+
+// Import future feature types for type references
+// Note: These are not re-exported to keep them out of the bundle
+import type { UserPreferences, UserStats, AudioBookInfo } from './future-features';

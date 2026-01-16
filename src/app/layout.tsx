@@ -41,6 +41,28 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" suppressHydrationWarning>
+            <head>
+                {/* Security meta tags */}
+                <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+                <meta httpEquiv="X-Frame-Options" content="DENY" />
+                <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
+                <meta httpEquiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+                <meta
+                    httpEquiv="Content-Security-Policy"
+                    content="
+                        default-src 'self';
+                        script-src 'self' 'unsafe-inline' 'unsafe-eval';
+                        style-src 'self' 'unsafe-inline';
+                        img-src 'self' data: https://s3.eu-south-1.wasabisys.com;
+                        font-src 'self' data:;
+                        connect-src 'self' https://s3.eu-south-1.wasabisys.com;
+                        media-src 'self' https://s3.eu-south-1.wasabisys.com;
+                        object-src 'none';
+                        base-uri 'self';
+                        form-action 'self'
+                    "
+                />
+            </head>
             <body className={`${baseFont.className} ${displayFont.variable}`}>
                 {/* <div className="grain-overlay" aria-hidden="true" /> */}
                 <Providers>

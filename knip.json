@@ -1,0 +1,31 @@
+{
+  "entry": ["src/app/**/*.{js,ts,jsx,tsx}", "src/pages/**/*.{js,ts,jsx,tsx}"],
+  "project": ["src/**/*.{js,ts,jsx,tsx}"],
+  "paths": {
+    "@/*": ["./src/*"]
+  },
+  "ignore": [
+    ".next/**",
+    "node_modules/**",
+    "_docs/**",
+    "reports/**",
+    "tmp/**",
+    "**/*.config.{js,ts}",
+    "**/*.d.ts"
+  ],
+  "ignoreDependencies": [
+    "@types/node",
+    "@types/react",
+    "@types/react-dom",
+    "eslint",
+    "typescript",
+    "@neondatabase/serverless",
+    "@radix-ui/react-navigation-menu",
+    "@radix-ui/react-scroll-area",
+    "@radix-ui/react-separator",
+    "@types/color",
+    "@shadcn/ui",
+    "eslint-config-next",
+    "baseline-browser-mapping"
+  ]
+}
