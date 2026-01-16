@@ -15,7 +15,7 @@ import type { UserPreferences } from '@/types/future-features';
 
 const initialState: AuthState = {
     user: null,
-    isLoading: false,
+    isLoading: true, // Start with loading true to prevent flash of unauthenticated state
     error: null,
     isAuthenticated: false,
 };

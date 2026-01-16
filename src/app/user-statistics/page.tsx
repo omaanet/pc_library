@@ -19,10 +19,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/auth-context';
 import { StatsCard, ActivityChart, TopListCard, BarChartComponent } from '@/components/statistics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Download, BookOpen, Users, AlertTriangle, TrendingUp, Activity, RefreshCw, Loader2 } from 'lucide-react';
+import { Calendar, Download, BookOpen, Users, AlertTriangle, TrendingUp, Activity, RefreshCw, Loader2, ArrowLeft } from 'lucide-react';
 import { fetchStatisticsWithErrors, retryEndpoint, type StatisticsResults, type StatisticsError } from '@/lib/statistics-error-helper';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
+import { AuthModal } from '@/components/auth/auth-modal';
 
 export default function UserStatisticsPage() {
     const router = useRouter();
@@ -32,6 +34,217 @@ export default function UserStatisticsPage() {
     const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [language, setLanguage] = useState<'en' | 'it'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('user-statistics-lang');
+            return (saved === 'en' || saved === 'it') ? saved : 'it';
+        }
+        return 'en';
+    });
+    
+    const translations = {
+        en: {
+            // Authorization and loading
+            checkingAuth: 'Checking authorization...',
+            loadingStats: 'Loading statistics...',
+            
+            // Page header
+            pageTitle: 'User Statistics',
+            backToHome: 'Go Back to Home',
+            back: 'Back',
+            
+            // Time range options
+            selectTimeRange: 'Select time range',
+            last7Days: 'Last 7 days',
+            last30Days: 'Last 30 days',
+            last90Days: 'Last 90 days',
+            last365Days: 'Last 365 days',
+            allData: 'All data',
+            
+            // Top list options
+            top: 'Top',
+            top5: 'Top 5',
+            top10: 'Top 10',
+            top50: 'Top 50',
+            all: 'All',
+            
+            // Error messages
+            failedToLoad: 'Failed to load statistics',
+            retry: 'Retry',
+            someEndpointsFailed: 'Some endpoints failed to load',
+            errorsCount: 'errors',
+            successfullyLoaded: 'Successfully loaded',
+            failedToRetry: 'Failed to retry',
+            
+            // Stats cards
+            totalDownloads: 'Total Downloads',
+            uniqueUsers: 'unique users',
+            readingSessions: 'Reading Sessions',
+            uniqueReaders: 'unique readers',
+            activeUsers: 'Active Users',
+            totalActions: 'total actions',
+            systemErrors: 'System Errors',
+            errorsWarnings: 'errors, warnings',
+            
+            // Tabs
+            overview: 'Overview',
+            downloads: 'Downloads',
+            reading: 'Reading',
+            users: 'Users',
+            errorsTab: 'Errors',
+            
+            // Charts and descriptions
+            downloadTrends: 'Download Trends',
+            downloadTrendsDesc: 'Daily downloads and unique users',
+            readingActivity: 'Reading Activity',
+            readingActivityDesc: 'Daily reading sessions and unique readers',
+            mostDownloadedBooks: 'Most Downloaded Books',
+            mostReadBooks: 'Most Read Books',
+            downloadsLabel: 'downloads',
+            sessionsLabel: 'sessions',
+            
+            // Downloads section
+            downloadStatistics: 'Download Statistics',
+            totalDownloadsLabel: 'Total Downloads:',
+            uniqueUsersLabel: 'Unique Users:',
+            uniqueBooks: 'Unique Books:',
+            totalSize: 'Total Size:',
+            topDownloaders: 'Top Downloaders',
+            
+            // Reading section
+            readingActivityByHour: 'Reading Activity by Hour',
+            readingActivityByHourDesc: 'Number of reading sessions per hour of day',
+            topReaders: 'Top Readers',
+            books: 'books',
+            
+            // Users section
+            dailyActiveUsers: 'Daily Active Users',
+            dailyActiveUsersDesc: 'Number of unique users per day',
+            userEngagementDistribution: 'User Engagement Distribution',
+            mostActiveUsers: 'Most Active Users',
+            actions: 'actions',
+            booksDownloaded: 'downloads',
+            booksRead: 'books read',
+            
+            // Errors section
+            errorTrends: 'Error Trends',
+            errorTrendsDesc: 'Daily errors and warnings',
+            topErrorSources: 'Top Error Sources',
+            errorsLabel: 'errors',
+            warningsLabel: 'warnings',
+            
+            // Units
+            bytes: ['Bytes', 'KB', 'MB', 'GB']
+        },
+        it: {
+            // Authorization and loading
+            checkingAuth: 'Verifica autorizzazione...',
+            loadingStats: 'Caricamento statistiche...',
+            
+            // Page header
+            pageTitle: 'Statistiche Utenti',
+            backToHome: 'Torna alla Home',
+            back: 'Indietro',
+            
+            // Time range options
+            selectTimeRange: 'Seleziona intervallo di tempo',
+            last7Days: 'Ultimi 7 giorni',
+            last30Days: 'Ultimi 30 giorni',
+            last90Days: 'Ultimi 90 giorni',
+            last365Days: 'Ultimi 365 giorni',
+            allData: 'Tutti i dati',
+            
+            // Top list options
+            top: 'Top',
+            top5: 'Top 5',
+            top10: 'Top 10',
+            top50: 'Top 50',
+            all: 'Tutti',
+            
+            // Error messages
+            failedToLoad: 'Impossibile caricare le statistiche',
+            retry: 'Riprova',
+            someEndpointsFailed: 'Alcuni endpoint non hanno caricato',
+            errorsCount: 'errori',
+            successfullyLoaded: 'Caricato con successo',
+            failedToRetry: 'Impossibile riprovare',
+            
+            // Stats cards
+            totalDownloads: 'Download Totali',
+            uniqueUsers: 'utenti unici',
+            readingSessions: 'Sessioni di Lettura',
+            uniqueReaders: 'lettori unici',
+            activeUsers: 'Utenti Attivi',
+            totalActions: 'azioni totali',
+            systemErrors: 'Errori di Sistema',
+            errorsWarnings: 'errori, avvisi',
+            
+            // Tabs
+            overview: 'Panoramica',
+            downloads: 'Download',
+            reading: 'Lettura',
+            users: 'Utenti',
+            errorsTab: 'Errori',
+            
+            // Charts and descriptions
+            downloadTrends: 'Tendenze Download',
+            downloadTrendsDesc: 'Download giornalieri e utenti unici',
+            readingActivity: 'Attività di Lettura',
+            readingActivityDesc: 'Sessioni di lettura giornaliere e lettori unici',
+            mostDownloadedBooks: 'Libri più Scaricati',
+            mostReadBooks: 'Libri più Letti',
+            downloadsLabel: 'download',
+            sessionsLabel: 'sessioni',
+            
+            // Downloads section
+            downloadStatistics: 'Statistiche Download',
+            totalDownloadsLabel: 'Download Totali:',
+            uniqueUsersLabel: 'Utenti Unici:',
+            uniqueBooks: 'Libri Unici:',
+            totalSize: 'Dimensione Totale:',
+            topDownloaders: 'Top Downloader',
+            
+            // Reading section
+            readingActivityByHour: 'Attività di Lettura per Ora',
+            readingActivityByHourDesc: 'Numero di sessioni di lettura per ora del giorno',
+            topReaders: 'Top Lettori',
+            books: 'libri',
+            
+            // Users section
+            dailyActiveUsers: 'Utenti Attivi Giornalieri',
+            dailyActiveUsersDesc: 'Numero di utenti unici per giorno',
+            userEngagementDistribution: 'Distribuzione Engagement Utenti',
+            mostActiveUsers: 'Utenti più Attivi',
+            actions: 'azioni',
+            booksDownloaded: 'download',
+            booksRead: 'libri letti',
+            
+            // Errors section
+            errorTrends: 'Tendenze Errori',
+            errorTrendsDesc: 'Errori e avvisi giornalieri',
+            topErrorSources: 'Fonti Errori Top',
+            errorsLabel: 'errori',
+            warningsLabel: 'avvisi',
+            
+            // Units
+            bytes: ['Bytes', 'KB', 'MB', 'GB']
+        }
+    };
+    
+    const t = (key: string): string => {
+        const value = translations[language][key as keyof typeof translations.en];
+        return Array.isArray(value) ? value[0] : (value || key);
+    };
+    
+    const getBytes = (): string[] => {
+        return translations[language].bytes as string[];
+    };
+    
+    const handleLanguageChange = (newLang: 'en' | 'it') => {
+        setLanguage(newLang);
+        localStorage.setItem('user-statistics-lang', newLang);
+    };
     const [statistics, setStatistics] = useState<{
         downloads: any;
         readingSessions: any;
@@ -49,11 +262,11 @@ export default function UserStatisticsPage() {
         
         try {
             const results = await fetchStatisticsWithErrors(timeRange, topListSize, (message, type) => {
-                toast({
-                    title: type === 'error' ? 'Error' : 'Success',
-                    description: message,
-                    variant: type === 'error' ? 'destructive' : 'default'
-                });
+            toast({
+                title: type === 'error' ? 'Error' : 'Success',
+                description: message,
+                variant: type === 'error' ? 'destructive' : 'default'
+            });
             });
 
             setStatistics({
@@ -65,7 +278,7 @@ export default function UserStatisticsPage() {
             });
             setFailedEndpoints(results.failedEndpoints);
         } catch (err) {
-            setError('Failed to load statistics');
+            setError(t('failedToLoad'));
             console.error('Error fetching statistics:', err);
         } finally {
             setLoading(false);
@@ -94,12 +307,12 @@ export default function UserStatisticsPage() {
             
             toast({
                 title: 'Success',
-                description: `Successfully loaded ${endpointName}`,
+                description: `${t('successfullyLoaded')} ${endpointName}`,
             });
         } else {
             toast({
                 title: 'Error',
-                description: `Failed to retry ${endpointName}: ${result.error?.error}`,
+                description: `${t('failedToRetry')} ${endpointName}: ${result.error?.error}`,
                 variant: 'destructive'
             });
         }
@@ -116,15 +329,26 @@ export default function UserStatisticsPage() {
         return (
             <div className="container mx-auto p-10 flex items-center justify-center min-h-screen">
                 <div className="text-center">
-                    <p className="text-lg text-muted-foreground">Verifica autorizzazione...</p>
+                    <p className="text-lg text-muted-foreground">{t('checkingAuth')}</p>
                 </div>
             </div>
         );
     }
 
-    // Don't render content if not authorized (will redirect)
+    // Don't render content if not authorized (only after loading is complete)
     if (!state.isAuthenticated || !state.user?.isAdmin) {
-        return null;
+        return (
+            <>
+                <AdminAccessDenied 
+                    action="visualizzare le statistiche utenti" 
+                    onAuthClick={() => setIsAuthModalOpen(true)}
+                />
+                <AuthModal
+                    open={isAuthModalOpen}
+                    onOpenChange={setIsAuthModalOpen}
+                />
+            </>
+        );
     }
 
     // Show initial loading screen only when there's no data yet
@@ -132,7 +356,7 @@ export default function UserStatisticsPage() {
         return (
             <div className="container mx-auto p-10 flex items-center justify-center min-h-screen">
                 <div className="text-center">
-                    <p className="text-lg text-muted-foreground">Loading statistics...</p>
+                    <p className="text-lg text-muted-foreground">{t('loadingStats')}</p>
                 </div>
             </div>
         );
@@ -144,7 +368,7 @@ export default function UserStatisticsPage() {
                 <div className="text-center">
                     <p className="text-lg text-red-600">{error}</p>
                     <Button onClick={fetchStatistics} className="mt-4">
-                        Retry
+                        {t('retry')}
                     </Button>
                 </div>
             </div>
@@ -154,43 +378,61 @@ export default function UserStatisticsPage() {
     const formatBytes = (bytes: number) => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const sizes = getBytes();
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
     return (
         <div className="container mx-auto p-10">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold tracking-tight">User Statistics</h1>
-                <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-4 mb-6">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => router.back()}
+                    className="mr-2"
+                >
+                    <ArrowLeft className="h-5 w-5" />
+                    <span className="sr-only">{t('back')}</span>
+                </Button>
+                <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
+                <div className="flex items-center space-x-4 ml-auto">
                     {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                    <Select value={timeRange} onValueChange={setTimeRange}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select time range" />
+                    <Select value={language} onValueChange={handleLanguageChange}>
+                        <SelectTrigger className="w-[100px]">
+                            <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="7">Last 7 days</SelectItem>
-                            <SelectItem value="30">Last 30 days</SelectItem>
-                            <SelectItem value="90">Last 90 days</SelectItem>
-                            <SelectItem value="365">Last 365 days</SelectItem>
-                            <SelectItem value="all">All data</SelectItem>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="it">Italiano</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={timeRange} onValueChange={setTimeRange}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder={t('selectTimeRange')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="7">{t('last7Days')}</SelectItem>
+                            <SelectItem value="30">{t('last30Days')}</SelectItem>
+                            <SelectItem value="90">{t('last90Days')}</SelectItem>
+                            <SelectItem value="365">{t('last365Days')}</SelectItem>
+                            <SelectItem value="all">{t('allData')}</SelectItem>
                         </SelectContent>
                     </Select>
                     <Select value={topListSize} onValueChange={setTopListSize}>
                         <SelectTrigger className="w-[120px]">
-                            <SelectValue placeholder="Top" />
+                            <SelectValue placeholder={t('top')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="5">Top 5</SelectItem>
-                            <SelectItem value="10">Top 10</SelectItem>
-                            <SelectItem value="50">Top 50</SelectItem>
-                            <SelectItem value="all">All</SelectItem>
+                            <SelectItem value="5">{t('top5')}</SelectItem>
+                            <SelectItem value="10">{t('top10')}</SelectItem>
+                            <SelectItem value="50">{t('top50')}</SelectItem>
+                            <SelectItem value="all">{t('all')}</SelectItem>
                         </SelectContent>
                     </Select>
                     <Button asChild variant="outline">
                         <Link href="/" className="select-none">
-                            Go Back to Home
+                            {t('backToHome')}
                         </Link>
                     </Button>
                 </div>
@@ -202,7 +444,7 @@ export default function UserStatisticsPage() {
                     <AlertTriangle className="h-4 w-4 text-orange-600" />
                     <AlertDescription className="space-y-2">
                         <div className="font-medium text-orange-800">
-                            Some endpoints failed to load ({failedEndpoints.length} errors)
+                            {t('someEndpointsFailed')} ({failedEndpoints.length} {t('errorsLabel')})
                         </div>
                         <div className="space-y-1">
                             {failedEndpoints.map((error, index) => (
@@ -217,7 +459,7 @@ export default function UserStatisticsPage() {
                                         className="ml-2 h-6 px-2 text-xs"
                                     >
                                         <RefreshCw className="h-3 w-3 mr-1" />
-                                        Retry
+                                        {t('retry')}
                                     </Button>
                                 </div>
                             ))}
@@ -229,38 +471,38 @@ export default function UserStatisticsPage() {
             {/* Overview Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
                 <StatsCard
-                    title="Total Downloads"
+                    title={t('totalDownloads')}
                     value={statistics?.downloads?.totalStats?.total_downloads?.toLocaleString('it-IT') || '0'}
-                    description={`${statistics?.downloads?.totalStats?.unique_users || 0} unique users`}
+                    description={`${statistics?.downloads?.totalStats?.unique_users || 0} ${t('uniqueUsers')}`}
                     icon={<Download className="h-4 w-4 text-blue-500" />}
                 />
                 <StatsCard
-                    title="Reading Sessions"
+                    title={t('readingSessions')}
                     value={statistics?.readingSessions?.totalStats?.total_sessions?.toLocaleString('it-IT') || '0'}
-                    description={`${statistics?.readingSessions?.totalStats?.unique_readers || 0} unique readers`}
+                    description={`${statistics?.readingSessions?.totalStats?.unique_readers || 0} ${t('uniqueReaders')}`}
                     icon={<BookOpen className="h-4 w-4 text-amber-500" />}
                 />
                 <StatsCard
-                    title="Active Users"
+                    title={t('activeUsers')}
                     value={statistics?.userActivity?.overallStats?.unique_active_users?.toLocaleString('it-IT') || '0'}
-                    description={`${statistics?.userActivity?.overallStats?.total_actions?.toLocaleString('it-IT') || 0} total actions`}
+                    description={`${statistics?.userActivity?.overallStats?.total_actions?.toLocaleString('it-IT') || 0} ${t('totalActions')}`}
                     icon={<Users className="h-4 w-4 text-purple-500" />}
                 />
                 <StatsCard
-                    title="System Errors"
+                    title={t('systemErrors')}
                     value={statistics?.errors?.overallStats?.total_errors?.toLocaleString('it-IT') || '0'}
-                    description={`${statistics?.errors?.overallStats?.errors || 0} errors, ${statistics?.errors?.overallStats?.warnings || 0} warnings`}
+                    description={`${statistics?.errors?.overallStats?.errors || 0} ${t('errorsCount')}, ${statistics?.errors?.overallStats?.warnings || 0} ${t('warningsLabel')}`}
                     icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
                 />
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsList>
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="downloads">Downloads</TabsTrigger>
-                    <TabsTrigger value="reading">Reading</TabsTrigger>
-                    <TabsTrigger value="users">Users</TabsTrigger>
-                    <TabsTrigger value="errors">Errors</TabsTrigger>
+                    <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
+                    <TabsTrigger value="downloads">{t('downloads')}</TabsTrigger>
+                    <TabsTrigger value="reading" className="data-[state=inactive]:bg-amber-700/50 dark:data-[state=active]:bg-amber-600/50">{t('reading')}</TabsTrigger>
+                    <TabsTrigger value="users">{t('users')}</TabsTrigger>
+                    <TabsTrigger value="errors">{t('errorsTab')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-4">
@@ -268,41 +510,41 @@ export default function UserStatisticsPage() {
                         <ActivityChart
                             data={statistics?.downloads?.downloadsOverTime || []}
                             lines={[
-                                { dataKey: 'downloads_count', name: 'Downloads', color: '#8884d8' },
-                                { dataKey: 'unique_users', name: 'Unique Users', color: '#82ca9d' }
+                                { dataKey: 'downloads_count', name: t('downloadsLabel'), color: '#8884d8' },
+                                { dataKey: 'unique_users', name: t('uniqueUsers'), color: '#82ca9d' }
                             ]}
-                            title="Download Trends"
-                            description="Daily downloads and unique users"
+                            title={t('downloadTrends')}
+                            description={t('downloadTrendsDesc')}
                         />
                         <ActivityChart
                             data={statistics?.readingSessions?.sessionsOverTime || []}
                             lines={[
-                                { dataKey: 'sessions_count', name: 'Sessions', color: '#ffc658' },
-                                { dataKey: 'unique_readers', name: 'Readers', color: '#ff7c7c' }
+                                { dataKey: 'sessions_count', name: t('sessionsLabel'), color: '#ffc658' },
+                                { dataKey: 'unique_readers', name: t('uniqueReaders'), color: '#ff7c7c' }
                             ]}
-                            title="Reading Activity"
-                            description="Daily reading sessions and unique readers"
+                            title={t('readingActivity')}
+                            description={t('readingActivityDesc')}
                         />
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                         <TopListCard
-                            title="Most Downloaded Books"
+                            title={t('mostDownloadedBooks')}
                             data={(statistics?.downloads?.mostDownloadedBooks || []).map((book: any) => ({
                                 name: book.book_title,
                                 value: book.download_count,
-                                subtitle: `${book.unique_downloaders} unique users`
+                                subtitle: `${book.unique_downloaders} ${t('uniqueUsers')}`
                             }))}
-                            valueLabel="downloads"
+                            valueLabel={t('downloadsLabel')}
                             maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
                         />
                         <TopListCard
-                            title="Most Read Books"
+                            title={t('mostReadBooks')}
                             data={(statistics?.readingSessions?.mostReadBooks || []).map((book: any) => ({
                                 name: book.book_title,
                                 value: book.read_sessions,
-                                subtitle: `${book.unique_readers} readers`
+                                subtitle: `${book.unique_readers} ${t('uniqueReaders')}`
                             }))}
-                            valueLabel="sessions"
+                            valueLabel={t('sessionsLabel')}
                             maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
                         />
                     </div>
@@ -312,35 +554,35 @@ export default function UserStatisticsPage() {
                     <div className="grid gap-4 md:grid-cols-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Download Statistics</CardTitle>
+                                <CardTitle>{t('downloadStatistics')}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
                                 <div className="flex justify-between">
-                                    <span>Total Downloads:</span>
+                                    <span>{t('totalDownloadsLabel')}</span>
                                     <span className="font-semibold">{statistics?.downloads?.totalStats?.total_downloads?.toLocaleString('it-IT') || '0'}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Unique Users:</span>
+                                    <span>{t('uniqueUsersLabel')}</span>
                                     <span className="font-semibold">{statistics?.downloads?.totalStats?.unique_users?.toLocaleString('it-IT') || '0'}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Unique Books:</span>
+                                    <span>{t('uniqueBooks')}:</span>
                                     <span className="font-semibold">{statistics?.downloads?.totalStats?.unique_books?.toLocaleString('it-IT') || '0'}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Total Size:</span>
+                                    <span>{t('totalSize')}:</span>
                                     <span className="font-semibold">{formatBytes(statistics?.downloads?.totalStats?.total_bytes_downloaded || 0)}</span>
                                 </div>
                             </CardContent>
                         </Card>
                         <TopListCard
-                            title="Top Downloaders"
+                            title={t('topDownloaders')}
                             data={(statistics?.downloads?.topDownloaders || []).map((user: any) => ({
                                 name: user.full_name,
                                 value: user.download_count,
                                 subtitle: user.email
                             }))}
-                            valueLabel="downloads"
+                            valueLabel={t('downloadsLabel')}
                             maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
                         />
                     </div>
@@ -353,18 +595,18 @@ export default function UserStatisticsPage() {
                                 name: `${hour.hour_of_day}:00`,
                                 value: hour.sessions_count
                             }))}
-                            title="Reading Activity by Hour"
-                            description="Number of reading sessions per hour of day"
+                            title={t('readingActivityByHour')}
+                            description={t('readingActivityByHourDesc')}
                             color="#ffc658"
                         />
                         <TopListCard
-                            title="Top Readers"
+                            title={t('topReaders')}
                             data={(statistics?.readingSessions?.topReaders || []).map((user: any) => ({
                                 name: user.full_name,
                                 value: user.reading_sessions,
-                                subtitle: `${user.unique_books_read} books`
+                                subtitle: `${user.unique_books_read} ${t('books')}`
                             }))}
-                            valueLabel="sessions"
+                            valueLabel={t('sessionsLabel')}
                             maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
                         />
                     </div>
@@ -375,14 +617,14 @@ export default function UserStatisticsPage() {
                         <ActivityChart
                             data={statistics?.userActivity?.dailyActiveUsers || []}
                             lines={[
-                                { dataKey: 'daily_active_users', name: 'Active Users', color: '#8884d8' }
+                                { dataKey: 'daily_active_users', name: t('activeUsers'), color: '#8884d8' }
                             ]}
-                            title="Daily Active Users"
-                            description="Number of unique users per day"
+                            title={t('dailyActiveUsers')}
+                            description={t('dailyActiveUsersDesc')}
                         />
                         <Card>
                             <CardHeader>
-                                <CardTitle>User Engagement Distribution</CardTitle>
+                                <CardTitle>{t('userEngagementDistribution')}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-2">
@@ -407,13 +649,13 @@ export default function UserStatisticsPage() {
                         </Card>
                     </div>
                     <TopListCard
-                        title="Most Active Users"
+                        title={t('mostActiveUsers')}
                         data={(statistics?.userActivity?.mostActiveUsers || []).map((user: any) => ({
                             name: user.full_name,
                             value: user.total_actions,
-                            subtitle: `${user.books_downloaded} downloads, ${user.books_read} books read`
+                            subtitle: `${user.books_downloaded} ${t('booksDownloaded')}, ${user.books_read} ${t('booksRead')}`
                         }))}
-                        valueLabel="actions"
+                        valueLabel={t('actions')}
                         maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
                     />
                 </TabsContent>
@@ -423,20 +665,20 @@ export default function UserStatisticsPage() {
                         <ActivityChart
                             data={statistics?.errors?.errorsOverTime || []}
                             lines={[
-                                { dataKey: 'errors', name: 'Errors', color: '#ff7c7c' },
-                                { dataKey: 'warnings', name: 'Warnings', color: '#ffa500' }
+                                { dataKey: 'errors', name: t('errorsTab'), color: '#ff7c7c' },
+                                { dataKey: 'warnings', name: t('warningsLabel'), color: '#ffa500' }
                             ]}
-                            title="Error Trends"
-                            description="Daily errors and warnings"
+                            title={t('errorTrends')}
+                            description={t('errorTrendsDesc')}
                         />
                         <TopListCard
-                            title="Top Error Sources"
+                            title={t('topErrorSources')}
                             data={(statistics?.errors?.topErrorSources || []).map((source: any) => ({
                                 name: source.source,
                                 value: source.error_count,
-                                subtitle: `${source.errors} errors, ${source.warnings} warnings`
+                                subtitle: `${source.errors} ${t('errorsLabel')}, ${source.warnings} ${t('warningsLabel')}`
                             }))}
-                            valueLabel="errors"
+                            valueLabel={t('errorsLabel')}
                             maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
                         />
                     </div>

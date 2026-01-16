@@ -98,7 +98,7 @@ export async function getUserById(id: number): Promise<User | null> {
     return {
         ...user,
         fullName: user.full_name, // Map from DB field to app field
-        userLevel: user.is_admin, // Map from DB field to app field
+        userLevel: user.is_admin, // Use is_admin column directly as userLevel
         isAdmin: Boolean(user.is_admin > 0), // Map from DB field to app field
         name: user.full_name?.split(' ')?.[0] || user.full_name || 'Utente', // First name, or full name, or fallback
         preferences: {

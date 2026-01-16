@@ -48,9 +48,9 @@ export function getNeonClient(): NeonClient {
                     const result = await originalQuery.call(this, sql, params);
 
                     // Log result info
-                    // console.debug('[Neon SQL] Success! Rows:', result?.rows?.length || 0);
-                    if (result && 'rows' in result && result.rows?.length > 0) {
-                        // console.debug('[Neon SQL] First row:', JSON.stringify(result.rows[0]));
+                    // console.debug('[Neon SQL] Success! Rows:', result?.length || 0);
+                    if (result && Array.isArray(result) && result.length > 0) {
+                        // console.debug('[Neon SQL] First row:', JSON.stringify(result[0]));
                     }
 
                     return result as NeonQueryResult<T>;

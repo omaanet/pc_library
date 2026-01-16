@@ -84,7 +84,7 @@ export async function GET(request: Request) {
         const countResult = await client.query(countQuery, params);
         console.log('[Users API] Count result:', countResult);
 
-        const total = parseInt(countResult.rows[0]?.total || '0');
+        const total = parseInt(countResult[0]?.total || '0');
         console.log('[Users API] Total users:', total);
 
         // Get paginated users
@@ -124,10 +124,10 @@ export async function GET(request: Request) {
 
         console.log('[Users API] Users query:', query, 'Params:', [...params, perPage, offset]);
         const result = await client.query(query, [...params, perPage, offset]);
-        console.log('[Users API] Query result rows:', result.rows?.length || 0);
+        console.log('[Users API] Query result rows:', result?.length || 0);
 
         const response = {
-            users: result.rows,
+            users: result,
             pagination: {
                 page,
                 perPage,
@@ -136,7 +136,7 @@ export async function GET(request: Request) {
             }
         };
 
-        console.log('[Users API] Sending response with', result.rows?.length || 0, 'users');
+        console.log('[Users API] Sending response with', result?.length || 0, 'users');
         return NextResponse.json(response);
 
     } catch (error) {

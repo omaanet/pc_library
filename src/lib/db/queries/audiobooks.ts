@@ -44,9 +44,7 @@ export async function saveAudioBook(data: {
         console.log('[saveAudioBook] updateRes:', updateRes);
 
         // If no rows were updated, try to insert
-        const wasUpdated = Array.isArray(updateRes)
-            ? updateRes.length > 0
-            : updateRes?.rowCount > 0;
+        const wasUpdated = Array.isArray(updateRes) && updateRes.length > 0;
 
         if (!wasUpdated) {
             try {
@@ -58,9 +56,7 @@ export async function saveAudioBook(data: {
                 console.log('[saveAudioBook] insertRes:', insertRes);
 
                 // Check if insert was successful
-                return Array.isArray(insertRes)
-                    ? insertRes.length > 0
-                    : insertRes?.rowCount > 0;
+                return Array.isArray(insertRes) && insertRes.length > 0;
             } catch (insertError) {
                 console.error('[saveAudioBook] Error inserting audiobook:', insertError);
                 return false;

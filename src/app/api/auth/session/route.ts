@@ -46,7 +46,8 @@ export async function GET() {
                     stats: user.stats,
                     createdAt: user.createdAt,
                     updatedAt: user.updatedAt,
-                    isAdmin: user.isAdmin
+                    isAdmin: user.isAdmin,
+                    userLevel: user.userLevel
                 }
             });
         } catch (parseError) {

@@ -45,6 +45,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/auth-context';
+import { AlertTriangle, ArrowLeft } from 'lucide-react';
+import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
+import { AuthModal } from '@/components/auth/auth-modal';
 
 export default function AddBookPage() {
     const router = useRouter();
@@ -53,6 +56,7 @@ export default function AddBookPage() {
     const [editingBook, setEditingBook] = useState<Book | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showAudioTracks, setShowAudioTracks] = useState(false);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
     // Filter and sorting state
     const [searchTerm, setSearchTerm] = useState('');
@@ -76,10 +80,10 @@ export default function AddBookPage() {
         deleteBook
     } = useBooks();
 
-    // Admin authorization check
+    // Admin authorization check - requires both admin status and userLevel > 1
     useEffect(() => {
         if (!state.isLoading) {
-            if (!state.isAuthenticated || !state.user?.isAdmin) {
+            if (!state.isAuthenticated || !state.user?.isAdmin || (state.user?.userLevel ?? 0) <= 1) {
                 router.push('/');
             }
         }
@@ -212,16 +216,36 @@ export default function AddBookPage() {
         );
     }
 
-    // Don't render content if not authorized (will redirect)
+    // Don't render content if not authorized (only after loading is complete)
     if (!state.isAuthenticated || !state.user?.isAdmin) {
-        return null;
+        return (
+            <>
+                <AdminAccessDenied 
+                    action="gestire i libri" 
+                    onAuthClick={() => setIsAuthModalOpen(true)}
+                />
+                <AuthModal
+                    open={isAuthModalOpen}
+                    onOpenChange={setIsAuthModalOpen}
+                />
+            </>
+        );
     }
 
     return (
         <div className="container mx-auto p-10">
-            <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4 mb-8">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => router.back()}
+                    className="mr-2"
+                >
+                    <ArrowLeft className="h-5 w-5" />
+                    <span className="sr-only">Indietro</span>
+                </Button>
                 <h1 className="text-3xl font-bold tracking-tight">Book Management</h1>
-                <Button asChild variant="outline">
+                <Button asChild variant="outline" className="ml-auto">
                     <Link href="/" className="select-none">
                         Go Back to Home
                     </Link>
@@ -264,13 +288,13 @@ export default function AddBookPage() {
 
                 <TabsContent value="manage" className="space-y-4">
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="select-none">Books Library</CardTitle>
+                        <CardHeader className="px-0">
+                            <CardTitle>Books Library</CardTitle>
                             <CardDescription className="select-none">
                                 View and manage all books in the database.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-0">
                             <BookTable
                                 books={books}
                                 onEdit={handleEdit}

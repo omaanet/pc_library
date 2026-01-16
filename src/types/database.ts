@@ -63,12 +63,8 @@ export interface NeonClient {
     query<T = any>(sql: string, params?: any[]): Promise<NeonQueryResult<T>>;
 }
 
-export interface NeonQueryResult<T = any> {
-    rows: T[];
-    rowCount: number;
-    command: string;
-    fields: any[];
-}
+// Neon client returns arrays directly, not objects with rows property
+export type NeonQueryResult<T = any> = T[];
 
 // Query parameter types
 export type QueryParams = (string | number | boolean | null)[];

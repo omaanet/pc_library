@@ -96,8 +96,8 @@ export function RootNav({
                                             {state.user?.name || state.user?.fullName || 'Utente'}
                                         </span>
                                         {state.user?.isAdmin && (
-                                            <span className="text-xs bg-yellow-400 text-black px-2 py-0.5 rounded-full font-semibold">
-                                                ADMIN
+                                            <span className="text-[11px] bg-yellow-400 text-black ms-1 px-1.5 py-0 rounded-full font-semibold tracking-wider">
+                                                ADMIN {state.user?.userLevel && state.user.userLevel > 1 && `[${state.user.userLevel}]`}
                                             </span>
                                         )}
                                     </div>
@@ -107,9 +107,6 @@ export function RootNav({
                                 <DropdownMenuItem asChild>
                                     <Link href="/settings">Impostazioni</Link>
                                 </DropdownMenuItem>
-                                {/* <DropdownMenuItem asChild disabled={true}>
-                                    <Link href="/my-books">La mia libreria</Link>
-                                </DropdownMenuItem> */}
                                 <DropdownMenuSeparator />
 
                                 {state.user?.isAdmin && (
@@ -119,7 +116,7 @@ export function RootNav({
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
 
-                                        {state.user?.userLevel && state.user.userLevel > 0 && (
+                                        {(state.user?.userLevel ?? 0) > 1 && (
                                             <>
                                                 <DropdownMenuItem asChild>
                                                     <Link href="/user-statistics" className="font-bold text-red-500 hover:text-red-600">Statistiche</Link>

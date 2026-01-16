@@ -44,9 +44,7 @@ async function saveAudioBook(data: {
 
         console.log('[saveAudioBook] updateRes:', updateRes);
 
-        const wasUpdated = Array.isArray(updateRes)
-            ? updateRes.length > 0
-            : updateRes?.rowCount > 0;
+        const wasUpdated = Array.isArray(updateRes) && updateRes.length > 0;
 
         if (!wasUpdated) {
             try {
@@ -57,9 +55,7 @@ async function saveAudioBook(data: {
                 );
                 console.log('[saveAudioBook] insertRes:', insertRes);
 
-                return Array.isArray(insertRes)
-                    ? insertRes.length > 0
-                    : insertRes?.rowCount > 0;
+                return Array.isArray(insertRes) && insertRes.length > 0;
             } catch (insertError) {
                 console.error('[saveAudioBook] Error inserting audiobook:', insertError);
                 return false;
@@ -385,9 +381,7 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
         }
 
         // Check if the insert was successful
-        const wasInserted = Array.isArray(result)
-            ? result.length > 0
-            : result?.rowCount > 0;
+        const wasInserted = Array.isArray(result) && result.length > 0;
 
         return wasInserted ? { id } : null;
     } catch (error) {
@@ -516,9 +510,7 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
 
     // Handle both array and object result formats
     // For Neon/Postgres, result could be an array or an object with rowCount
-    const wasUpdated = Array.isArray(result)
-        ? result.length > 0
-        : result?.rowCount > 0;
+    const wasUpdated = Array.isArray(result) && result.length > 0;
     console.log('[updateBook] wasUpdated:', wasUpdated);
 
     return wasUpdated;
@@ -545,9 +537,7 @@ export async function deleteBook(id: string): Promise<boolean> {
         );
 
         // Check if any rows were affected
-        const wasDeleted = Array.isArray(result)
-            ? result.length > 0
-            : result?.rowCount > 0;
+        const wasDeleted = Array.isArray(result) && result.length > 0;
 
         if (!wasDeleted) {
             console.log(`[deleteBook] No book found with ID: ${id}`);
