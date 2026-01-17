@@ -211,7 +211,7 @@ export function UsersTable() {
                                             ? 'bg-purple-400 text-purple-950'
                                             : 'bg-slate-400 text-slate-950'
                                             }`}>
-                                            {user.isAdmin ? `Admin [${user.userLevel ?? -1}]` : 'User'}
+                                            {user.isAdmin ? `Admin [${user.userLevel ?? ''}]` : 'User'}
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-xs text-muted-foreground text-end">
