@@ -35,13 +35,16 @@ export default function UserStatisticsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [language, setLanguage] = useState<'en' | 'it'>(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('user-statistics-lang');
-            return (saved === 'en' || saved === 'it') ? saved : 'it';
+    const [language, setLanguage] = useState<'en' | 'it'>('it');
+    const [isMounted, setIsMounted] = useState(false);
+    
+    useEffect(() => {
+        setIsMounted(true);
+        const saved = localStorage.getItem('user-statistics-lang');
+        if (saved === 'en' || saved === 'it') {
+            setLanguage(saved);
         }
-        return 'en';
-    });
+    }, []);
     
     const translations = {
         en: {
@@ -324,8 +327,8 @@ export default function UserStatisticsPage() {
         }
     }, [timeRange, topListSize, state.isAuthenticated, state.user?.isAdmin]);
 
-    // Show loading state while checking authentication
-    if (state.isLoading) {
+    // Show loading state while checking authentication or mounting
+    if (state.isLoading || !isMounted) {
         return (
             <div className="container mx-auto p-10 flex items-center justify-center min-h-screen">
                 <div className="text-center">

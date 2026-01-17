@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getNeonClient, extractRows } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export async function GET(request: Request) {
     try {
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const daysParam = searchParams.get('days') || '30';
         const limit = parseInt(searchParams.get('limit') || '10');
-        
+
         // Handle 'all' days parameter
         const daysFilter = daysParam === 'all' ? '' : `AND created_at >= NOW() - INTERVAL '${daysParam} days'`;
 
@@ -27,6 +28,7 @@ export async function GET(request: Request) {
             FROM system_logs 
             WHERE message = '[read-book]' 
                 AND level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY DATE(created_at)
             ORDER BY date DESC
@@ -45,14 +47,14 @@ export async function GET(request: Request) {
             FROM system_logs 
             WHERE message = '[read-book]' 
                 AND level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY details->>'bookTitle', details->>'bookId'
             ORDER BY read_sessions DESC
-            LIMIT $1
         `;
 
-        const mostReadBooks = await client.query(mostReadBooksQuery, [limit]);
-        const mostReadBooksRows = extractRows(mostReadBooks);
+        const mostReadBooks = await client.query(mostReadBooksQuery);
+        const mostReadBooksRows = extractRows(mostReadBooks).slice(0, limit);
 
         // Get top readers by session count
         const topReadersQuery = `
@@ -65,14 +67,14 @@ export async function GET(request: Request) {
             JOIN users u ON sl.user_id = u.id
             WHERE sl.message = '[read-book]' 
                 AND sl.level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION.replace(/ip_address/g, 'sl.ip_address')}
                 ${daysFilter.replace('created_at', 'sl.created_at')}
             GROUP BY u.id, u.full_name, u.email
             ORDER BY reading_sessions DESC
-            LIMIT $1
         `;
 
-        const topReaders = await client.query(topReadersQuery, [limit]);
-        const topReadersRows = extractRows(topReaders);
+        const topReaders = await client.query(topReadersQuery);
+        const topReadersRows = extractRows(topReaders).slice(0, limit);
 
         // Get reading session patterns by hour
         const sessionsByHourQuery = `
@@ -83,6 +85,7 @@ export async function GET(request: Request) {
             FROM system_logs 
             WHERE message = '[read-book]' 
                 AND level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY EXTRACT(HOUR FROM created_at)
             ORDER BY hour_of_day
@@ -103,6 +106,7 @@ export async function GET(request: Request) {
                      FROM system_logs 
                      WHERE message = '[read-book]' 
                          AND level = 'info'
+                         AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                          ${daysFilter}
                      GROUP BY user_id
                  ) user_sessions
@@ -110,6 +114,7 @@ export async function GET(request: Request) {
             FROM system_logs 
             WHERE message = '[read-book]' 
                 AND level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
         `;
 

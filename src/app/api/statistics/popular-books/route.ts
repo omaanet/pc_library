@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getNeonClient, extractRows } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export async function GET(request: Request) {
     try {
@@ -11,14 +12,14 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const daysParam = searchParams.get('days') || '30';
         const limit = parseInt(searchParams.get('limit') || '10');
-        
+
         // Handle 'all' days parameter
         const daysFilter = daysParam === 'all' ? '' : `AND created_at >= NOW() - INTERVAL '${daysParam} days'`;
 
         const client = getNeonClient();
 
         // Get books by downloads
-        const booksByDownloadsQuery = `
+        const booksByDownloadsQuery = ` 
             SELECT 
                 COALESCE(details->>'bookTitle', 'Unknown') as book_title,
                 COALESCE(details->>'bookId', 'unknown') as book_id,
@@ -28,14 +29,14 @@ export async function GET(request: Request) {
             FROM system_logs 
             WHERE source = 'download-book' 
                 AND level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY details->>'bookTitle', details->>'bookId'
             ORDER BY download_count DESC
-            LIMIT $1
         `;
 
-        const booksByDownloads = await client.query(booksByDownloadsQuery, [limit]);
-        const booksByDownloadsRows = extractRows(booksByDownloads);
+        const booksByDownloads = await client.query(booksByDownloadsQuery);
+        const booksByDownloadsRows = extractRows(booksByDownloads).slice(0, limit);
 
         // Get books by reading sessions
         const booksByReadsQuery = `
@@ -48,14 +49,14 @@ export async function GET(request: Request) {
             FROM system_logs 
             WHERE message = '[read-book]' 
                 AND level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY details->>'bookTitle', details->>'bookId'
             ORDER BY read_sessions DESC
-            LIMIT $1
         `;
 
-        const booksByReads = await client.query(booksByReadsQuery, [limit]);
-        const booksByReadsRows = extractRows(booksByReads);
+        const booksByReads = await client.query(booksByReadsQuery);
+        const booksByReadsRows = extractRows(booksByReads).slice(0, limit);
 
         // Get combined engagement score
         const combinedEngagementQuery = `
@@ -76,6 +77,7 @@ export async function GET(request: Request) {
                 FROM system_logs 
                 WHERE source = 'download-book' 
                     AND level = 'info'
+                    AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                     ${daysFilter}
                 GROUP BY details->>'bookTitle', details->>'bookId'
             ) d
@@ -88,15 +90,15 @@ export async function GET(request: Request) {
                 FROM system_logs 
                 WHERE message = '[read-book]' 
                     AND level = 'info'
+                    AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                     ${daysFilter}
                 GROUP BY details->>'bookTitle', details->>'bookId'
             ) r ON d.book_id = r.book_id
             ORDER BY engagement_score DESC
-            LIMIT $1
         `;
 
-        const combinedEngagement = await client.query(combinedEngagementQuery, [limit]);
-        const combinedEngagementRows = extractRows(combinedEngagement);
+        const combinedEngagement = await client.query(combinedEngagementQuery);
+        const combinedEngagementRows = extractRows(combinedEngagement).slice(0, limit);
 
         // Get book access trends over time
         const accessTrendsQuery = `
@@ -107,6 +109,7 @@ export async function GET(request: Request) {
             FROM system_logs 
             WHERE (source = 'download-book' OR message = '[read-book]')
                 AND level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY DATE(created_at)
             ORDER BY date DESC

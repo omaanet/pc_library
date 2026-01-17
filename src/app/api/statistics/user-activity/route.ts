@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getNeonClient, extractRows } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export async function GET(request: Request) {
     try {
@@ -11,20 +12,21 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const daysParam = searchParams.get('days') || '30';
         const limit = parseInt(searchParams.get('limit') || '10');
-        
+
         // Handle 'all' days parameter
         const daysFilter = daysParam === 'all' ? '' : `AND created_at >= NOW() - INTERVAL '${daysParam} days'`;
 
         const client = getNeonClient();
 
         // Get daily active users
-        const dailyActiveUsersQuery = `
+        const dailyActiveUsersQuery = ` 
             SELECT 
                 DATE(created_at) as date,
                 COUNT(DISTINCT user_id) as daily_active_users,
                 COUNT(*) as total_actions
             FROM system_logs 
             WHERE level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY DATE(created_at)
             ORDER BY date DESC
@@ -46,14 +48,14 @@ export async function GET(request: Request) {
             FROM system_logs sl
             JOIN users u ON sl.user_id = u.id
             WHERE sl.level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION.replace(/ip_address/g, 'sl.ip_address')}
                 ${daysFilter.replace('created_at', 'sl.created_at')}
             GROUP BY u.id, u.full_name, u.email, u.created_at
             ORDER BY total_actions DESC
-            LIMIT $1
         `;
 
-        const mostActiveUsers = await client.query(mostActiveUsersQuery, [limit]);
-        const mostActiveUsersRows = extractRows(mostActiveUsers);
+        const mostActiveUsers = await client.query(mostActiveUsersQuery);
+        const mostActiveUsersRows = extractRows(mostActiveUsers).slice(0, limit);
 
         // Get user activity breakdown by type
         const activityByTypeQuery = `
@@ -68,6 +70,7 @@ export async function GET(request: Request) {
                 ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as percentage
             FROM system_logs 
             WHERE level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY activity_type
             ORDER BY count DESC
@@ -86,6 +89,7 @@ export async function GET(request: Request) {
             FROM system_logs sl
             JOIN users u ON sl.user_id = u.id
             WHERE sl.level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION.replace(/ip_address/g, 'sl.ip_address')}
                 ${daysFilter.replace('created_at', 'sl.created_at')}
             GROUP BY DATE(sl.created_at)
             ORDER BY date DESC
@@ -112,6 +116,7 @@ export async function GET(request: Request) {
                 FROM system_logs sl
                 JOIN users u ON sl.user_id = u.id
                 WHERE sl.level = 'info'
+                    AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION.replace(/ip_address/g, 'sl.ip_address')}
                     ${daysFilter.replace('created_at', 'sl.created_at')}
                 GROUP BY u.id
             ) user_engagement
@@ -137,6 +142,7 @@ export async function GET(request: Request) {
                 ROUND(COUNT(*)::decimal / COUNT(DISTINCT user_id), 2) as avg_actions_per_user
             FROM system_logs 
             WHERE level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
         `;
 

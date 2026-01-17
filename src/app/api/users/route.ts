@@ -15,7 +15,7 @@ export interface UsersQueryParams {
 }
 
 export async function GET(request: Request) {
-    console.log('[Users API] Request received');
+    // console.log('[Users API] Request received');
     try {
         // Require admin authorization
         await requireAdmin();
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get('page') || String(SITE_CONFIG.PAGINATION.DEFAULT_PAGE));
         let perPage = parseInt(searchParams.get('perPage') || String(SITE_CONFIG.PAGINATION.DEFAULT_PER_PAGE));
-        
+
         // Validate perPage is within allowed range
         if (perPage < SITE_CONFIG.PAGINATION.MIN_PER_PAGE) {
             perPage = SITE_CONFIG.PAGINATION.MIN_PER_PAGE;
@@ -36,18 +36,18 @@ export async function GET(request: Request) {
         const isActivated = searchParams.get('isActivated');
         const isAdmin = searchParams.get('isAdmin');
 
-        console.log('[Users API] Query params:', {
-            page,
-            perPage,
-            search,
-            sortBy,
-            sortOrder,
-            isActivated,
-            isAdmin
-        });
+        // console.log('[Users API] Query params:', {
+        //     page,
+        //     perPage,
+        //     search,
+        //     sortBy,
+        //     sortOrder,
+        //     isActivated,
+        //     isAdmin
+        // });
 
         const client = getNeonClient();
-        console.log('[Users API] Database client initialized');
+        // console.log('[Users API] Database client initialized');
 
         // Build WHERE conditions
         const whereConditions: string[] = [];
@@ -79,13 +79,13 @@ export async function GET(request: Request) {
 
         // Get total count
         const countQuery = `SELECT COUNT(*) as total FROM users ${whereClause}`;
-        console.log('[Users API] Count query:', countQuery, 'Params:', params);
+        // console.log('[Users API] Count query:', countQuery, 'Params:', params);
 
         const countResult = await client.query(countQuery, params);
-        console.log('[Users API] Count result:', countResult);
+        // console.log('[Users API] Count result:', countResult);
 
         const total = parseInt(countResult[0]?.total || '0');
-        console.log('[Users API] Total users:', total);
+        // console.log('[Users API] Total users:', total);
 
         // Get paginated users
         const offset = (page - 1) * perPage;
@@ -123,9 +123,9 @@ export async function GET(request: Request) {
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
 
-        console.log('[Users API] Users query:', query, 'Params:', [...params, perPage, offset]);
+        // console.log('[Users API] Users query:', query, 'Params:', [...params, perPage, offset]);
         const result = await client.query(query, [...params, perPage, offset]);
-        console.log('[Users API] Query result rows:', result?.length || 0);
+        // console.log('[Users API] Query result rows:', result?.length || 0);
 
         const response = {
             users: result,
@@ -137,7 +137,7 @@ export async function GET(request: Request) {
             }
         };
 
-        console.log('[Users API] Sending response with', result?.length || 0, 'users');
+        // console.log('[Users API] Sending response with', result?.length || 0, 'users');
         return NextResponse.json(response);
 
     } catch (error) {

@@ -76,4 +76,11 @@ export const SITE_CONFIG = {
         SITE_URL: 'https://www.omaa.it',
         ESTABLISHED_YEAR: 2025,
     },
+
+    /**
+     * SQL condition to exclude internal and local IP addresses from statistics
+     * to prevent data pollution from development and maintenance activities.
+     * Handles NULL ip_address values by treating them as non-excluded.
+     */
+    AVOID_LOCAL_ADDRESS_POLLUTION: "(COALESCE(ip_address, '') <> '128.116.163.86' AND COALESCE(ip_address, '') <> '::1')",
 } as const;

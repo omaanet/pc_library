@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getNeonClient, extractRows } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export async function GET(request: Request) {
     try {
@@ -11,13 +12,13 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const daysParam = searchParams.get('days') || '30';
         const limit = parseInt(searchParams.get('limit') || '10');
-        
+
         // Handle 'all' days parameter
         const daysFilter = daysParam === 'all' ? '' : `AND created_at >= NOW() - INTERVAL '${daysParam} days'`;
 
         const client = getNeonClient();
 
-        // Get errors over time
+        // Get errors over time 
         const errorsOverTimeQuery = `
             SELECT 
                 DATE(created_at) as date,
@@ -27,6 +28,7 @@ export async function GET(request: Request) {
                 COUNT(DISTINCT user_id) as affected_users
             FROM system_logs 
             WHERE level IN ('error', 'warning')
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY DATE(created_at)
             ORDER BY date DESC
@@ -46,14 +48,14 @@ export async function GET(request: Request) {
                 STRING_AGG(DISTINCT message, ', ') as common_messages
             FROM system_logs 
             WHERE level IN ('error', 'warning')
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY source
             ORDER BY error_count DESC
-            LIMIT $1
         `;
 
-        const topErrorSources = await client.query(topErrorSourcesQuery, [limit]);
-        const topErrorSourcesRows = extractRows(topErrorSources);
+        const topErrorSources = await client.query(topErrorSourcesQuery);
+        const topErrorSourcesRows = extractRows(topErrorSources).slice(0, limit);
 
         // Get most frequent error messages
         const frequentErrorsQuery = `
@@ -66,14 +68,14 @@ export async function GET(request: Request) {
                 MAX(created_at) as last_occurrence
             FROM system_logs 
             WHERE level IN ('error', 'warning')
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY message, source
             ORDER BY occurrence_count DESC
-            LIMIT $1
         `;
 
-        const frequentErrors = await client.query(frequentErrorsQuery, [limit]);
-        const frequentErrorsRows = extractRows(frequentErrors);
+        const frequentErrors = await client.query(frequentErrorsQuery);
+        const frequentErrorsRows = extractRows(frequentErrors).slice(0, limit);
 
         // Get errors by request path
         const errorsByPathQuery = `
@@ -87,14 +89,14 @@ export async function GET(request: Request) {
             FROM system_logs 
             WHERE level IN ('error', 'warning')
                 AND request_path IS NOT NULL
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY request_path
             ORDER BY error_count DESC
-            LIMIT $1
         `;
 
-        const errorsByPath = await client.query(errorsByPathQuery, [limit]);
-        const errorsByPathRows = extractRows(errorsByPath);
+        const errorsByPath = await client.query(errorsByPathQuery);
+        const errorsByPathRows = extractRows(errorsByPath).slice(0, limit);
 
         // Get error distribution by hour
         const errorsByHourQuery = `
@@ -105,6 +107,7 @@ export async function GET(request: Request) {
                 COUNT(CASE WHEN level = 'warning' THEN 1 END) as warnings
             FROM system_logs 
             WHERE level IN ('error', 'warning')
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY EXTRACT(HOUR FROM created_at)
             ORDER BY hour_of_day
@@ -124,6 +127,7 @@ export async function GET(request: Request) {
                 ROUND(COUNT(CASE WHEN level = 'error' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0), 2) as error_percentage
             FROM system_logs 
             WHERE level IN ('error', 'warning')
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
         `;
 

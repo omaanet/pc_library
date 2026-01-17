@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getNeonClient, extractRows } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export async function GET(request: Request) {
     try {
@@ -11,13 +12,13 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const daysParam = searchParams.get('days') || '30';
         const limit = parseInt(searchParams.get('limit') || '10');
-        
+
         // Handle 'all' days parameter
         const daysFilter = daysParam === 'all' ? '' : `AND created_at >= NOW() - INTERVAL '${daysParam} days'`;
 
         const client = getNeonClient();
 
-        // Get download analytics over time
+        // Get download analytics over time 
         const downloadsOverTimeQuery = `
             SELECT 
                 DATE(created_at) as date,
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
             GROUP BY DATE(created_at)
             ORDER BY date DESC
         `;
+        // AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
 
         const downloadsOverTime = await client.query(downloadsOverTimeQuery);
         const downloadsOverTimeRows = extractRows(downloadsOverTime);
@@ -45,14 +47,14 @@ export async function GET(request: Request) {
             FROM system_logs 
             WHERE source = 'download-book' 
                 AND level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
             GROUP BY details->>'bookTitle', details->>'bookId'
             ORDER BY download_count DESC
-            LIMIT $1
         `;
 
-        const mostDownloadedBooks = await client.query(mostDownloadedBooksQuery, [limit]);
-        const mostDownloadedBooksRows = extractRows(mostDownloadedBooks);
+        const mostDownloadedBooks = await client.query(mostDownloadedBooksQuery);
+        const mostDownloadedBooksRows = extractRows(mostDownloadedBooks).slice(0, limit);
 
         // Get top downloaders
         const topDownloadersQuery = `
@@ -65,14 +67,14 @@ export async function GET(request: Request) {
             JOIN users u ON sl.user_id = u.id
             WHERE sl.source = 'download-book' 
                 AND sl.level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION.replace(/ip_address/g, 'sl.ip_address')}
                 ${daysFilter.replace('created_at', 'sl.created_at')}
             GROUP BY u.id, u.full_name, u.email
             ORDER BY download_count DESC
-            LIMIT $1
         `;
 
-        const topDownloaders = await client.query(topDownloadersQuery, [limit]);
-        const topDownloadersRows = extractRows(topDownloaders);
+        const topDownloaders = await client.query(topDownloadersQuery);
+        const topDownloadersRows = extractRows(topDownloaders).slice(0, limit);
 
         // Get total downloads stats
         const totalStatsQuery = `
@@ -84,6 +86,7 @@ export async function GET(request: Request) {
             FROM system_logs 
             WHERE source = 'download-book' 
                 AND level = 'info'
+                AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 ${daysFilter}
         `;
 
