@@ -19,6 +19,7 @@ export interface User {
     fullName: string;
     isActivated: boolean;
     isAdmin: boolean;
+    userLevel?: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -210,7 +211,7 @@ export function UsersTable() {
                                             ? 'bg-purple-400 text-purple-950'
                                             : 'bg-slate-400 text-slate-950'
                                             }`}>
-                                            {user.isAdmin ? 'Admin' : 'User'}
+                                            {user.isAdmin ? `Admin [${user.userLevel ?? -1}]` : 'User'}
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-xs text-muted-foreground text-end">

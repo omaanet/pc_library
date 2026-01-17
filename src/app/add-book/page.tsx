@@ -52,7 +52,22 @@ import { AuthModal } from '@/components/auth/auth-modal';
 export default function AddBookPage() {
     const router = useRouter();
     const { state } = useAuth();
-    const [activeTab, setActiveTab] = useState('manage');
+    // Load active tab from localStorage on mount, default to 'manage'
+    const [activeTab, setActiveTab] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const savedTab = localStorage.getItem('add-book-active-tab');
+            return savedTab || 'manage';
+        }
+        return 'manage';
+    });
+
+    // Wrapper function to handle tab changes with localStorage persistence
+    const handleSetActiveTab = (value: string) => {
+        setActiveTab(value);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('add-book-active-tab', value);
+        }
+    };
     const [editingBook, setEditingBook] = useState<Book | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showAudioTracks, setShowAudioTracks] = useState(false);
@@ -138,7 +153,7 @@ export default function AddBookPage() {
 
             // Reset form and switch to manage tab
             setEditingBook(undefined);
-            setActiveTab('manage');
+            handleSetActiveTab('manage');
         } catch (error) {
             console.error('Error saving book:', error);
         } finally {
@@ -171,7 +186,7 @@ export default function AddBookPage() {
             console.error('Error preparing book for edit:', error);
         } finally {
             setIsSubmitting(false);
-            setActiveTab('add');
+            handleSetActiveTab('add');
         }
     };
 
@@ -186,20 +201,20 @@ export default function AddBookPage() {
         };
         // Set the cloned book for editing
         setEditingBook(clonedBook as Book);
-        setActiveTab('add');
+        handleSetActiveTab('add');
     };
 
     // Handle cancel button click
     const handleCancel = () => {
         setEditingBook(undefined);
         if (activeTab === 'add' || activeTab === 'audio-tracks') {
-            setActiveTab('manage');
+            handleSetActiveTab('manage');
         }
     };
 
     // Handle tab change
     const handleTabChange = (value: string) => {
-        setActiveTab(value);
+        handleSetActiveTab(value);
         if (value === 'manage') {
             setEditingBook(undefined);
         }

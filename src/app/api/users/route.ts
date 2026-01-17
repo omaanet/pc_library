@@ -113,7 +113,8 @@ export async function GET(request: Request) {
         email,
         full_name as "fullName",
         is_activated as "isActivated",
-        CASE WHEN is_admin = 1 THEN true ELSE false END as "isAdmin",
+        is_admin as "userLevel",
+        CASE WHEN is_admin > 0 THEN true ELSE false END as "isAdmin",
         created_at as "createdAt",
         updated_at as "updatedAt"
       FROM users
