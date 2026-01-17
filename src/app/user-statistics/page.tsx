@@ -30,7 +30,7 @@ export default function UserStatisticsPage() {
     const router = useRouter();
     const { state } = useAuth();
     const [timeRange, setTimeRange] = useState('all');
-    const [topListSize, setTopListSize] = useState('5');
+    const [topListSize, setTopListSize] = useState('10');
     const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
