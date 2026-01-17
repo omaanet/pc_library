@@ -202,3 +202,13 @@
 .time-display {
     font-size: 0.875rem;
 }
+
+/* Scrollbar hide utility for horizontal scrolling */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}

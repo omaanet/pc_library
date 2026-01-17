@@ -330,7 +330,7 @@ export default function UserStatisticsPage() {
     // Show loading state while checking authentication or mounting
     if (state.isLoading || !isMounted) {
         return (
-            <div className="container mx-auto p-10 flex items-center justify-center min-h-screen">
+            <div className="container mx-auto p-4 sm:p-6 lg:p-10 flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <p className="text-lg text-muted-foreground">{t('checkingAuth')}</p>
                 </div>
@@ -357,7 +357,7 @@ export default function UserStatisticsPage() {
     // Show initial loading screen only when there's no data yet
     if (loading && !statistics) {
         return (
-            <div className="container mx-auto p-10 flex items-center justify-center min-h-screen">
+            <div className="container mx-auto p-4 sm:p-6 lg:p-10 flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <p className="text-lg text-muted-foreground">{t('loadingStats')}</p>
                 </div>
@@ -367,7 +367,7 @@ export default function UserStatisticsPage() {
 
     if (error) {
         return (
-            <div className="container mx-auto p-10">
+            <div className="container mx-auto p-4 sm:p-6 lg:p-10">
                 <div className="text-center">
                     <p className="text-lg text-red-600">{error}</p>
                     <Button onClick={fetchStatistics} className="mt-4">
@@ -387,31 +387,33 @@ export default function UserStatisticsPage() {
     };
 
     return (
-        <div className="container mx-auto p-10">
-            <div className="flex items-center gap-4 mb-6">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => router.back()}
-                    className="mr-2"
-                >
-                    <ArrowLeft className="h-5 w-5" />
-                    <span className="sr-only">{t('back')}</span>
-                </Button>
-                <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
-                <div className="flex items-center space-x-4 ml-auto">
+        <div className="container mx-auto px-2 sm:px-4 lg:px-0 py-2 sm:py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => router.back()}
+                        className="mr-2"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                        <span className="sr-only">{t('back')}</span>
+                    </Button>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
+                </div>
+                <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4">
                     {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                     <Select value={language} onValueChange={handleLanguageChange}>
-                        <SelectTrigger className="w-[100px]">
+                        <SelectTrigger className="w-[80px] sm:w-[100px]">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="en">English</SelectItem>
-                            <SelectItem value="it">Italiano</SelectItem>
+                            <SelectItem value="en">EN</SelectItem>
+                            <SelectItem value="it">IT</SelectItem>
                         </SelectContent>
                     </Select>
                     <Select value={timeRange} onValueChange={setTimeRange}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-[140px] sm:w-[180px]">
                             <SelectValue placeholder={t('selectTimeRange')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -423,7 +425,7 @@ export default function UserStatisticsPage() {
                         </SelectContent>
                     </Select>
                     <Select value={topListSize} onValueChange={setTopListSize}>
-                        <SelectTrigger className="w-[120px]">
+                        <SelectTrigger className="w-[120px] sm:w-[120px]">
                             <SelectValue placeholder={t('top')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -433,25 +435,25 @@ export default function UserStatisticsPage() {
                             <SelectItem value="all">{t('all')}</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button asChild variant="outline">
+                    {/* <Button asChild variant="outline" size="sm" className="hidden sm:flex flex-shrink-0">
                         <Link href="/" className="select-none">
                             {t('backToHome')}
                         </Link>
-                    </Button>
+                    </Button> */}
                 </div>
             </div>
 
             {/* Error Summary */}
             {failedEndpoints.length > 0 && (
-                <Alert className="mb-6 border-orange-200 bg-orange-50">
-                    <AlertTriangle className="h-4 w-4 text-orange-600" />
+                <Alert className="mb-4 sm:mb-6 border-orange-200 bg-orange-50">
+                    <AlertTriangle className="h-4 w-4 text-orange-600 flex-shrink-0" />
                     <AlertDescription className="space-y-2">
                         <div className="font-medium text-orange-800">
                             {t('someEndpointsFailed')} ({failedEndpoints.length} {t('errorsLabel')})
                         </div>
                         <div className="space-y-1">
                             {failedEndpoints.map((error, index) => (
-                                <div key={index} className="flex items-center justify-between text-sm">
+                                <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-start sm:justify-between text-sm gap-2">
                                     <span className="text-orange-700">
                                         <strong>{error.endpoint}</strong>: {error.error}
                                     </span>
@@ -459,7 +461,7 @@ export default function UserStatisticsPage() {
                                         size="sm"
                                         variant="outline"
                                         onClick={() => handleRetryEndpoint(error.endpoint)}
-                                        className="ml-2 h-6 px-2 text-xs"
+                                        className="ml-0 sm:ml-2 h-6 px-2 text-xs self-end"
                                     >
                                         <RefreshCw className="h-3 w-3 mr-1" />
                                         {t('retry')}
@@ -472,7 +474,7 @@ export default function UserStatisticsPage() {
             )}
 
             {/* Overview Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+            <div className="grid gap-2 sm:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-4 sm:mb-6">
                 <StatsCard
                     title={t('totalDownloads')}
                     value={statistics?.downloads?.totalStats?.total_downloads?.toLocaleString('it-IT') || '0'}
@@ -500,16 +502,16 @@ export default function UserStatisticsPage() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
-                    <TabsTrigger value="downloads">{t('downloads')}</TabsTrigger>
-                    <TabsTrigger value="reading" className="data-[state=inactive]:bg-amber-700/50 dark:data-[state=active]:bg-amber-600/50">{t('reading')}</TabsTrigger>
-                    <TabsTrigger value="users">{t('users')}</TabsTrigger>
-                    <TabsTrigger value="errors">{t('errorsTab')}</TabsTrigger>
+                <TabsList className="w-full overflow-x-auto flex flex-nowrap whitespace-nowrap scrollbar-hide">
+                    <TabsTrigger value="overview" className="flex-shrink-0">{t('overview')}</TabsTrigger>
+                    <TabsTrigger value="downloads" className="flex-shrink-0">{t('downloads')}</TabsTrigger>
+                    <TabsTrigger value="reading" className="flex-shrink-0 data-[state=inactive]:bg-amber-700/50 dark:data-[state=active]:bg-amber-600/50">{t('reading')}</TabsTrigger>
+                    <TabsTrigger value="users" className="flex-shrink-0">{t('users')}</TabsTrigger>
+                    <TabsTrigger value="errors" className="flex-shrink-0">{t('errorsTab')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                         <ActivityChart
                             data={statistics?.downloads?.downloadsOverTime || []}
                             lines={[
@@ -554,7 +556,7 @@ export default function UserStatisticsPage() {
                 </TabsContent>
 
                 <TabsContent value="downloads" className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                         <Card>
                             <CardHeader>
                                 <CardTitle>{t('downloadStatistics')}</CardTitle>
@@ -592,7 +594,7 @@ export default function UserStatisticsPage() {
                 </TabsContent>
 
                 <TabsContent value="reading" className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                         <BarChartComponent
                             data={(statistics?.readingSessions?.sessionsByHour || []).map((hour: any) => ({
                                 name: `${hour.hour_of_day}:00`,
@@ -616,7 +618,7 @@ export default function UserStatisticsPage() {
                 </TabsContent>
 
                 <TabsContent value="users" className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                         <ActivityChart
                             data={statistics?.userActivity?.dailyActiveUsers || []}
                             lines={[
@@ -664,7 +666,7 @@ export default function UserStatisticsPage() {
                 </TabsContent>
 
                 <TabsContent value="errors" className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                         <ActivityChart
                             data={statistics?.errors?.errorsOverTime || []}
                             lines={[
