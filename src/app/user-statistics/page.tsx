@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,7 +46,7 @@ export default function UserStatisticsPage() {
         }
     }, []);
     
-    const translations = {
+    const translations = React.useMemo(() => ({
         en: {
             // Authorization and loading
             checkingAuth: 'Checking authorization...',
@@ -135,7 +135,7 @@ export default function UserStatisticsPage() {
             errorTrendsDesc: 'Daily errors and warnings',
             topErrorSources: 'Top Error Sources',
             errorsLabel: 'errors',
-            warningsLabel: 'warnings',
+            warningsLabel: 'avvisi',
             
             // Units
             bytes: ['Bytes', 'KB', 'MB', 'GB']
@@ -233,21 +233,22 @@ export default function UserStatisticsPage() {
             // Units
             bytes: ['Bytes', 'KB', 'MB', 'GB']
         }
-    };
+    }), []);
     
-    const t = (key: string): string => {
-        const value = translations[language][key as keyof typeof translations.en];
-        return Array.isArray(value) ? value[0] : (value || key);
-    };
-    
-    const getBytes = (): string[] => {
-        return translations[language].bytes as string[];
-    };
-    
-    const handleLanguageChange = (newLang: 'en' | 'it') => {
+    const handleLanguageChange = useCallback((newLang: 'en' | 'it') => {
         setLanguage(newLang);
         localStorage.setItem('user-statistics-lang', newLang);
-    };
+    }, []);
+
+    const t = useCallback((key: string): string => {
+        const value = (translations as any)[language][key];
+        return Array.isArray(value) ? value[0] : (value || key);
+    }, [language, translations]);
+    
+    const getBytes = useCallback((): string[] => {
+        return (translations as any)[language].bytes as string[];
+    }, [language, translations]);
+    
     const [statistics, setStatistics] = useState<{
         downloads: any;
         readingSessions: any;
@@ -259,7 +260,7 @@ export default function UserStatisticsPage() {
     const { toast } = useToast();
 
     // Fetch statistics data
-    const fetchStatistics = async () => {
+    const fetchStatistics = useCallback(async () => {
         setLoading(true);
         setError(null);
         
@@ -286,7 +287,7 @@ export default function UserStatisticsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [timeRange, topListSize, toast, t]);
 
     // Retry a specific endpoint
     const handleRetryEndpoint = async (endpointName: string) => {
@@ -325,7 +326,7 @@ export default function UserStatisticsPage() {
         if (state.isAuthenticated && state.user?.isAdmin) {
             fetchStatistics();
         }
-    }, [timeRange, topListSize, state.isAuthenticated, state.user?.isAdmin]);
+    }, [timeRange, topListSize, state.isAuthenticated, state.user?.isAdmin]); // Removed fetchStatistics from dependencies to break the loop
 
     // Show loading state while checking authentication or mounting
     if (state.isLoading || !isMounted) {
