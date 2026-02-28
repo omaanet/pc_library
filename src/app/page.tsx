@@ -26,8 +26,8 @@ export default function HomePage() {
 
                 {/* Hero Section */}
                 <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">
-                    <div className="container mx-auto space-y-2">
-                        <div className="space-y-1 sm:space-y-4 text-center">
+                    <div className="container">
+                        <div className="space-y-1 sm:space-y-3 text-center">
                             <h1 className={`text-4xl font-medium tracking-tight md:tracking-normal sm:text-6xl text-sky-600 dark:text-sky-400 ${displayFontClass}`}>
                                 Racconti in Voce e Caratteri
                             </h1>
@@ -35,13 +35,14 @@ export default function HomePage() {
                                 Espressioni di Scrittura Creativa
                             </h2>
 
-                            <p className="mx-auto max-w-5xl text-sm md:text-lg tracking-tight md:tracking-normal text-sky-500 dark:text-sky-300">
-                                <span className="inline-block mt-4">Una variegata raccolta narrativa di fantasia.</span><br />
-                                <span className="inline-block">Sito web dedicato alla lettura a scopo benefico.</span><br />
-                                <span className="inline-block mt-4 text-emerald-600 dark:text-emerald-400">Un libero contributo da destinarsi a scelta del lettore a favore di:<br />Organizzazioni Non Profit, Associazioni di Volontariato, Fondazioni o a cause specifiche.</span>
-                            </p>
+                            <div className="mx-auto max-w-5xl text-sm md:text-lg tracking-tight md:tracking-normal text-sky-500 dark:text-sky-300">
+                                <div className="block pt-3 sm:pt-5">Una variegata raccolta narrativa di fantasia.</div>
+                                <div className="block">Sito web dedicato alla lettura a scopo benefico.</div>
+                                {SITE_CONFIG.SHOW_CONTRIBUTION_TEXT && (
+                                    <div className="block mt-4 text-emerald-600 dark:text-emerald-400">Un libero contributo da destinarsi a scelta del lettore a favore di:<br />Organizzazioni Non Profit, Associazioni di Volontariato, Fondazioni o a cause specifiche.</div>
+                                )}
+                            </div>
                         </div>
-
                     </div>
                 </section>
 

@@ -8,6 +8,8 @@
 export const SITE_CONFIG = {
     CONTACT_EMAIL: process.env.NODE_ENV === 'development' ? 'oscar@omaa.it' : 'info@raccontiinvoceecaratteri.it',
 
+    SHOW_CONTRIBUTION_TEXT: false,
+
     BOOK_BADGES: {
         NEW_DAYS: 30,
     },
