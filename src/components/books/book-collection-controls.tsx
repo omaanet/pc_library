@@ -1,6 +1,7 @@
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BookWithSign } from '@/components/shared/book-with-sign';
+import { QuillStage } from '@/components/mascots/quill-stage';
 
 /**
  * Header controls for the book collection displaying the library title and icon.
@@ -24,6 +25,21 @@ export function BookCollectionControls({ onRefresh, isRefreshing = false }: Book
                     Biblioteca
                 </h2>
             </div>
+
+            {/* Free-roaming Quill mascot — walks in after 3s, inspects a book */}
+            {/* <QuillStage
+                trigger={{ type: 'load', delay: 1000 }}
+                choreography="book-inspect"
+                frequency="always"
+                id="library-book-inspect"
+            /> */}
+
+            {/* <QuillStage
+                trigger={{ type: 'load', delay: 1000 }}
+                choreography="write-and-leave"
+                frequency="always"
+                id="library-book-inspect"
+            /> */}
 
             {onRefresh && (
                 <div className="flex justify-end sm:justify-start">

@@ -212,3 +212,17 @@
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
+
+/* Quill mascot — shake effect when mascot "touches" an element */
+@keyframes quillTouchShake {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    15% { transform: translateX(-3px) rotate(-1deg); }
+    30% { transform: translateX(3px) rotate(1deg); }
+    45% { transform: translateX(-2px) rotate(-0.5deg); }
+    60% { transform: translateX(2px) rotate(0.5deg); }
+    75% { transform: translateX(-1px) rotate(0deg); }
+}
+
+.quill-touch-shake {
+    animation: quillTouchShake 0.5s ease-in-out;
+}

@@ -111,6 +111,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
 
     return (
         <Card
+            data-book-card
             className={cn(
                 "group overflow-hidden transition-colors hover:border-primary",
                 className
