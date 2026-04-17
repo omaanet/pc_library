@@ -49,11 +49,24 @@ const AudioBookPlayer = ({ book, autoPlay = false }: AudioBookPlayerProps) => {
     }
     if (!audiobook || !audiobook.media_id) return null;
 
-    const tracks = [
-        {
+    const hasCustomIntro = Boolean(
+        audiobook.intro_audio_override &&
+        audiobook.intro_audio_title?.trim() &&
+        audiobook.intro_audio_id?.trim()
+    );
+
+    const introTrack = hasCustomIntro
+        ? {
+            title: audiobook.intro_audio_title as string,
+            url: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/${audiobook.intro_audio_id}`
+        }
+        : {
             title: 'Nota per la beneficenza',
             url: 'https://s3.eu-south-1.wasabisys.com/piero-audiolibri/Nota per la beneficenza.mp3',
-        },
+        };
+
+    const tracks = [
+        introTrack,
         {
             title: book.title || '',
             url: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/${audiobook.media_id}`

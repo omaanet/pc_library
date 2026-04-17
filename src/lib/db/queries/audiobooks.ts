@@ -11,7 +11,17 @@ import { getFirstRow } from '../utils';
 export async function getAudioBookById(id: string): Promise<AudioBook | undefined> {
     const client = getNeonClient();
     const res = await client.query(
-        `SELECT id, book_id, media_id, audio_length, publishing_date FROM audiobooks WHERE book_id = $1`,
+        `SELECT
+            id,
+            book_id,
+            media_id,
+            audio_length,
+            publishing_date,
+            intro_audio_override,
+            intro_audio_title,
+            intro_audio_id
+        FROM audiobooks
+        WHERE book_id = $1`,
         [id]
     );
 
@@ -30,6 +40,9 @@ export async function saveAudioBook(data: {
     media_id: string | null;
     audio_length: number | null;
     publishing_date: string | null;
+    intro_audio_override?: boolean;
+    intro_audio_title?: string | null;
+    intro_audio_id?: string | null;
 }): Promise<boolean> {
     const client = getNeonClient();
     console.log('[saveAudioBook] data:', data);
@@ -37,8 +50,25 @@ export async function saveAudioBook(data: {
     try {
         // Try update first
         const updateRes = await client.query(
-            `UPDATE audiobooks SET media_id = $1, audio_length = $2, publishing_date = $3, updated_at = NOW() WHERE book_id = $4 RETURNING book_id`,
-            [data.media_id, data.audio_length, data.publishing_date, data.book_id]
+            `UPDATE audiobooks
+             SET media_id = $1,
+                 audio_length = $2,
+                 publishing_date = $3,
+                 intro_audio_override = COALESCE($4, intro_audio_override),
+                 intro_audio_title = COALESCE($5, intro_audio_title),
+                 intro_audio_id = COALESCE($6, intro_audio_id),
+                 updated_at = NOW()
+             WHERE book_id = $7
+             RETURNING book_id`,
+            [
+                data.media_id,
+                data.audio_length,
+                data.publishing_date,
+                data.intro_audio_override ?? null,
+                data.intro_audio_title ?? null,
+                data.intro_audio_id ?? null,
+                data.book_id
+            ]
         );
 
         console.log('[saveAudioBook] updateRes:', updateRes);
@@ -49,9 +79,25 @@ export async function saveAudioBook(data: {
         if (!wasUpdated) {
             try {
                 const insertRes = await client.query(
-                    `INSERT INTO audiobooks (book_id, media_id, audio_length, publishing_date) 
-                     VALUES ($1, $2, $3, $4) RETURNING book_id`,
-                    [data.book_id, data.media_id, data.audio_length, data.publishing_date]
+                    `INSERT INTO audiobooks (
+                        book_id,
+                        media_id,
+                        audio_length,
+                        publishing_date,
+                        intro_audio_override,
+                        intro_audio_title,
+                        intro_audio_id
+                    ) VALUES ($1, $2, $3, $4, COALESCE($5, FALSE), $6, $7)
+                    RETURNING book_id`,
+                    [
+                        data.book_id,
+                        data.media_id,
+                        data.audio_length,
+                        data.publishing_date,
+                        data.intro_audio_override ?? null,
+                        data.intro_audio_title ?? null,
+                        data.intro_audio_id ?? null
+                    ]
                 );
                 console.log('[saveAudioBook] insertRes:', insertRes);
 

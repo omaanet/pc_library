@@ -69,4 +69,10 @@ export interface UserStats {
 export interface AudioBookInfo {
     /** Mux media ID for the audiobook, null if not available */
     mediaId: string | null;
+    /** Whether the default intro audio is overridden for this audiobook */
+    introAudioOverride?: boolean;
+    /** Custom intro title shown as the first track when override is enabled */
+    introAudioTitle?: string | null;
+    /** Wasabi object key segment for the custom intro track */
+    introAudioId?: string | null;
 }

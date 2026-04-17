@@ -12,7 +12,7 @@ pnpm dev2             # Next.js dev server without Turbopack on port 3005
 pnpm devENV           # Dev server with scripts/check-env.js preloaded
 pnpm build            # Production build
 pnpm start            # Production server on port 3006
-pnpm lint             # next lint
+pnpm lint             # ESLint via eslint.config.cjs
 pnpm check-env        # Print selected env vars at startup
 pnpm knip:json        # Write reports/knip.json
 pnpm knip:md          # Write reports/knip.md
@@ -23,7 +23,7 @@ pnpm knip:timestamped # Generate timestamped knip reports
 
 ## Core Stack
 
-- Framework: Next.js `15.5.9` + React `19.2.0`
+- Framework: Next.js `16.2.4` + React `19.2.0`
 - Language: TypeScript `5.9.3`
 - Database: Neon PostgreSQL via direct SQL, no ORM
 - Styling: Tailwind CSS `3.4.18`, shadcn/ui, Radix UI, `next-themes`
@@ -44,7 +44,7 @@ The live app pages under `src/app/` are:
 - `/settings` user preferences UI
 - `/user-statistics` admin analytics dashboard
 
-Authentication is modal-driven from the client. The middleware still treats `/login` and `/register` as auth routes, but there are no dedicated page files for them in `src/app/`.
+Authentication is modal-driven from the client. The proxy still treats `/login` and `/register` as auth routes, but there are no dedicated page files for them in `src/app/`.
 
 ### Database Layer
 
@@ -193,7 +193,7 @@ Important behavior:
 
 ## Middleware and Security
 
-`src/middleware.ts` currently does three things:
+`src/proxy.ts` currently does three things:
 
 - validates the session cookie for protected routes
 - redirects authenticated users away from `/login` and `/register`
@@ -268,4 +268,4 @@ Notes:
 - `src/app/api/user/preferences/route.ts` is a placeholder implementation, so DB-backed preference changes need new persistence work.
 - `src/app/add-book/page.tsx` and parts of the admin UI still contain English copy; keep changes localized.
 - The statistics endpoints depend on `system_logs` and on `SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION`.
-- The middleware matcher excludes `_next/static`, `_next/image`, and `favicon.ico`, but otherwise runs broadly.
+- The proxy matcher excludes `_next/static`, `_next/image`, and `favicon.ico`, but otherwise runs broadly.

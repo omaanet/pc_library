@@ -19,7 +19,7 @@ A modern Next.js web application for reading and listening to creative fiction s
 ## 🛠️ Tech Stack
 
 ### Core Framework
-- **Next.js 15.5.6** - React framework with App Router and Turbopack
+- **Next.js 16.2.4** - React framework with App Router and Turbopack
 - **React 19.2.0** - UI library (stable release)
 - **TypeScript 5.9.3** - Type safety
 
@@ -137,7 +137,7 @@ pnpm devENV
 | `pnpm dev2` | Start development server without Turbopack |
 | `pnpm build` | Build production bundle (can use `--turbo` flag for beta Turbopack builds) |
 | `pnpm start` | Start production server on port 3006 |
-| `pnpm lint` | Run ESLint (Note: `next lint` is deprecated in Next.js 15.5+) |
+| `pnpm lint` | Run ESLint using the root flat config (`eslint.config.cjs`) |
 | `pnpm check-env` | Verify environment variables |
 
 ## 📁 Project Structure
@@ -185,7 +185,7 @@ my-app_claude/
 │   ├── providers/            # App providers
 │   ├── styles/               # Global styles
 │   ├── types/                # TypeScript definitions
-│   └── middleware.ts         # Next.js middleware
+│   └── proxy.ts              # Next.js proxy
 ├── public/                   # Static assets
 ├── scripts/                  # Utility scripts
 ├── .env.local               # Environment variables (not in git)

@@ -33,7 +33,10 @@ export async function POST(
             book_id: bookId,
             media_id: body.media_id,
             audio_length: body.audio_length ? Number(body.audio_length) : null,
-            publishing_date: body.publishing_date
+            publishing_date: body.publishing_date,
+            intro_audio_override: body.intro_audio_override,
+            intro_audio_title: body.intro_audio_title,
+            intro_audio_id: body.intro_audio_id
         });
 
         return NextResponse.json(audiobook);

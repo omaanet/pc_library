@@ -1,0 +1,4 @@
+ALTER TABLE audiobooks
+  ADD COLUMN IF NOT EXISTS intro_audio_override BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS intro_audio_title TEXT,
+  ADD COLUMN IF NOT EXISTS intro_audio_id TEXT;

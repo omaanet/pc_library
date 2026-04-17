@@ -8,6 +8,98 @@ import { SITE_CONFIG } from '@/config/site-config';
 import { requireAdmin } from '@/lib/admin-auth';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
 
+type NormalizedAudiobookPayload = {
+    mediaId?: string | null;
+    introAudioOverride?: boolean;
+    introAudioTitle?: string | null;
+    introAudioId?: string | null;
+};
+
+function normalizeStringField(
+    value: unknown,
+    fieldName: string
+): string | null | undefined {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+    if (typeof value !== 'string') {
+        throw new ApiError(
+            HttpStatus.BAD_REQUEST,
+            'Validation failed',
+            { audiobook: [`${fieldName} must be null, undefined, or a string`] }
+        );
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeAudiobookPayload(payload: unknown): NormalizedAudiobookPayload | undefined {
+    if (payload === undefined || payload === null) {
+        return undefined;
+    }
+
+    if (typeof payload === 'string') {
+        return {
+            mediaId: payload.trim().length > 0 ? payload.trim() : null
+        };
+    }
+
+    if (typeof payload !== 'object' || Array.isArray(payload)) {
+        throw new ApiError(
+            HttpStatus.BAD_REQUEST,
+            'Validation failed',
+            { audiobook: ['Value must be an object or string'] }
+        );
+    }
+
+    const audiobook = payload as Record<string, unknown>;
+    const mediaId = normalizeStringField(audiobook.mediaId, 'mediaId');
+    const introAudioTitle = normalizeStringField(audiobook.introAudioTitle, 'introAudioTitle');
+    const introAudioId = normalizeStringField(audiobook.introAudioId, 'introAudioId');
+
+    if (
+        audiobook.introAudioOverride !== undefined &&
+        audiobook.introAudioOverride !== null &&
+        typeof audiobook.introAudioOverride !== 'boolean'
+    ) {
+        throw new ApiError(
+            HttpStatus.BAD_REQUEST,
+            'Validation failed',
+            { audiobook: ['introAudioOverride must be null, undefined, or a boolean'] }
+        );
+    }
+
+    const introAudioOverride =
+        audiobook.introAudioOverride === undefined || audiobook.introAudioOverride === null
+            ? undefined
+            : audiobook.introAudioOverride;
+
+    if (introAudioOverride) {
+        const missingFields: string[] = [];
+        if (!introAudioTitle) missingFields.push('introAudioTitle');
+        if (!introAudioId) missingFields.push('introAudioId');
+
+        if (missingFields.length > 0) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                'Validation failed',
+                {
+                    audiobook: [
+                        `When introAudioOverride is enabled, ${missingFields.join(' and ')} ${missingFields.length > 1 ? 'are' : 'is'} required`
+                    ]
+                }
+            );
+        }
+    }
+
+    return {
+        mediaId,
+        introAudioOverride,
+        introAudioTitle,
+        introAudioId
+    };
+}
+
 /**
  * GET /api/books
  * 
@@ -94,28 +186,7 @@ export const POST = withCSRFProtection(async function(request: Request) {
 
         const bookData = await request.json();
 
-        // Manually validate audiobook field (since it can be an object, not just a string)
-        if (bookData.audiobook !== undefined && bookData.audiobook !== null) {
-            if (typeof bookData.audiobook === 'object' && !Array.isArray(bookData.audiobook)) {
-                // Valid object - check mediaId if present
-                if ('mediaId' in bookData.audiobook) {
-                    const mediaId = bookData.audiobook.mediaId;
-                    if (mediaId !== null && mediaId !== undefined && typeof mediaId !== 'string') {
-                        throw new ApiError(
-                            HttpStatus.BAD_REQUEST,
-                            'Validation failed',
-                            { audiobook: ['mediaId must be null, undefined, or a string'] }
-                        );
-                    }
-                }
-            } else if (typeof bookData.audiobook !== 'string') {
-                throw new ApiError(
-                    HttpStatus.BAD_REQUEST,
-                    'Validation failed',
-                    { audiobook: ['Value must be an object or string'] }
-                );
-            }
-        }
+        const normalizedAudiobook = normalizeAudiobookPayload(bookData.audiobook);
 
         // Define validation schema for book data
         const validationSchema = {
@@ -202,8 +273,8 @@ export const POST = withCSRFProtection(async function(request: Request) {
         const sanitizedData = validation.sanitizedData;
         
         // Add the manually validated audiobook field back to sanitizedData
-        if (bookData.audiobook !== undefined) {
-            sanitizedData.audiobook = bookData.audiobook;
+        if (normalizedAudiobook !== undefined) {
+            sanitizedData.audiobook = normalizedAudiobook;
         }
 
         const newBook = await createBook(sanitizedData);
@@ -227,7 +298,10 @@ export const POST = withCSRFProtection(async function(request: Request) {
                 book_id: newBook.id,
                 media_id: mediaId,
                 audio_length: sanitizedData.audioLength || null,
-                publishing_date: sanitizedData.publishingDate || null
+                publishing_date: sanitizedData.publishingDate || null,
+                intro_audio_override: sanitizedData.audiobook?.introAudioOverride,
+                intro_audio_title: sanitizedData.audiobook?.introAudioTitle ?? null,
+                intro_audio_id: sanitizedData.audiobook?.introAudioId ?? null
             });
 
             if (!audioBookSaved) {

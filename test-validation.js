@@ -96,33 +96,33 @@ try {
     console.log('✗ API route file does not exist');
   }
 
-  // Test 6: Check if middleware file exists and includes improved error handling
-  const middlewarePath = path.join(__dirname, 'src', 'middleware.ts');
-  if (fs.existsSync(middlewarePath)) {
-    console.log('✓ Middleware file exists');
+  // Test 6: Check if proxy file exists and includes improved error handling
+  const proxyPath = path.join(__dirname, 'src', 'proxy.ts');
+  if (fs.existsSync(proxyPath)) {
+    console.log('✓ Proxy file exists');
 
-    const middlewareContent = fs.readFileSync(middlewarePath, 'utf8');
-    if (middlewareContent.includes('Session base64 decoding failed')) {
-      console.log('✓ Middleware includes improved base64 error handling');
+    const proxyContent = fs.readFileSync(proxyPath, 'utf8');
+    if (proxyContent.includes('Session base64 decoding failed')) {
+      console.log('✓ Proxy includes improved base64 error handling');
     } else {
-      console.log('✗ Middleware does not include improved base64 error handling');
+      console.log('✗ Proxy does not include improved base64 error handling');
     }
 
-    if (middlewareContent.includes('Session JSON parsing failed')) {
-      console.log('✓ Middleware includes improved JSON parsing error handling');
+    if (proxyContent.includes('Session JSON parsing failed')) {
+      console.log('✓ Proxy includes improved JSON parsing error handling');
     } else {
-      console.log('✗ Middleware does not include improved JSON parsing error handling');
+      console.log('✗ Proxy does not include improved JSON parsing error handling');
     }
 
   } else {
-    console.log('✗ Middleware file does not exist');
+    console.log('✗ Proxy file does not exist');
   }
 
   console.log('\n🎉 All validation tests completed successfully!');
   console.log('The A-004 and A-005 issues have been addressed with:');
   console.log('- ✅ Comprehensive input validation and sanitization utilities');
   console.log('- ✅ Enhanced API endpoint validation for POST /api/books');
-  console.log('- ✅ Improved base64 decoding error handling in middleware');
+  console.log('- ✅ Improved base64 decoding error handling in proxy');
   console.log('- ✅ Session data structure validation');
 
 } catch (error) {

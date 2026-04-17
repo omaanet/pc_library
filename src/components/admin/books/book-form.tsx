@@ -50,13 +50,42 @@ const bookFormSchema = z.object({
     isVisible: z.boolean().default(true),
     // Audiobook specific fields
     audiobook: z.object({
-        mediaId: z.string().nullable().optional()
-    }).optional(),
+        mediaId: z.string().nullable().optional(),
+        introAudioOverride: z.boolean().default(false),
+        introAudioTitle: z.string().nullable().optional(),
+        introAudioId: z.string().nullable().optional()
+    }).optional()
+        .default({
+            mediaId: null,
+            introAudioOverride: false,
+            introAudioTitle: null,
+            introAudioId: null
+        }),
     // Preview media fields (optional)
     mediaId: z.string().nullable().optional(),
     mediaTitle: z.string().nullable().optional(),
     mediaUid: z.string().nullable().optional(),
     previewPlacement: z.string().nullable().optional(),
+}).superRefine((data, ctx) => {
+    if (!data.hasAudio || !data.audiobook?.introAudioOverride) {
+        return;
+    }
+
+    if (!data.audiobook.introAudioTitle?.trim()) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Title is required when intro override is enabled',
+            path: ['audiobook', 'introAudioTitle']
+        });
+    }
+
+    if (!data.audiobook.introAudioId?.trim()) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'IntroAudioID is required when intro override is enabled',
+            path: ['audiobook', 'introAudioId']
+        });
+    }
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
@@ -82,7 +111,12 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         console.log('[BookForm] Creating missing audiobook object');
         book = {
             ...book,
-            audiobook: { mediaId: null }
+            audiobook: {
+                mediaId: null,
+                introAudioOverride: false,
+                introAudioTitle: null,
+                introAudioId: null
+            }
         };
     }
 
@@ -101,7 +135,10 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         isPreview: book?.isPreview || false,
         isVisible: book?.isVisible !== undefined ? Boolean(book.isVisible) : true,
         audiobook: {
-            mediaId: book?.audiobook?.mediaId || null
+            mediaId: book?.audiobook?.mediaId || null,
+            introAudioOverride: Boolean(book?.audiobook?.introAudioOverride),
+            introAudioTitle: book?.audiobook?.introAudioTitle ?? null,
+            introAudioId: book?.audiobook?.introAudioId ?? null
         },
         mediaId: book?.mediaId ?? null,
         mediaTitle: book?.mediaTitle ?? null,
@@ -133,7 +170,10 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                 isPreview: book.isPreview || false,
                 isVisible: book.isVisible !== undefined ? Boolean(book.isVisible) : true,
                 audiobook: {
-                    mediaId: book.audiobook?.mediaId || null
+                    mediaId: book.audiobook?.mediaId || null,
+                    introAudioOverride: Boolean(book.audiobook?.introAudioOverride),
+                    introAudioTitle: book.audiobook?.introAudioTitle ?? null,
+                    introAudioId: book.audiobook?.introAudioId ?? null
                 },
                 mediaId: book.mediaId ?? null,
                 mediaTitle: book.mediaTitle ?? null,
@@ -163,12 +203,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         <Form {...form}>
             <form
                 className="space-y-6"
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = form.getValues();
-                    // console.log("Form submitted manually with values:", formData);
-                    handleSubmit(formData);
-                }}
+                onSubmit={form.handleSubmit(handleSubmit)}
                 noValidate
                 lang="it"
             >
@@ -418,6 +453,73 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                                                     The length of the audio version in seconds
                                                 </FormDescription>
                                                 <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="audiobook.introAudioOverride"
+                                        render={({ field: introOverrideField }) => (
+                                            <FormItem className={`space-y-4 rounded-lg border p-4 transition-colors ${introOverrideField.value ? 'border-primary/50' : 'border-border/60'}`}>
+                                                <div className="flex flex-row items-center justify-between">
+                                                    <div className="space-y-0.5">
+                                                        <FormLabel className="text-base">Custom Intro Audio</FormLabel>
+                                                        <FormDescription>
+                                                            Override the default intro track used as the first audio track
+                                                        </FormDescription>
+                                                    </div>
+                                                    <FormControl>
+                                                        <Switch
+                                                            checked={introOverrideField.value}
+                                                            onCheckedChange={introOverrideField.onChange}
+                                                            className="data-[state=checked]:bg-green-500"
+                                                        />
+                                                    </FormControl>
+                                                </div>
+
+                                                {introOverrideField.value && (
+                                                    <div className="space-y-4">
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="audiobook.introAudioTitle"
+                                                            render={({ field: titleField }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Title</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            placeholder="Intro track title"
+                                                                            value={titleField.value || ''}
+                                                                            onChange={(e) => titleField.onChange(e.target.value || null)}
+                                                                            className="w-full"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="audiobook.introAudioId"
+                                                            render={({ field: introIdField }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>IntroAudioID</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            placeholder="Wasabi intro audio object key"
+                                                                            value={introIdField.value || ''}
+                                                                            onChange={(e) => introIdField.onChange(e.target.value || null)}
+                                                                            className="w-full"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormDescription>
+                                                                        Stored verbatim in the intro audio URL path
+                                                                    </FormDescription>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                )}
                                             </FormItem>
                                         )}
                                     />

@@ -1,4 +1,4 @@
-// src/middleware.ts
+// src/proxy.ts
 import { type NextRequest, NextResponse } from 'next/server';
 
 const COVERS_PATH = '/api/covers';
@@ -18,9 +18,9 @@ const AUTH_ROUTES = [
 ];
 
 // Note: Security headers for cover images are configured in next.config.ts
-// This middleware focuses on validation only (dimensions, path security)
+// This proxy focuses on validation only (dimensions, path security)
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const session = request.cookies.get('session');
     let isAuthenticated = false;

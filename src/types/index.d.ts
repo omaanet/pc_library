@@ -16,6 +16,12 @@ export interface Book {
     displayOrder?: number;
     isVisible?: number;
     pagesCount?: number;
+    audiobook?: {
+        mediaId?: string | null;
+        introAudioOverride?: boolean;
+        introAudioTitle?: string | null;
+        introAudioId?: string | null;
+    };
     mediaId?: string | null;
     mediaTitle?: string | null;
     mediaUid?: string | null;

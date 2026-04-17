@@ -32,7 +32,10 @@ const bookFormSchema = z.object({
     isPreview: z.boolean().default(false),
     isVisible: z.boolean().default(true),
     audiobook: z.object({
-        mediaId: z.string().nullable().optional()
+        mediaId: z.string().nullable().optional(),
+        introAudioOverride: z.boolean().default(false),
+        introAudioTitle: z.string().nullable().optional(),
+        introAudioId: z.string().nullable().optional()
     }).optional(),
     mediaId: z.string().nullable().optional(),
     mediaTitle: z.string().nullable().optional(),
@@ -131,7 +134,10 @@ export default function AddBookPage() {
                 previewPlacement: (values.previewPlacement as 'left' | 'right' | null | undefined) ?? undefined,
                 isVisible: values.isVisible ? 1 : 0,
                 audiobook: values.audiobook ? {
-                    mediaId: values.audiobook.mediaId ?? null
+                    mediaId: values.audiobook.mediaId ?? null,
+                    introAudioOverride: values.audiobook.introAudioOverride ?? false,
+                    introAudioTitle: values.audiobook.introAudioTitle ?? null,
+                    introAudioId: values.audiobook.introAudioId ?? null
                 } : undefined,
             };
 

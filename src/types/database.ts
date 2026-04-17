@@ -36,6 +36,9 @@ export interface DatabaseAudioBook {
     media_id: string | null;
     audio_length: number | null;
     publishing_date: string | null;
+    intro_audio_override: boolean;
+    intro_audio_title: string | null;
+    intro_audio_id: string | null;
     created_at: string;
     updated_at: string;
 }

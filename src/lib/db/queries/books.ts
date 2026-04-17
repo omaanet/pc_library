@@ -16,7 +16,17 @@ import { SITE_CONFIG } from '@/config/site-config';
 async function getAudioBookById(id: string): Promise<AudioBook | undefined> {
     const client = getNeonClient();
     const res = await client.query(
-        `SELECT id, book_id, media_id, audio_length, publishing_date FROM audiobooks WHERE book_id = $1`,
+        `SELECT
+            id,
+            book_id,
+            media_id,
+            audio_length,
+            publishing_date,
+            intro_audio_override,
+            intro_audio_title,
+            intro_audio_id
+        FROM audiobooks
+        WHERE book_id = $1`,
         [id]
     );
     const audioBook = getFirstRow<AudioBook>(res);
@@ -32,14 +42,34 @@ async function saveAudioBook(data: {
     media_id: string | null;
     audio_length: number | null;
     publishing_date: string | null;
+    intro_audio_override?: boolean;
+    intro_audio_title?: string | null;
+    intro_audio_id?: string | null;
 }): Promise<boolean> {
     const client = getNeonClient();
     console.log('[saveAudioBook] data:', data);
 
     try {
         const updateRes = await client.query(
-            `UPDATE audiobooks SET media_id = $1, audio_length = $2, publishing_date = $3, updated_at = NOW() WHERE book_id = $4 RETURNING book_id`,
-            [data.media_id, data.audio_length, data.publishing_date, data.book_id]
+            `UPDATE audiobooks
+             SET media_id = $1,
+                 audio_length = $2,
+                 publishing_date = $3,
+                 intro_audio_override = COALESCE($4, intro_audio_override),
+                 intro_audio_title = COALESCE($5, intro_audio_title),
+                 intro_audio_id = COALESCE($6, intro_audio_id),
+                 updated_at = NOW()
+             WHERE book_id = $7
+             RETURNING book_id`,
+            [
+                data.media_id,
+                data.audio_length,
+                data.publishing_date,
+                data.intro_audio_override ?? null,
+                data.intro_audio_title ?? null,
+                data.intro_audio_id ?? null,
+                data.book_id
+            ]
         );
 
         console.log('[saveAudioBook] updateRes:', updateRes);
@@ -49,9 +79,25 @@ async function saveAudioBook(data: {
         if (!wasUpdated) {
             try {
                 const insertRes = await client.query(
-                    `INSERT INTO audiobooks (book_id, media_id, audio_length, publishing_date) 
-                     VALUES ($1, $2, $3, $4) RETURNING book_id`,
-                    [data.book_id, data.media_id, data.audio_length, data.publishing_date]
+                    `INSERT INTO audiobooks (
+                        book_id,
+                        media_id,
+                        audio_length,
+                        publishing_date,
+                        intro_audio_override,
+                        intro_audio_title,
+                        intro_audio_id
+                    )
+                     VALUES ($1, $2, $3, $4, COALESCE($5, FALSE), $6, $7) RETURNING book_id`,
+                    [
+                        data.book_id,
+                        data.media_id,
+                        data.audio_length,
+                        data.publishing_date,
+                        data.intro_audio_override ?? null,
+                        data.intro_audio_title ?? null,
+                        data.intro_audio_id ?? null
+                    ]
                 );
                 console.log('[saveAudioBook] insertRes:', insertRes);
 
@@ -303,7 +349,10 @@ export async function getBookById(id: string): Promise<Book | undefined> {
         const audioBook = await getAudioBookById(id);
         if (audioBook) {
             book.audiobook = {
-                mediaId: audioBook.media_id
+                mediaId: audioBook.media_id,
+                introAudioOverride: Boolean(audioBook.intro_audio_override),
+                introAudioTitle: audioBook.intro_audio_title ?? null,
+                introAudioId: audioBook.intro_audio_id ?? null
             };
             console.log('[getBookById] Populated audiobook data:', book.audiobook);
         }
@@ -369,13 +418,25 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
         if (book.hasAudio) {
             const mediaId = book.audiobook?.mediaId || null;
             const audioLength = book.audioLength || null; // audioLength is directly on book object
+            const introAudioOverride = book.audiobook?.introAudioOverride;
+            const introAudioTitle = book.audiobook?.introAudioTitle ?? null;
+            const introAudioId = book.audiobook?.introAudioId ?? null;
 
-            if (mediaId !== null || audioLength !== null) {
+            if (
+                mediaId !== null ||
+                audioLength !== null ||
+                introAudioOverride !== undefined ||
+                introAudioTitle !== null ||
+                introAudioId !== null
+            ) {
                 await saveAudioBook({
                     book_id: id,
                     media_id: mediaId,
                     audio_length: audioLength,
-                    publishing_date: book.publishingDate || null
+                    publishing_date: book.publishingDate || null,
+                    intro_audio_override: introAudioOverride,
+                    intro_audio_title: introAudioTitle,
+                    intro_audio_id: introAudioId
                 });
             }
         }
@@ -486,14 +547,32 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
             const audioLength = book.audioLength !== undefined
                 ? book.audioLength
                 : (audioBook?.audio_length || null); // audioLength is directly on book object
+            const introAudioOverride = book.audiobook?.introAudioOverride !== undefined
+                ? book.audiobook.introAudioOverride
+                : audioBook?.intro_audio_override;
+            const introAudioTitle = book.audiobook?.introAudioTitle !== undefined
+                ? book.audiobook.introAudioTitle
+                : (audioBook?.intro_audio_title || null);
+            const introAudioId = book.audiobook?.introAudioId !== undefined
+                ? book.audiobook.introAudioId
+                : (audioBook?.intro_audio_id || null);
 
-            if (mediaId !== null || audioLength !== null) {
+            if (
+                mediaId !== null ||
+                audioLength !== null ||
+                introAudioOverride !== undefined ||
+                introAudioTitle !== null ||
+                introAudioId !== null
+            ) {
                 console.log('[updateBook] saving audiobook for book:', id);
                 await saveAudioBook({
                     book_id: id,
                     media_id: mediaId,
                     audio_length: audioLength,
-                    publishing_date: book.publishingDate || (currentBook?.publishingDate || null)
+                    publishing_date: book.publishingDate || (currentBook?.publishingDate || null),
+                    intro_audio_override: introAudioOverride,
+                    intro_audio_title: introAudioTitle,
+                    intro_audio_id: introAudioId
                 });
             }
         } else if (audioBook) {

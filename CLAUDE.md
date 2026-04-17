@@ -15,7 +15,7 @@ pnpm devENV     # Dev server with environment variable validation
 ```bash
 pnpm build         # Production build (can use --turbo for beta Turbopack builds)
 pnpm start         # Start production server on port 3006
-pnpm lint          # ESLint code quality checks (next lint deprecated in 15.5+)
+pnpm lint          # ESLint code quality checks via eslint.config.cjs
 pnpm check-env     # Validate environment variables
 ```
 
@@ -23,7 +23,7 @@ pnpm check-env     # Validate environment variables
 
 ## Core Technology Stack
 
-- **Framework:** Next.js 15.5.6 with React 19.2.0 (stable) and Turbopack
+- **Framework:** Next.js 16.2.4 with React 19.2.0 (stable) and Turbopack
 - **Database:** Neon PostgreSQL (serverless) with direct SQL queries
 - **Styling:** Tailwind CSS 3.4.18 + shadcn/ui + Radix UI primitives
 - **State Management:** React Context + TanStack Query (React Query v5.90.5)
@@ -241,9 +241,9 @@ This is an Italian audiobook/ebook platform ("Racconti in Voce e Caratteri"). Al
 - Buffer objects need `.buffer as ArrayBuffer` when passed to Response constructor
 - Stricter type checking overall - ensure all types are properly defined
 
-**Next.js 15.5+ Updates:**
+**Next.js 16 Updates:**
 - Turbopack for production builds now in beta (`next build --turbo`)
 - Node.js middleware runtime is stable
-- `next lint` command deprecated (still works but shows warnings)
+- ESLint now runs through the root `eslint.config.cjs`; `next lint` is no longer used
 - TypeScript route type improvements available
 - Improved performance and bug fixes over 15.0.3
