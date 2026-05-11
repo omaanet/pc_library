@@ -23,7 +23,7 @@ export default function AnimationsManagerPage() {
     const isAllowed =
         state.isAuthenticated &&
         state.user?.isAdmin === true &&
-        (state.user.userLevel ?? 0) > 1;
+        (state.user?.userLevel ?? 0) > 1;
 
     if (!isAllowed) {
         return (
