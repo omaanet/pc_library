@@ -121,6 +121,9 @@ export function RootNav({
                                                 <DropdownMenuItem asChild>
                                                     <Link href="/user-statistics" className="font-semibold text-yellow-500 hover:text-red-600">Statistiche</Link>
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem asChild>
+                                                    <Link href="/animations-manager" className="font-semibold text-yellow-500 hover:text-red-600">Animazioni</Link>
+                                                </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                             </>
                                         )}

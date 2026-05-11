@@ -21,23 +21,25 @@ export function QuillBody({ className, style }: PartProps) {
                 strokeLinejoin="round"
                 fill="none"
             />
-            {/* Feather barbs */}
-            <path
-                d="M55 35 C 60 30, 68 28, 72 18"
-                stroke="var(--text-quill)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                fill="none"
-                opacity="0.5"
-            />
-            <path
-                d="M48 50 C 55 42, 62 38, 68 28"
-                stroke="var(--text-quill)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                fill="none"
-                opacity="0.4"
-            />
+            {/* Feather barbs — wrapped so they can sway during idle */}
+            <g className="qp-barbs">
+                <path
+                    d="M55 35 C 60 30, 68 28, 72 18"
+                    stroke="var(--text-quill)"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity="0.5"
+                />
+                <path
+                    d="M48 50 C 55 42, 62 38, 68 28"
+                    stroke="var(--text-quill)"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity="0.4"
+                />
+            </g>
         </g>
     );
 }
@@ -66,22 +68,25 @@ export function QuillLegs({ className, style }: PartProps) {
 export function QuillEyes({ className, style }: PartProps) {
     return (
         <g className={className} style={style}>
-            {/* Eye */}
-            <circle
-                cx="62"
-                cy="27"
-                r="2.5"
-                fill="var(--text-quill)"
-                stroke="none"
-            />
-            {/* Pupil highlight */}
-            <circle
-                cx="63"
-                cy="26"
-                r="0.8"
-                fill="var(--gold-main)"
-                stroke="none"
-            />
+            {/* Inner blink wrapper — scaleY collapses on the blink keyframe */}
+            <g className="qp-blink">
+                {/* Eye */}
+                <circle
+                    cx="62"
+                    cy="27"
+                    r="2.5"
+                    fill="var(--text-quill)"
+                    stroke="none"
+                />
+                {/* Pupil highlight */}
+                <circle
+                    cx="63"
+                    cy="26"
+                    r="0.8"
+                    fill="var(--gold-main)"
+                    stroke="none"
+                />
+            </g>
         </g>
     );
 }

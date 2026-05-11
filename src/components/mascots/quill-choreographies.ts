@@ -52,16 +52,63 @@ export async function writeAndLeave(quill: QuillController): Promise<void> {
     await quill.leave('right');
 }
 
+/**
+ * Quill walks toward a target element (resolved by HTMLElement or DOM id).
+ * When no target is provided, walks toward the center of the viewport.
+ * The mascot stops near the target's bounding box with a small clearance
+ * so it never overlaps the element. If the mascot is offscreen it first
+ * enters from the side closest to the target.
+ */
+export async function walkToward(
+    quill: QuillController,
+    target?: HTMLElement | string | null,
+    opts?: { gap?: number },
+): Promise<void> {
+    const el =
+        typeof target === 'string'
+            ? document.getElementById(target)
+            : target ?? null;
+
+    // No target → walk to the center of the viewport.
+    if (!el) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const state = quill.getState();
+        if (!state.visible) {
+            await quill.enterFrom('left');
+        }
+        await quill.moveTo(vw * 0.5, vh * 0.6);
+        return;
+    }
+
+    const rect = el.getBoundingClientRect();
+    const targetCenterX = rect.left + rect.width * 0.5;
+    const state = quill.getState();
+    // Approach from whichever side the mascot is currently on so it
+    // walks toward the target rather than crossing over it.
+    const side: 'left' | 'right' = state.x < targetCenterX ? 'left' : 'right';
+    const gap = opts?.gap ?? 12;
+
+    if (!state.visible) {
+        await quill.enterFrom(side === 'left' ? 'left' : 'right');
+    }
+    await quill.moveToElement(el, { side, gap });
+    await quill.lookAround(900);
+}
+
 /** Registry of named choreographies for declarative usage */
 export type ChoreographyName =
     | 'book-inspect'
     | 'peek-and-leave'
     | 'wander-and-dance'
-    | 'write-and-leave';
+    | 'write-and-leave'
+    | 'walk-toward';
 
 export interface ChoreographyOptions {
     /** CSS selector to find a target element (for book-inspect) */
     bookSelector?: string;
+    /** DOM element id to target (for walk-toward) */
+    targetId?: string;
     /** Callback when Quill "touches" an element */
     onTouch?: () => void;
 }
@@ -91,5 +138,11 @@ export async function runChoreography(
             return wanderAndDance(quill);
         case 'write-and-leave':
             return writeAndLeave(quill);
+        case 'walk-toward': {
+            const el = options?.targetId
+                ? document.getElementById(options.targetId)
+                : null;
+            return walkToward(quill, el);
+        }
     }
 }
