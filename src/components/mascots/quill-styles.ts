@@ -120,10 +120,8 @@ export const KEYFRAMES_RUN_LEAN = `
  * the looking. Rotation pivots from the pelvis (32, 82) so the top end of the
  * line swings while the feet stay planted.
  */
-export const KEYFRAMES_LOOK_AROUND = `
-@keyframes quillLookAround {
-    0%, 100% { transform: translateX(0); }
-}`;
+// NOTE: Looking animation now uses KEYFRAMES_HEAD_TILT for rotation-based movement.
+// KEYFRAMES_LOOK_AROUND was removed as it's no longer referenced in the sprite.
 
 /** Right → center → left → center (trunk top acts as the "head"). */
 export const KEYFRAMES_HEAD_TILT = `
