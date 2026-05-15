@@ -19,6 +19,8 @@ import {
     Rewind,
     FastForward,
     Square,
+    Download,
+    Clipboard,
 } from 'lucide-react';
 import type { AnimationKind } from './animation-registry';
 
@@ -29,12 +31,15 @@ interface PlaybackControlsProps {
     isPaused: boolean;
     isReversed: boolean;
     speed: number;
+    svgExported: 'idle' | 'saved' | 'copied';
     onPlay: () => void;
     onReplay: () => void;
     onStop: () => void;
     onTogglePause: () => void;
     onToggleReverse: () => void;
     onSpeedChange: (value: number) => void;
+    onSaveSvg: () => void;
+    onCopySvg: () => void;
 }
 
 const SPEED_PRESETS = [0.25, 0.5, 1, 1.5, 2] as const;
@@ -46,12 +51,15 @@ export function PlaybackControls({
     isPaused,
     isReversed,
     speed,
+    svgExported,
     onPlay,
     onReplay,
     onStop,
     onTogglePause,
     onToggleReverse,
     onSpeedChange,
+    onSaveSvg,
+    onCopySvg,
 }: PlaybackControlsProps) {
     const isPose = kind === 'pose';
     const canReplay = !isPose && hasTimeline;
@@ -118,6 +126,39 @@ export function PlaybackControls({
                         Stop
                     </Button>
                 )}
+            </div>
+
+            {/* Snapshot row — bakes the paused visual state into a standalone SVG.
+                Only meaningful while paused, since CSS animations are otherwise
+                in motion and the captured frame would not match what's on screen. */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onSaveSvg}
+                    disabled={!isPaused}
+                    className="gap-1.5"
+                >
+                    <Download className="h-4 w-4" aria-hidden="true" />
+                    {svgExported === 'saved' ? 'Salvato!' : 'Salva SVG'}
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onCopySvg}
+                    disabled={!isPaused}
+                    className="gap-1.5"
+                >
+                    <Clipboard className="h-4 w-4" aria-hidden="true" />
+                    {svgExported === 'copied' ? 'Copiato!' : 'Copia SVG'}
+                </Button>
+                <span className="text-[11px] text-muted-foreground">
+                    {isPaused
+                        ? 'Cattura lo stato visivo corrente come file SVG autonomo.'
+                        : 'Metti in pausa per catturare lo stato dell’SVG.'}
+                </span>
             </div>
 
             {/* Speed */}

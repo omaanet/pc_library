@@ -25,9 +25,29 @@ export default function HomePage() {
             <main className="flex-1 mx-2 sm:container sm:mx-auto">
 
                 {/* Hero Section */}
-                <section className="relative overflow-hidden pt-12 pb-0 sm:pt-12 sm:pb-0">
-                    <div className="container">
-                        <div className="space-y-1 sm:space-y-3 text-center">
+                <section className="relative isolate overflow-hidden pt-12 pb-4 sm:pt-12 sm:pb-6">
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-1/2 top-0 -z-20 h-full min-h-[15rem] w-screen -translate-x-1/2 bg-[url('/butterfly_contours.svg')] bg-no-repeat dark:opacity-[0.85] sm:hidden"
+                        style={{
+                            backgroundPosition: 'center 45%',
+                            backgroundSize: '155vw auto',
+                        }}
+                    />
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-1/2 top-0 -z-20 hidden h-full min-h-[17rem] w-screen -translate-x-1/2 bg-[url('/butterfly_contours.svg')] bg-no-repeat dark:opacity-[0.85] sm:block"
+                        style={{
+                            backgroundPosition: 'center 44%',
+                            backgroundSize: 'min(1400px, 115vw) auto',
+                        }}
+                    />
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-1/2 top-0 -z-10 h-full min-h-[15rem] w-screen -translate-x-1/2 bg-background/70 dark:bg-background/80 sm:min-h-[17rem]"
+                    />
+                    <div className="container relative z-10">
+                        <div className="space-y-1 text-center sm:space-y-3">
                             <h1 className={`text-4xl font-medium tracking-tight md:tracking-normal sm:text-6xl text-sky-600 dark:text-sky-400 ${displayFontClass}`}>
                                 Racconti in Voce e Caratteri
                             </h1>

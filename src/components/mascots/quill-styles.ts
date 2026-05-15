@@ -114,34 +114,47 @@ export const KEYFRAMES_RUN_LEAN = `
 
 /* ───────────────────────── Looking around ───────────────────────── */
 
-/** Eye shift left/right for looking around */
+/**
+ * Looking around — bend the upper spine right, return to center, then left,
+ * then return to center. No fake eye motion: the top of the trunk curve does
+ * the looking. Rotation pivots from the pelvis (32, 82) so the top end of the
+ * line swings while the feet stay planted.
+ */
 export const KEYFRAMES_LOOK_AROUND = `
 @keyframes quillLookAround {
     0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-3px); }
-    40% { transform: translateX(4px); }
-    60% { transform: translateX(-2px); }
-    80% { transform: translateX(3px); }
 }`;
 
-/** Head tilt for looking around */
+/** Right → center → left → center (trunk top acts as the "head"). */
 export const KEYFRAMES_HEAD_TILT = `
 @keyframes quillHeadTilt {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-5deg); }
-    50% { transform: rotate(4deg); }
-    75% { transform: rotate(-3deg); }
+    0%   { transform: rotate(0deg); }
+    20%  { transform: rotate(10deg); }
+    35%  { transform: rotate(10deg); }
+    50%  { transform: rotate(0deg); }
+    70%  { transform: rotate(-10deg); }
+    85%  { transform: rotate(-10deg); }
+    100% { transform: rotate(0deg); }
 }`;
 
 /* ───────────────────────── Writing ───────────────────────── */
 
-/** Rhythmic body dip for writing */
+/**
+ * Writing — the mascot IS a quill, so the body itself traces short rhythmic
+ * pen-strokes on an invisible surface. Combines a small horizontal dab with
+ * a tiny downward dip and a wrist-like rotation. Stays subtle so the cadence
+ * reads as deliberate writing rather than shaking.
+ */
 export const KEYFRAMES_WRITE_DIP = `
 @keyframes quillWriteDip {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    25% { transform: translateY(3px) rotate(2deg); }
-    50% { transform: translateY(0) rotate(-1deg); }
-    75% { transform: translateY(2px) rotate(1deg); }
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    15%  { transform: translate(-1px, 2px) rotate(-3deg); }
+    30%  { transform: translate(2px, 3px) rotate(2deg); }
+    45%  { transform: translate(3px, 2px) rotate(4deg); }
+    60%  { transform: translate(1px, 3px) rotate(-2deg); }
+    75%  { transform: translate(-1px, 2px) rotate(-3deg); }
+    90%  { transform: translate(2px, 3px) rotate(3deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
 }`;
 
 /** Ink stroke pulse for writing */
@@ -185,13 +198,16 @@ export const KEYFRAMES_DANCE_LEG_RIGHT = `
 
 /* ───────────────────────── Nodding ───────────────────────── */
 
-/** Enthusiastic nodding */
+/**
+ * Nodding — bend the spine forward and back on one side only. Pivots from
+ * the pelvis (set via transform-origin in POSE_STYLES) so the top of the
+ * trunk dips like an affirmative head-nod while the feet stay still.
+ */
 export const KEYFRAMES_NOD = `
 @keyframes quillNod {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-12deg); }
-    50% { transform: rotate(0deg); }
-    75% { transform: rotate(-10deg); }
+    0%   { transform: rotate(0deg); }
+    45%  { transform: rotate(-14deg); }
+    100% { transform: rotate(0deg); }
 }`;
 
 /* ───────────────────────── Jumping ─────────────────────────

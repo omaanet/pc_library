@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { QuillSprite } from '@/components/mascots/quill-sprite';
 import { useQuillController } from '@/components/mascots/use-quill-controller';
 import { QuillTimeline, playTimeline } from '@/components/mascots/quill-timeline';
+import { serializePausedQuill, downloadSvg } from '@/components/mascots/quill-export';
 import {
     ANIMATION_REGISTRY,
     PREVIEW_TARGET_IDS,
@@ -42,9 +43,11 @@ export function AnimationManager() {
     const [isBusy, setIsBusy] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [svgExported, setSvgExported] = useState<'idle' | 'saved' | 'copied'>('idle');
 
     const timelineRef = useRef<QuillTimeline>(new QuillTimeline());
     const playbackAbortRef = useRef<AbortController | null>(null);
+    const portalRef = useRef<HTMLDivElement | null>(null);
 
     // The portal target needs to wait until after mount so SSR doesn't crash.
     useEffect(() => setMounted(true), []);
@@ -142,6 +145,34 @@ export function AnimationManager() {
         }
     }, [selected, controller, isReversed, speed, playSelected, stopPlayback, showHeldPose]);
 
+    const grabPausedSvg = useCallback((): string | null => {
+        const root = portalRef.current ?? document;
+        const svg = root.querySelector<SVGSVGElement>('svg.quill-scene');
+        if (!svg) return null;
+        return serializePausedQuill(svg);
+    }, []);
+
+    const handleSaveSvg = useCallback(() => {
+        const svg = grabPausedSvg();
+        if (!svg) return;
+        const filename = `quill-${selected.id}.svg`;
+        downloadSvg(svg, filename);
+        setSvgExported('saved');
+        window.setTimeout(() => setSvgExported('idle'), 1500);
+    }, [grabPausedSvg, selected.id]);
+
+    const handleCopySvg = useCallback(async () => {
+        const svg = grabPausedSvg();
+        if (!svg) return;
+        try {
+            await navigator.clipboard.writeText(svg);
+            setSvgExported('copied');
+            window.setTimeout(() => setSvgExported('idle'), 1500);
+        } catch {
+            // Clipboard unavailable — silently ignore.
+        }
+    }, [grabPausedSvg]);
+
     const handleCopySnippet = useCallback(async () => {
         const snippet =
             selected.kind === 'pose'
@@ -222,12 +253,15 @@ export function AnimationManager() {
                         isPaused={isPaused}
                         isReversed={isReversed}
                         speed={speed}
+                        svgExported={svgExported}
                         onPlay={playSelected}
                         onReplay={replay}
                         onStop={stopPlayback}
                         onTogglePause={() => setIsPaused((p) => !p)}
                         onToggleReverse={() => setIsReversed((r) => !r)}
                         onSpeedChange={setSpeed}
+                        onSaveSvg={handleSaveSvg}
+                        onCopySvg={handleCopySvg}
                     />
 
                     {/* Preview targets — used by target-based sequences such as
@@ -300,6 +334,7 @@ export function AnimationManager() {
             {mounted && state.visible &&
                 createPortal(
                     <div
+                        ref={portalRef}
                         aria-hidden="true"
                         style={{
                             position: 'fixed',

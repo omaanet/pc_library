@@ -178,24 +178,20 @@ const POSE_STYLES = `
         animation: quillRunLean calc(0.26s * var(--qdur-scale)) linear infinite;
     }
 
-    /* ── Looking ── slow float, curious head tilt, eyes shift */
+    /* ── Looking ── upper spine swings right → center → left → center.
+       No fake eye motion: the trunk top is the "head". */
     .qp-looking .qp-body-wrap {
-        animation: quillFloat calc(3s * var(--qdur-scale)) ease-in-out infinite;
+        animation: quillFloat calc(4s * var(--qdur-scale)) ease-in-out infinite;
     }
     .qp-looking .qp-tilt {
         transform-origin: 32px 82px;
-        animation: quillHeadTilt calc(3s * var(--qdur-scale)) ease-in-out infinite;
-    }
-    .qp-looking .qp-eyes {
-        animation: quillLookAround calc(3s * var(--qdur-scale)) ease-in-out infinite;
+        animation: quillHeadTilt calc(2.8s * var(--qdur-scale)) ease-in-out infinite;
     }
 
-    /* ── Nodding ── */
-    /* Nodding bends the spine from the pelvis — the head dips while the
-       pelvis stays anchored to the legs. */
+    /* ── Nodding ── single-sided spine dip, feet stay anchored */
     .qp-nodding .qp-tilt {
         transform-origin: 32px 82px;
-        animation: quillNod calc(0.4s * var(--qdur-scale)) ease-in-out infinite;
+        animation: quillNod calc(0.55s * var(--qdur-scale)) ease-in-out infinite;
     }
 
     /* ── Dancing ── */
@@ -215,13 +211,13 @@ const POSE_STYLES = `
         animation: quillDanceLegRight calc(0.3s * var(--qdur-scale)) ease-in-out calc(0.15s * var(--qdur-scale)) infinite;
     }
 
-    /* ── Writing ── */
+    /* ── Writing ── rhythmic, short pen-strokes; the body IS the nib */
     .qp-writing .qp-tilt {
         transform-origin: 30px 82px;
-        animation: quillWriteDip calc(2s * var(--qdur-scale)) ease-in-out infinite;
+        animation: quillWriteDip calc(0.85s * var(--qdur-scale)) ease-in-out infinite;
     }
     .qp-writing .qp-ink {
-        animation: quillInkPulse calc(1s * var(--qdur-scale)) ease-in-out infinite;
+        animation: quillInkPulse calc(0.85s * var(--qdur-scale)) ease-in-out infinite;
     }
 
     /* ── Jumping ── anticipation crouch → launch → apex → landing squash */
