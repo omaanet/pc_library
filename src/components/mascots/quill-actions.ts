@@ -452,22 +452,42 @@ export async function turnTo(
 export async function moveToElement(
     ctx: ActionContext,
     el: HTMLElement,
-    offset?: { side?: 'left' | 'right'; gap?: number },
+    offset?: { side?: QuillEdge; gap?: number },
 ): Promise<void> {
     const rect = el.getBoundingClientRect();
     const side = offset?.side ?? 'left';
     const gap = offset?.gap ?? 10;
     const spriteWidth = getSpriteWidth();
+    const spriteHeight = getSpriteHeight();
+    const state = ctx.getState();
 
     let targetX: number;
-    if (side === 'left') {
-        targetX = rect.left - spriteWidth - gap;
-    } else {
-        targetX = rect.right + gap;
-    }
-    const targetY = rect.top + rect.height * 0.5;
+    let targetY: number;
+    let newFacing: QuillFacing;
 
-    const newFacing: QuillFacing = side === 'left' ? 'right' : 'left';
+    switch (side) {
+        case 'left':
+            targetX = rect.left - spriteWidth - gap;
+            targetY = rect.top + rect.height * 0.5;
+            newFacing = 'right';
+            break;
+        case 'right':
+            targetX = rect.right + gap;
+            targetY = rect.top + rect.height * 0.5;
+            newFacing = 'left';
+            break;
+        case 'top':
+            targetX = rect.left + rect.width * 0.5 - spriteWidth * 0.5;
+            targetY = rect.top - spriteHeight - gap;
+            newFacing = targetX >= state.x ? 'right' : 'left';
+            break;
+        case 'bottom':
+            targetX = rect.left + rect.width * 0.5 - spriteWidth * 0.5;
+            targetY = rect.bottom + gap;
+            newFacing = targetX >= state.x ? 'right' : 'left';
+            break;
+    }
+
     ctx.update({ pose: 'walking', facing: newFacing });
     await animatePosition(ctx.update, ctx.getState, targetX, targetY, getBaseSpeed(), ctx.signal);
     ctx.update({ pose: 'idle' });
@@ -607,4 +627,8 @@ function getSpriteWidth(): number {
     return Math.max(40, Math.min(70, window.innerWidth * 0.08));
 }
 
-export { getSpriteWidth };
+function getSpriteHeight(): number {
+    return getSpriteWidth() * (88 / 70);
+}
+
+export { getSpriteWidth, getSpriteHeight };

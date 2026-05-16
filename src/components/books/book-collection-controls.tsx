@@ -34,12 +34,14 @@ export function BookCollectionControls({ onRefresh, isRefreshing = false }: Book
                 id="library-book-inspect"
             /> */}
 
-            {/* <QuillStage
+            <QuillStage
                 trigger={{ type: 'load', delay: 1000 }}
                 choreography="write-and-leave"
+                options={{ entrySide: 'right', exitSide: 'left' }}
                 frequency="always"
-                id="library-book-inspect"
-            /> */}
+                id="library-write-and-leave"
+                targetId="@#book-1760914128273"
+            />
 
             {onRefresh && (
                 <div className="flex justify-end sm:justify-start">

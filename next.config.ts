@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+    allowedDevOrigins: ['127.0.0.1'],
     images: {
         unoptimized: true, // Disables Next.js image optimization
         dangerouslyAllowSVG: true, // Enable if you use SVGs

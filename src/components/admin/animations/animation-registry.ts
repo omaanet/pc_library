@@ -218,26 +218,37 @@ export const ANIMATION_REGISTRY: AnimationEntry[] = [
     {
         id: 'choreo-peek-and-leave', kind: 'choreography', group: 'Choreographies', name: 'Peek and Leave',
         description: 'Entra da sinistra, si guarda intorno, esce a destra.',
-        snippet: `<QuillStage choreography="peek-and-leave" trigger={{ type: 'load' }} />`,
+        snippet: `<QuillStage choreography="peek-and-leave" trigger={{ type: 'load' }} options={{ entrySide: 'left', exitSide: 'right' }} />`,
         play: async (c) => { c.setState({ visible: false }); await peekAndLeave(c); },
     },
     {
         id: 'choreo-wander-and-dance', kind: 'choreography', group: 'Choreographies', name: 'Wander and Dance',
         description: 'Entra, raggiunge il centro, balla, poi salta via.',
-        snippet: `<QuillStage choreography="wander-and-dance" trigger={{ type: 'load' }} />`,
+        snippet: `<QuillStage choreography="wander-and-dance" trigger={{ type: 'load' }} options={{ entrySide: 'left' }} />`,
         play: async (c) => { c.setState({ visible: false }); await wanderAndDance(c); },
     },
     {
         id: 'choreo-write-and-leave', kind: 'choreography', group: 'Choreographies', name: 'Write and Leave',
-        description: 'Entra da destra, scrive, esce a destra.',
-        snippet: `<QuillStage choreography="write-and-leave" trigger={{ type: 'load' }} />`,
-        play: async (c) => { c.setState({ visible: false }); await writeAndLeave(c); },
+        description: 'Entra da destra, scrive accanto a un bersaglio se disponibile, esce a destra.',
+        snippet: `<QuillStage choreography="write-and-leave" trigger={{ type: 'load' }} targetId="@#quill-target-a" options={{ entrySide: 'right', exitSide: 'right' }} />`,
+        usesTarget: true,
+        play: async (c, ctx) => {
+            c.setState({ visible: false });
+            const id =
+                ctx?.targetId ??
+                PREVIEW_TARGET_IDS.find((tid) => document.getElementById(tid));
+            await writeAndLeave(c, {
+                targetId: id ?? undefined,
+                entrySide: 'right',
+                exitSide: 'right',
+            });
+        },
     },
     {
         id: 'choreo-book-inspect', kind: 'choreography', group: 'Choreographies', name: 'Book Inspect',
         description:
             'Ispeziona un elemento bersaglio. Se nel selettore bersagli è impostato “Auto”, cerca una book card sulla pagina; se non la trova, ripiega su peek-and-leave.',
-        snippet: `<QuillStage choreography="book-inspect" trigger={{ type: 'load' }} />`,
+        snippet: `<QuillStage choreography="book-inspect" trigger={{ type: 'load' }} targetId="@#quill-target-a" options={{ entrySide: 'left' }} />`,
         usesTarget: true,
         play: async (c, ctx) => {
             c.setState({ visible: false });
@@ -262,7 +273,7 @@ export const ANIMATION_REGISTRY: AnimationEntry[] = [
         id: 'choreo-walk-toward', kind: 'choreography', group: 'Choreographies', name: 'Walk Toward',
         description:
             'Cammina verso un elemento bersaglio individuato dal suo ID (rispettando il bounding box con un piccolo margine). Se non viene fornito un bersaglio, raggiunge il centro della pagina.',
-        snippet: `await walkToward(quill, document.getElementById('quill-target-a'));`,
+        snippet: `<QuillStage choreography="walk-toward" trigger={{ type: 'load' }} targetId="@#quill-target-a" options={{ entrySide: 'left' }} />`,
         usesTarget: true,
         play: async (c, ctx) => {
             c.setState({ visible: false });
@@ -270,8 +281,7 @@ export const ANIMATION_REGISTRY: AnimationEntry[] = [
             const id =
                 ctx?.targetId ??
                 PREVIEW_TARGET_IDS.find((tid) => document.getElementById(tid));
-            const el = id ? document.getElementById(id) : null;
-            await walkToward(c, el);
+            await walkToward(c, { targetId: id ?? undefined });
         },
     },
 ];

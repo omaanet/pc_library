@@ -28,7 +28,7 @@ export default function HomePage() {
                 <section className="relative isolate overflow-hidden pt-12 pb-4 sm:pt-12 sm:pb-6">
                     <div
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-x-1/2 top-0 -z-20 h-full min-h-[15rem] w-screen -translate-x-1/2 bg-[url('/butterfly_contours.svg')] bg-no-repeat dark:opacity-[0.85] sm:hidden"
+                        className="pointer-events-none absolute inset-x-1/2 top-0 -z-20 h-full min-h-[15rem] w-screen -translate-x-1/2 bg-[url('/butterfly_contours.svg')] bg-no-repeat dark:opacity-[1] sm:hidden"
                         style={{
                             backgroundPosition: 'center 45%',
                             backgroundSize: '155vw auto',
@@ -36,7 +36,7 @@ export default function HomePage() {
                     />
                     <div
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-x-1/2 top-0 -z-20 hidden h-full min-h-[17rem] w-screen -translate-x-1/2 bg-[url('/butterfly_contours.svg')] bg-no-repeat dark:opacity-[0.85] sm:block"
+                        className="pointer-events-none absolute inset-x-1/2 top-0 -z-20 hidden h-full min-h-[17rem] w-screen -translate-x-1/2 bg-[url('/butterfly_contours.svg')] bg-no-repeat dark:opacity-[1] sm:block"
                         style={{
                             backgroundPosition: 'center 44%',
                             backgroundSize: 'min(1400px, 115vw) auto',
@@ -44,7 +44,7 @@ export default function HomePage() {
                     />
                     <div
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-x-1/2 top-0 -z-10 h-full min-h-[15rem] w-screen -translate-x-1/2 bg-background/70 dark:bg-background/80 sm:min-h-[17rem]"
+                        className="pointer-events-none absolute inset-x-1/2 top-0 -z-10 h-full min-h-[15rem] w-screen -translate-x-1/2 bg-background/65 dark:bg-background/70 sm:min-h-[17rem]"
                     />
                     <div className="container relative z-10">
                         <div className="space-y-1 text-center sm:space-y-3">

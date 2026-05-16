@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Book } from '@/types';
+import { formatBookDomId } from './book-dom-id';
 
 interface BookGridCardProps {
     book: Book;
@@ -111,6 +112,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
 
     return (
         <Card
+            id={formatBookDomId(book.id)}
             data-book-card
             className={cn(
                 "group overflow-hidden transition-colors hover:border-primary",

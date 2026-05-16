@@ -3,6 +3,35 @@
  * Each choreography is an async function that chains controller actions.
  */
 import type { QuillController } from './use-quill-controller';
+import type { QuillEdge } from './quill-actions';
+
+export interface EntryAndExistSideOptions {
+    target?: HTMLElement | string | null;
+    targetId?: string;
+    entrySide?: QuillEdge;
+    exitSide?: QuillEdge;
+    gap?: number;
+}
+
+function normalizeTargetId(id: string): string {
+    if (id.startsWith('@#')) return id.slice(2);
+    if (id.startsWith('#')) return id.slice(1);
+    return id;
+}
+
+function resolveTargetElement(options?: EntryAndExistSideOptions): HTMLElement | null {
+    if (options?.targetId) return document.getElementById(normalizeTargetId(options.targetId));
+    const target = options?.target;
+    if (target instanceof HTMLElement) return target;
+    if (typeof target === 'string') return document.getElementById(normalizeTargetId(target));
+    return null;
+}
+
+function pickBookElement(selector = '[data-book-card]'): HTMLElement | null {
+    const cards = document.querySelectorAll<HTMLElement>(selector);
+    if (cards.length === 0) return null;
+    return cards[Math.floor(Math.random() * cards.length)];
+}
 
 /**
  * Quill walks in, inspects a book, "touches" it (callback triggers shake),
@@ -10,13 +39,29 @@ import type { QuillController } from './use-quill-controller';
  */
 export async function bookInspect(
     quill: QuillController,
-    bookElement: HTMLElement,
+    bookElementOrOptions?: HTMLElement | string | null | (EntryAndExistSideOptions & {
+        bookSelector?: string;
+        onTouch?: () => void;
+    }),
     onTouch?: () => void,
 ): Promise<void> {
-    await quill.enterFrom('left');
-    await quill.moveToElement(bookElement, { side: 'left', gap: 8 });
+    const options: EntryAndExistSideOptions & { bookSelector?: string; onTouch?: () => void } =
+        bookElementOrOptions instanceof HTMLElement || typeof bookElementOrOptions === 'string' || bookElementOrOptions == null
+            ? { target: bookElementOrOptions, onTouch }
+            : bookElementOrOptions;
+    const bookElement = resolveTargetElement(options) ?? pickBookElement(options.bookSelector);
+
+    if (!bookElement) {
+        return peekAndLeave(quill);
+    }
+
+    const entrySide = options.entrySide ?? 'left';
+    const gap = options.gap ?? 8;
+
+    await quill.enterFrom(entrySide);
+    await quill.moveToElement(bookElement, { side: entrySide, gap });
     await quill.lookAround(1500);
-    onTouch?.();
+    (options.onTouch ?? onTouch)?.();
     await quill.nod(3);
     await quill.walkAway();
 }
@@ -24,27 +69,54 @@ export async function bookInspect(
 /**
  * Quill peeks in from the left, looks around curiously, then leaves.
  */
-export async function peekAndLeave(quill: QuillController): Promise<void> {
-    await quill.enterFrom('left');
+export async function peekAndLeave(
+    quill: QuillController,
+    options?: EntryAndExistSideOptions,
+): Promise<void> {
+    await quill.enterFrom(options?.entrySide ?? 'left');
     await quill.lookAround(2500);
-    await quill.leave('right');
+    await quill.leave(options?.exitSide ?? 'right');
 }
 
 /**
  * Quill walks in, dances, then jumps off-screen.
  */
-export async function wanderAndDance(quill: QuillController): Promise<void> {
-    await quill.enterFrom('left');
+export async function wanderAndDance(
+    quill: QuillController,
+    options?: EntryAndExistSideOptions,
+): Promise<void> {
+    await quill.enterFrom(options?.entrySide ?? 'left');
     const vw = window.innerWidth;
     await quill.moveTo(vw * 0.45, window.innerHeight * 0.8);
     await quill.dance(3000);
+    if (options?.exitSide) {
+        await quill.leave(options.exitSide);
+        return;
+    }
     await quill.jumpAndEscape();
 }
 
 /**
  * Quill walks in and writes for a while, then walks out.
  */
-export async function writeAndLeave(quill: QuillController): Promise<void> {
+export async function writeAndLeave(
+    quill: QuillController,
+    options?: EntryAndExistSideOptions,
+): Promise<void> {
+    const target = resolveTargetElement(options);
+
+    if (target) {
+        const entrySide = options?.entrySide ?? 'right';
+        const exitSide = options?.exitSide ?? 'right';
+        const gap = options?.gap ?? 12;
+
+        await quill.enterFrom(entrySide);
+        await quill.moveToElement(target, { side: entrySide, gap });
+        await quill.write(4000);
+        await quill.leave(exitSide);
+        return;
+    }
+
     await quill.enterFrom('right');
     const vw = window.innerWidth;
     await quill.moveTo(vw * 0.5, window.innerHeight * 0.85);
@@ -61,13 +133,14 @@ export async function writeAndLeave(quill: QuillController): Promise<void> {
  */
 export async function walkToward(
     quill: QuillController,
-    target?: HTMLElement | string | null,
+    targetOrOptions?: HTMLElement | string | null | EntryAndExistSideOptions,
     opts?: { gap?: number },
 ): Promise<void> {
-    const el =
-        typeof target === 'string'
-            ? document.getElementById(target)
-            : target ?? null;
+    const options: EntryAndExistSideOptions =
+        targetOrOptions instanceof HTMLElement || typeof targetOrOptions === 'string' || targetOrOptions == null
+            ? { target: targetOrOptions, gap: opts?.gap }
+            : targetOrOptions;
+    const el = resolveTargetElement(options);
 
     // No target → walk to the center of the viewport.
     if (!el) {
@@ -86,11 +159,11 @@ export async function walkToward(
     const state = quill.getState();
     // Approach from whichever side the mascot is currently on so it
     // walks toward the target rather than crossing over it.
-    const side: 'left' | 'right' = state.x < targetCenterX ? 'left' : 'right';
-    const gap = opts?.gap ?? 12;
+    const side: QuillEdge = options.entrySide ?? (state.x < targetCenterX ? 'left' : 'right');
+    const gap = options.gap ?? 12;
 
     if (!state.visible) {
-        await quill.enterFrom(side === 'left' ? 'left' : 'right');
+        await quill.enterFrom(side);
     }
     await quill.moveToElement(el, { side, gap });
     await quill.lookAround(900);
@@ -104,11 +177,9 @@ export type ChoreographyName =
     | 'write-and-leave'
     | 'walk-toward';
 
-export interface ChoreographyOptions {
+export interface ChoreographyOptions extends EntryAndExistSideOptions {
     /** CSS selector to find a target element (for book-inspect) */
     bookSelector?: string;
-    /** DOM element id to target (for walk-toward) */
-    targetId?: string;
     /** Callback when Quill "touches" an element */
     onTouch?: () => void;
 }
@@ -122,27 +193,15 @@ export async function runChoreography(
     options?: ChoreographyOptions,
 ): Promise<void> {
     switch (name) {
-        case 'book-inspect': {
-            const selector = options?.bookSelector ?? '[data-book-card]';
-            const cards = document.querySelectorAll<HTMLElement>(selector);
-            if (cards.length === 0) {
-                // Fallback to peek-and-leave if no books found
-                return peekAndLeave(quill);
-            }
-            const randomCard = cards[Math.floor(Math.random() * cards.length)];
-            return bookInspect(quill, randomCard, options?.onTouch);
-        }
+        case 'book-inspect':
+            return bookInspect(quill, options);
         case 'peek-and-leave':
-            return peekAndLeave(quill);
+            return peekAndLeave(quill, options);
         case 'wander-and-dance':
-            return wanderAndDance(quill);
+            return wanderAndDance(quill, options);
         case 'write-and-leave':
-            return writeAndLeave(quill);
-        case 'walk-toward': {
-            const el = options?.targetId
-                ? document.getElementById(options.targetId)
-                : null;
-            return walkToward(quill, el);
-        }
+            return writeAndLeave(quill, options);
+        case 'walk-toward':
+            return walkToward(quill, options);
     }
 }

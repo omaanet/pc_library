@@ -10,6 +10,7 @@ import { DEFAULT_COVER_SIZES, getImageSizeString } from '@/types/images';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Book } from '@/types';
+import { formatBookDomId } from './book-dom-id';
 
 interface BookListCardProps {
     book: Book;
@@ -147,6 +148,8 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
 
     return (
         <div
+            id={formatBookDomId(book.id)}
+            data-book-card
             className={cn(
                 "group flex gap-4 border-b p-4 hover:bg-accent/50 transition-colors",
                 className

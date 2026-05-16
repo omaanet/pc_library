@@ -37,7 +37,7 @@ import type { QuillTimeline } from './quill-timeline';
 export interface QuillController {
     enterFrom: (edge: QuillEdge) => Promise<void>;
     moveTo: (x: number, y: number, speedOrOptions?: number | MoveOptions) => Promise<void>;
-    moveToElement: (el: HTMLElement, offset?: { side?: 'left' | 'right'; gap?: number }) => Promise<void>;
+    moveToElement: (el: HTMLElement, offset?: { side?: QuillEdge; gap?: number }) => Promise<void>;
     run: (x: number, y: number, opts?: MoveOptions) => Promise<void>;
     walkPath: (points: { x: number; y: number }[], opts?: MoveOptions) => Promise<void>;
     turnTo: (facing: QuillFacing) => Promise<void>;

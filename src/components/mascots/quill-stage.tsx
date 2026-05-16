@@ -18,7 +18,12 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { QuillSprite } from './quill-sprite';
 import { useQuillController } from './use-quill-controller';
-import { runChoreography, type ChoreographyName, type ChoreographyOptions } from './quill-choreographies';
+import {
+    runChoreography,
+    type ChoreographyName,
+    type ChoreographyOptions,
+    type EntryAndExistSideOptions,
+} from './quill-choreographies';
 
 // ─── Trigger types ──────────────────────────────────────────────────────
 
@@ -37,6 +42,8 @@ export type QuillFrequency =
 interface QuillStageProps {
     trigger: QuillTrigger;
     choreography: ChoreographyName;
+    targetId?: string;
+    options?: EntryAndExistSideOptions;
     choreographyOptions?: ChoreographyOptions;
     frequency?: QuillFrequency;
     /** Unique key for sessionStorage when frequency='once' */
@@ -73,11 +80,62 @@ function prefersReducedMotion(): boolean {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+function isElementVisibleInViewport(element: HTMLElement): boolean {
+    const style = window.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+        return false;
+    }
+
+    if (element.getClientRects().length === 0) {
+        return false;
+    }
+
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+        return false;
+    }
+
+    return (
+        rect.bottom > 0 &&
+        rect.right > 0 &&
+        rect.top < window.innerHeight &&
+        rect.left < window.innerWidth
+    );
+}
+
+function normalizeTargetId(id: string): string {
+    if (id.startsWith('@#')) return id.slice(2);
+    if (id.startsWith('#')) return id.slice(1);
+    return id;
+}
+
+function passesVisibilityGuard(targetId?: string): boolean {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return true;
+    if (!targetId?.startsWith('@#')) return true;
+
+    const normalizedTargetId = normalizeTargetId(targetId).trim();
+    if (!normalizedTargetId) return false;
+
+    try {
+        const element = document.getElementById(normalizedTargetId);
+        return element ? isElementVisibleInViewport(element) : false;
+    } catch {
+        return false;
+    }
+}
+
+function getLegacyTargetId(id: string): string | undefined {
+    if (!id.startsWith('@#') || id.length <= 2) return undefined;
+    return id.trim() || undefined;
+}
+
 // ─── Component ──────────────────────────────────────────────────────────
 
 export function QuillStage({
     trigger,
     choreography,
+    targetId,
+    options,
     choreographyOptions,
     frequency = 'always',
     id,
@@ -93,36 +151,7 @@ export function QuillStage({
         setMounted(true);
     }, []);
 
-    const startChoreography = useRef(async () => {
-        if (hasStartedRef.current) return;
-        if (prefersReducedMotion()) return;
-        if (!shouldPlay(frequency, stageId)) return;
-
-        hasStartedRef.current = true;
-
-        if (frequency === 'once') {
-            markPlayed(stageId);
-        }
-
-        // Default onTouch: add shake class to the target element
-        const opts: ChoreographyOptions = {
-            ...choreographyOptions,
-            onTouch: choreographyOptions?.onTouch ?? (() => {
-                const selector = choreographyOptions?.bookSelector ?? '[data-book-card]';
-                const cards = document.querySelectorAll<HTMLElement>(selector);
-                cards.forEach((card) => {
-                    card.classList.add('quill-touch-shake');
-                    setTimeout(() => card.classList.remove('quill-touch-shake'), 600);
-                });
-            }),
-        };
-
-        try {
-            await runChoreography(choreography, controller, opts);
-        } finally {
-            onComplete?.();
-        }
-    });
+    const startChoreography = useRef<() => Promise<void>>(async () => undefined);
 
     // Keep ref in sync
     useEffect(() => {
@@ -131,14 +160,18 @@ export function QuillStage({
             if (prefersReducedMotion()) return;
             if (!shouldPlay(frequency, stageId)) return;
 
-            hasStartedRef.current = true;
-
-            if (frequency === 'once') {
-                markPlayed(stageId);
-            }
-
+            const hasExplicitTarget =
+                choreographyOptions?.target !== undefined ||
+                choreographyOptions?.targetId !== undefined ||
+                options?.target !== undefined ||
+                options?.targetId !== undefined ||
+                targetId !== undefined;
+            const legacyTargetId = hasExplicitTarget ? undefined : getLegacyTargetId(stageId);
+            const mergedTargetId = targetId ?? options?.targetId ?? choreographyOptions?.targetId ?? legacyTargetId;
             const opts: ChoreographyOptions = {
                 ...choreographyOptions,
+                ...options,
+                targetId: mergedTargetId ? normalizeTargetId(mergedTargetId) : undefined,
                 onTouch: choreographyOptions?.onTouch ?? (() => {
                     const selector = choreographyOptions?.bookSelector ?? '[data-book-card]';
                     const cards = document.querySelectorAll<HTMLElement>(selector);
@@ -148,6 +181,14 @@ export function QuillStage({
                     });
                 }),
             };
+
+            if (!passesVisibilityGuard(mergedTargetId)) return;
+
+            hasStartedRef.current = true;
+
+            if (frequency === 'once') {
+                markPlayed(stageId);
+            }
 
             try {
                 await runChoreography(choreography, controller, opts);

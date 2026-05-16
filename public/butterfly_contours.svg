@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1672 941" role="img" aria-label="Pale watercolor butterfly contour pattern on a transparent background">
-  <title>Pale butterfly contour pattern</title>
+  <title>Butterfly contour pattern</title>
   <desc>Transparent SVG converted from the provided butterfly pattern image. Checkerboard background removed; colors are embedded as CSS variables sampled from the source contours.</desc>
   <!--
   Palette and vectorization summary:
@@ -11,13 +11,13 @@
   -->
   <style><![CDATA[
   svg { background: transparent; }
-  .butterfly-art { opacity: 0.78; }
+  .butterfly-art { opacity: 1; }
   .line-shape { fill-rule: evenodd; clip-rule: evenodd; shape-rendering: geometricPrecision; }
-  .coral    { fill: #e99f96; }
-  .peach    { fill: #efb79c; }
-  .gold     { fill: #e9bd78; }
-  .bluegray { fill: #abc8ce; }
-  .neutral  { fill: #d2d4cf; }
+.coral    { fill: hsl(6, 85%, 68%); }    /* #f37468 */
+.peach    { fill: hsl(22, 98%, 70%); }   /* #fe9972 */
+.gold     { fill: hsl(37, 95%, 64%); }   /* #fbb84b */
+.bluegray { fill: hsl(190, 41%, 67%); }  /* #88bfcc */
+.neutral  { fill: hsl(100, 8%, 73%); }   /* #b9c2b3 */
   ]]></style>
   <g class="butterfly-art">
     <path class="line-shape neutral" d="M419.0 684.0L418.0 684.0L417.0 685.0L419.0 685.0ZM167.0 515.0L167.0 516.0L168.0 517.0L169.0 517.0ZM969.0 502.0L969.0 503.0L968.0 504.0L969.0 504.0ZM958.0 500.0L957.0 501.0L957.0 502.0L956.0 503.0L957.0 502.0L958.0 502.0ZM987.0 488.0L986.0 489.0L985.0 489.0L987.0 489.0ZM525.0 487.0L525.0 488.0L526.0 488.0L526.0 487.0ZM499.0 436.0L499.0 437.0L500.0 437.0ZM1364.0 417.0L1363.0 416.0L1362.0 417.0L1361.0 417.0L1362.0 418.0L1363.0 418.0ZM531.0 416.0L529.0 418.0L530.0 418.0L531.0 417.0ZM534.0 414.0L533.0 414.0L533.0 415.0ZM1150.0 286.0L1149.0 286.0L1148.0 287.0L1149.0 287.0ZM1138.0 260.0L1139.0 261.0L1140.0 261.0L1139.0 260.0ZM313.0 244.0L312.0 245.0L313.0 246.0L314.0 246.0L314.0 245.0Z"/>
