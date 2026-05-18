@@ -7,6 +7,15 @@
 export interface Track {
     title: string;
     url: string;
+    kind?: 'intro' | 'main';
+}
+
+export interface AudioPlayerState {
+    currentTrack: number;
+    track: Track;
+    currentTime: number;
+    duration: number;
+    isPlaying: boolean;
 }
 
 /**
@@ -16,4 +25,12 @@ export interface HTML5PlayerProps {
     tracks: Track[];
     autoPlay?: boolean;
     initialVolume?: number; // percent, 0-100
+    initialTrackIndex?: number;
+    initialTime?: number;
+    onProgress?: (state: AudioPlayerState) => void;
+    onBookmark?: (state: AudioPlayerState) => void;
+    isBookmarkActive?: (state: AudioPlayerState) => boolean;
+    isBookmarkSaving?: boolean;
+    showBookmarkControl?: boolean;
+    isBookmarkDisabled?: boolean;
 }

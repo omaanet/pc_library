@@ -9,12 +9,13 @@ import dynamic from 'next/dynamic';
 interface ClientReadBookPageProps {
     bookId: string;
     book: Book | undefined;
+    initialPage: number;
 }
 
 // Dynamically import PageReader to avoid SSR issues with DOM manipulation
 const PageReader = dynamic(() => import('./PageReader'), { ssr: false });
 
-export default function ClientReadBookPage({ bookId, book }: ClientReadBookPageProps) {
+export default function ClientReadBookPage({ bookId, book, initialPage }: ClientReadBookPageProps) {
     const { state } = useAuth();
     const { user, isLoading } = state;
 
@@ -55,7 +56,7 @@ export default function ClientReadBookPage({ bookId, book }: ClientReadBookPageP
                     </div>
                 ) : (
                     <>
-                        <PageReader book={book} bookId={bookId} user={user} />
+                        <PageReader book={book} bookId={bookId} user={user} initialPage={initialPage} />
                     </>
                 )}
             </div>

@@ -4,6 +4,8 @@
 // Main orchestrator component for audio player
 
 import type { HTML5PlayerProps } from './types';
+import { Bookmark, BookmarkCheck } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useVolumeControl } from './hooks/useVolumeControl';
 import { useTrackNavigation } from './hooks/useTrackNavigation';
@@ -13,9 +15,21 @@ import { SeekBar } from './components/SeekBar';
 import { VolumeControl } from './components/VolumeControl';
 import { AudioControls } from './components/AudioControls';
 
-const HTML5Player = ({ tracks, autoPlay = false, initialVolume = 25 }: HTML5PlayerProps) => {
+const HTML5Player = ({
+    tracks,
+    autoPlay = false,
+    initialVolume = 25,
+    initialTrackIndex = 0,
+    initialTime = 0,
+    onProgress,
+    onBookmark,
+    isBookmarkActive,
+    isBookmarkSaving = false,
+    showBookmarkControl = false,
+    isBookmarkDisabled = false
+}: HTML5PlayerProps) => {
     // Track navigation
-    const { currentTrack, handleNext, handlePrev, handleEnd } = useTrackNavigation({ tracks });
+    const { currentTrack, handleNext, handlePrev, handleEnd } = useTrackNavigation({ tracks, initialTrackIndex });
 
     // Audio playback
     const {
@@ -28,6 +42,7 @@ const HTML5Player = ({ tracks, autoPlay = false, initialVolume = 25 }: HTML5Play
     } = useAudioPlayer({
         autoPlay,
         currentTrack,
+        initialTime: currentTrack === initialTrackIndex ? initialTime : 0,
         onTrackEnd: handleEnd
     });
 
@@ -45,12 +60,31 @@ const HTML5Player = ({ tracks, autoPlay = false, initialVolume = 25 }: HTML5Play
         initialVolume
     });
 
-    // Early return if no tracks are provided
-    if (!tracks || tracks.length === 0) {
+    const showPlaylist: boolean = false;
+    const currentTrackData = tracks[currentTrack];
+    const currentState = useMemo(() => currentTrackData
+        ? {
+            currentTrack,
+            track: currentTrackData,
+            currentTime,
+            duration,
+            isPlaying,
+        }
+        : null,
+    [currentTrack, currentTrackData, currentTime, duration, isPlaying]);
+    const showBookmarkButton = Boolean((showBookmarkControl || onBookmark) && currentState?.track.kind === 'main');
+    const canBookmark = Boolean(onBookmark) && !isBookmarkDisabled && currentState?.track.kind === 'main';
+    const bookmarkActive = currentState ? (isBookmarkActive?.(currentState) ?? false) : false;
+
+    useEffect(() => {
+        if (currentState) {
+            onProgress?.(currentState);
+        }
+    }, [currentState, onProgress]);
+
+    if (!tracks || tracks.length === 0 || !currentState) {
         return <div>No tracks available</div>;
     }
-
-    const showPlaylist: boolean = false;
 
     return (
         <div>
@@ -97,9 +131,26 @@ const HTML5Player = ({ tracks, autoPlay = false, initialVolume = 25 }: HTML5Play
                         disablePrev={tracks.length <= 1 || currentTrack <= 0}
                         disableNext={tracks.length <= 1 || currentTrack >= tracks.length - 1}
                     />
-                    <div className="text-sm text-gray-400 invisible">
-                        {currentTrack + 1}/{tracks.length}
-                    </div>
+                    {showBookmarkButton ? (
+                        <button
+                            type="button"
+                            className="justify-self-end rounded-full p-2 text-gray-300 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                            onClick={() => {
+                                if (canBookmark) {
+                                    onBookmark?.(currentState);
+                                }
+                            }}
+                            disabled={!canBookmark || isBookmarkSaving}
+                            aria-label="Salva segnalibro audio"
+                            title={currentState.track.kind === 'main' ? 'Salva segnalibro audio' : 'Disponibile sul racconto audio'}
+                        >
+                            {bookmarkActive ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+                        </button>
+                    ) : (
+                        <div className="justify-self-end p-2 text-gray-400 invisible" aria-hidden="true">
+                            {currentTrack + 1}/{tracks.length}
+                        </div>
+                    )}
                 </div>
 
                 {showPlaylist && tracks.length > 1 && (

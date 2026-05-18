@@ -28,3 +28,16 @@ export {
     saveAudioBook,
     deleteAudioBook
 } from './queries/audiobooks';
+
+// Export bookmark queries
+export {
+    getBookmarksForBook,
+    upsertBookmark,
+    deleteBookmark
+} from './queries/bookmarks';
+
+export type {
+    Bookmark,
+    BookmarkKind,
+    BookmarksByKind
+} from './queries/bookmarks';

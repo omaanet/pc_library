@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Minimize, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Fullscreen } from "lucide-react";
+import { Bookmark, BookmarkCheck, Minimize, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Fullscreen } from "lucide-react";
 import { Book } from "@/types";
 import { User } from "@/types";
 import { useLogger } from '@/lib/logging';
+import { useBookmarks } from '@/hooks/use-bookmarks';
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -25,9 +26,10 @@ interface PageReaderProps {
     book: Book;
     bookId: string;
     user: User;
+    initialPage?: number;
 }
 
-export default function PageReader({ book, bookId, user }: PageReaderProps) {
+export default function PageReader({ book, bookId, user, initialPage = 1 }: PageReaderProps) {
     const source = 'PageReader';
     const logger = useLogger(source);
     
@@ -35,12 +37,19 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const readerPrefs = useReaderPreferences();
     const setViewMode = useSetViewMode();
     const setZoomLevel = useSetZoomLevel();
+    const {
+        bookmarks,
+        initialized: bookmarksInitialized,
+        error: bookmarksError,
+        canWrite: bookmarksCanWrite,
+        saveBookmark,
+    } = useBookmarks(bookId, Boolean(user?.id));
     
     // Configuration - use values from store as defaults
     const CONFIG = {
         viewMode: readerPrefs.viewMode || "double" as "single" | "double",
         zoomLevel: (readerPrefs.zoomLevel || 1.0) * 100,
-        pageStart: 1,
+        pageStart: Math.max(1, initialPage),
         pageGap: 5,
         sidebarCollapsed: true,
         imagePrefix: undefined,
@@ -58,7 +67,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const pageJumpInputRef = useRef<HTMLInputElement>(null);
 
     // State variables - sync with store
-    const [currentPage, setCurrentPage] = useState(Math.max(1, CONFIG.pageStart ?? 1));
+    const [currentPage, setCurrentPage] = useState(Math.max(1, Math.min(book.pagesCount || 1, CONFIG.pageStart ?? 1)));
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [imagesLoaded, setImagesLoaded] = useState<Record<number, string>>({});
     const [imagesFailed, setImagesFailed] = useState<Record<number, boolean>>({});
@@ -74,11 +83,14 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const [visiblePages, setVisiblePages] = useState<number[]>([]);
     const [isPageJumpOpen, setIsPageJumpOpen] = useState(false);
     const [pageJumpValue, setPageJumpValue] = useState("");
+    const [hasAppliedReaderBookmark, setHasAppliedReaderBookmark] = useState(initialPage > 1);
+    const [isSavingReaderBookmark, setIsSavingReaderBookmark] = useState(false);
     const pinchInitialDistance = useRef<number | null>(null);
     const pinchInitialZoom = useRef<number>((readerPrefs.zoomLevel || 1.0) * 100);
     const lastTapTime = useRef<number>(0);
     const pinchInitialMidpoint = useRef<{ x: number; y: number } | null>(null);
     const pinchInitialTranslate = useRef<{ x: number; y: number } | null>(null);
+    const lastSavedReaderPageRef = useRef<number | null>(initialPage > 1 ? initialPage : null);
 
     // Update store when viewMode changes
     const handleViewModeChange = useCallback((newMode: 'single' | 'double') => {
@@ -372,6 +384,21 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
         const targetPage = clampPageNumber(Number.parseInt(pageJumpValue, 10));
         setPageWithTransition(targetPage);
         setIsPageJumpOpen(false);
+    };
+
+    const saveReaderBookmark = async (e?: React.MouseEvent | React.TouchEvent) => {
+        stopNavigationEvent(e);
+        const pageNumber = clampPageNumber(getVisiblePages()[0] ?? currentPage);
+
+        setIsSavingReaderBookmark(true);
+        try {
+            await saveBookmark({ kind: 'reader', pageNumber });
+            lastSavedReaderPageRef.current = pageNumber;
+        } catch (error) {
+            logger.error('Failed to save reader bookmark', { error, bookId, pageNumber });
+        } finally {
+            setIsSavingReaderBookmark(false);
+        }
     };
 
     // Set view mode (single or double)
@@ -695,8 +722,9 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             viewerContainerRef.current.addEventListener('wheel', handleViewerContainerWheel, { passive: false });
         }
 
-        // Load initial pages
-        lazyLoadImages();
+        if (hasAppliedReaderBookmark) {
+            lazyLoadImages();
+        }
 
         // Clean up
         return () => {
@@ -710,12 +738,63 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 viewerContainerRef.current.removeEventListener('wheel', handleViewerContainerWheel);
             }
         };
-    }, [isDragging, currentPage, readerPrefs.viewMode, readerPrefs.zoomLevel]); // Re-run when these values change
+    }, [hasAppliedReaderBookmark, isDragging, currentPage, readerPrefs.viewMode, readerPrefs.zoomLevel]); // Re-run when these values change
 
     // Load images when page or view mode changes
     useEffect(() => {
+        if (!hasAppliedReaderBookmark) return;
         lazyLoadImages();
-    }, [currentPage, readerPrefs.viewMode]);
+    }, [currentPage, hasAppliedReaderBookmark, readerPrefs.viewMode]);
+
+    useEffect(() => {
+        if (!bookmarksInitialized || hasAppliedReaderBookmark) return;
+
+        if (bookmarksError) {
+            lastSavedReaderPageRef.current = currentPage;
+            setHasAppliedReaderBookmark(true);
+            return;
+        }
+
+        const savedPage = bookmarks.reader?.pageNumber;
+        if (savedPage && savedPage >= 1 && savedPage <= totalPages) {
+            lastSavedReaderPageRef.current = savedPage;
+            setCurrentPage(savedPage);
+        } else {
+            lastSavedReaderPageRef.current = currentPage;
+        }
+
+        setHasAppliedReaderBookmark(true);
+    }, [bookmarks.reader?.pageNumber, bookmarksError, bookmarksInitialized, currentPage, hasAppliedReaderBookmark, totalPages]);
+
+    useEffect(() => {
+        if (!bookmarksCanWrite || !bookmarksInitialized || bookmarksError || !hasAppliedReaderBookmark) return;
+        if (bookmarks.reader?.pageNumber === currentPage) return;
+        if (lastSavedReaderPageRef.current === currentPage) return;
+
+        const timeoutId = window.setTimeout(() => {
+            saveBookmark({ kind: 'reader', pageNumber: currentPage })
+                .then(() => {
+                    lastSavedReaderPageRef.current = currentPage;
+                })
+                .catch((error) => {
+                    logger.error('Failed to auto-save reader bookmark', { error, bookId, pageNumber: currentPage });
+                });
+        }, 1200);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [
+        bookId,
+        bookmarksCanWrite,
+        bookmarksError,
+        bookmarks.reader?.pageNumber,
+        bookmarksInitialized,
+        currentPage,
+        hasAppliedReaderBookmark,
+        logger,
+        saveBookmark,
+    ]);
 
     useEffect(() => {
         if (!isPageJumpOpen) return;
@@ -760,6 +839,8 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             ? `Pagina ${visiblePages[0]} di ${totalPages}`
             : `Pagine ${visiblePages.join('-')} di ${totalPages}`;
     };
+
+    const isCurrentPageBookmarked = bookmarks.reader?.pageNumber === (getVisiblePages()[0] ?? currentPage);
 
     const getButtonClassName = (
         currentPage: number,
@@ -1037,6 +1118,23 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 </div>
 
                 {/* Fullscreen Button - Top Right */}
+                <div className="fixed top-4 right-16 z-[25] pointer-events-none">
+                    <button
+                        className="p-2 bg-black/40 hover:bg-black/60 rounded-full pointer-events-auto touch-manipulation transition-colors backdrop-blur-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={saveReaderBookmark}
+                        onTouchEnd={saveReaderBookmark}
+                        disabled={isSavingReaderBookmark || !bookmarksCanWrite}
+                        aria-label="Salva segnalibro"
+                        title="Salva segnalibro"
+                    >
+                        {isCurrentPageBookmarked ? (
+                            <BookmarkCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300 hover:text-emerald-200" />
+                        ) : (
+                            <Bookmark className="w-5 h-5 sm:w-6 sm:h-6 text-gray-100 hover:text-white" />
+                        )}
+                    </button>
+                </div>
+
                 <div className="fixed top-4 right-5 z-[25] pointer-events-none">
                     <button
                         className="p-2 bg-black/40 hover:bg-black/60 rounded-full pointer-events-auto touch-manipulation transition-colors backdrop-blur-sm"

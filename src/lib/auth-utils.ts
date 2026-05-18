@@ -2,22 +2,31 @@
 import { NextRequest } from 'next/server';
 import { getUserById } from './user-db';
 
+type CookieStoreLike = {
+    get?: (name: string) => { value?: string } | string | undefined;
+    session?: string;
+};
+
 // Request type that supports both NextRequest (App Router) and request objects with cookies
-type RequestWithCookies = NextRequest | { cookies: { session?: string } };
+type RequestWithCookies = NextRequest | { cookies: CookieStoreLike };
+
+function getSessionCookieValue(req: RequestWithCookies): string | undefined {
+    const cookieStore = req.cookies as CookieStoreLike | undefined;
+    if (!cookieStore) return undefined;
+
+    if (typeof cookieStore.get === 'function') {
+        const sessionCookie = cookieStore.get('session');
+        return typeof sessionCookie === 'string' ? sessionCookie : sessionCookie?.value;
+    }
+
+    return cookieStore.session;
+}
 
 // Get the user from the session cookie
 // Supports both NextRequest (App Router) and other request types with cookies
 export async function getSessionUser(req: RequestWithCookies) {
     try {
-        let sessionCookieValue: string | undefined = undefined;
-
-        // App Router: NextRequest (has cookies as RequestCookies with get method)
-        if (req instanceof NextRequest) {
-            sessionCookieValue = req.cookies.get('session')?.value;
-        } else if (req.cookies) {
-            // Other request types with plain cookies object
-            sessionCookieValue = req.cookies.session;
-        }
+        const sessionCookieValue = getSessionCookieValue(req);
         
         if (!sessionCookieValue) return null;
         

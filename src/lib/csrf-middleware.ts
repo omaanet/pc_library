@@ -4,8 +4,10 @@ import { validateCsrfToken, requiresCsrfProtection } from './csrf';
 /**
  * Middleware to add CSRF protection to API routes
  */
-export function withCSRFProtection(handler: (request: NextRequest) => Promise<NextResponse>) {
-    return async (request: NextRequest): Promise<NextResponse> => {
+export function withCSRFProtection<TArgs extends unknown[]>(
+    handler: (request: NextRequest, ...args: TArgs) => Promise<NextResponse>
+) {
+    return async (request: NextRequest, ...args: TArgs): Promise<NextResponse> => {
         // Only validate CSRF for state-changing methods
         if (requiresCsrfProtection(request.method)) {
             // Skip CSRF for auth endpoints that don't have sessions yet
@@ -41,6 +43,6 @@ export function withCSRFProtection(handler: (request: NextRequest) => Promise<Ne
         }
         
         // Execute the handler
-        return handler(request);
+        return handler(request, ...args);
     };
 }
