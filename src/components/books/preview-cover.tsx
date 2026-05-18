@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import type { MuxCSSProperties } from '@mux/mux-player-react';
 import { Book } from '@/types';
 import { BookCover } from '@/components/books/book-cover';
 import { DEFAULT_COVER_SIZES } from '@/types/images';
@@ -15,6 +16,12 @@ export interface PreviewCoverProps {
 const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), {
     ssr: false,
 });
+
+const muxPlayerStyle: MuxCSSProperties = {
+    width: DEFAULT_COVER_SIZES.video.width,
+    height: DEFAULT_COVER_SIZES.video.height,
+    '--cast-button': 'none',
+};
 
 export function PreviewCover({ mounted, book, itemsVerticalAlign = 'items-start' }: PreviewCoverProps) {
     const hasMedia = Boolean(book.mediaId && String(book.mediaId).trim().length > 0);
@@ -32,14 +39,7 @@ export function PreviewCover({ mounted, book, itemsVerticalAlign = 'items-start'
                         video_title: book.mediaTitle || book.title,
                         viewer_user_id: book.mediaUid || undefined,
                     }}
-                    style={(() => {
-                        const s: React.CSSProperties & Record<string, string | number> = {
-                            width: DEFAULT_COVER_SIZES.video.width,
-                            height: DEFAULT_COVER_SIZES.video.height,
-                        };
-                        s['--cast-button'] = 'none';
-                        return s;
-                    })()}
+                    style={muxPlayerStyle}
                 />
             )}
         </div>

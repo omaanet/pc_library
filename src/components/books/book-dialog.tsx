@@ -22,6 +22,8 @@ import AudioBookPlayer from '../shared/AudioBookPlayer';
 import { LinkButton } from '@/components/ui/LinkButton';
 import { useToast } from '@/components/ui/use-toast';
 import { SITE_CONFIG } from '@/config/site-config';
+import { useLibrary } from '@/context/library-context';
+import { saveLibraryReturnState } from '@/lib/library-return-state';
 
 interface BookDialogProps {
     book: Book | null;
@@ -72,7 +74,23 @@ export function BookDialogSimple({
     const [isPdfRequesting, setIsPdfRequesting] = useState(false);
     const { toast } = useToast();
     const { state: authState } = useAuth();
+    const {
+        state: { filters, sort, viewMode },
+    } = useLibrary();
     const pendingActionRef = useRef<{ type: 'request-pdf'; bookId: string } | null>(null);
+    const isReaderNavigationRef = useRef(false);
+
+    const handleReaderNavigation = () => {
+        if (!book) return;
+
+        isReaderNavigationRef.current = true;
+        saveLibraryReturnState({
+            selectedBookId: book.id,
+            filters,
+            sort,
+            viewMode,
+        });
+    };
 
     // Reset image loaded state when dialog opens/closes or book changes
     useEffect(() => {
@@ -170,7 +188,13 @@ export function BookDialogSimple({
     if (!book) return null;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={(nextOpen) => {
+                if (!nextOpen && isReaderNavigationRef.current) return;
+                onOpenChange(nextOpen);
+            }}
+        >
             <DialogContent className="p-2 sm:p-4 sm:pt-0 overflow-hidden !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0">
                 {/* Header with Title and Audio Length */}
                 <DialogHeader className="space-y-0 p-0 sm:p-0 sm:pb-0">
@@ -227,6 +251,7 @@ export function BookDialogSimple({
                                         <div className="flex-1">
                                             <LinkButton url={`/read-book/${book.id}`}
                                                 icon={BookOpen}
+                                                onClick={handleReaderNavigation}
                                                 className="w-full px-3 py-1 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate">
                                                 Leggi Racconto<span className="hidden sm:inline"> on-line</span>
                                             </LinkButton>
@@ -292,6 +317,22 @@ export function BookDialog({
     onLoginClick,
 }: BookDialogProps) {
     const [imageLoaded, setImageLoaded] = useState(false);
+    const {
+        state: { filters, sort, viewMode },
+    } = useLibrary();
+    const isReaderNavigationRef = useRef(false);
+
+    const handleReaderNavigation = () => {
+        if (!book) return;
+
+        isReaderNavigationRef.current = true;
+        saveLibraryReturnState({
+            selectedBookId: book.id,
+            filters,
+            sort,
+            viewMode,
+        });
+    };
 
     // Reset image loaded state when dialog opens/closes or book changes
     useEffect(() => {
@@ -299,7 +340,13 @@ export function BookDialog({
     }, [book, open]);
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={(nextOpen) => {
+                if (!nextOpen && isReaderNavigationRef.current) return;
+                onOpenChange(nextOpen);
+            }}
+        >
             <DialogContent
                 className="flex flex-col w-full max-w-[1200px] p-0 !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0"
                 style={{ margin: '0 auto 0 auto' }}
@@ -369,7 +416,7 @@ export function BookDialog({
                                             {isAuthenticated /*&& !book.hasAudio*/ && (
                                                 <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">
                                                     <div className="flex-1">
-                                                        <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate">
+                                                        <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} onClick={handleReaderNavigation} className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate">
                                                             Leggi Racconto
                                                         </LinkButton>
                                                     </div>

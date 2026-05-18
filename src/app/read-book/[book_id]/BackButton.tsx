@@ -27,7 +27,7 @@ export function BackButton() {
                 console.error('Vibration failed:', error);
             }
         }
-        router.back();
+        router.push('/');
     };
 
     return (

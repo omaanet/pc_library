@@ -18,5 +18,6 @@
     "explorer.fileNesting.patterns": {
         "*.d.ts": "${basename}.ts, ${basename}.js"
     },
-    "css.lint.unknownAtRules": "ignore"
+    "css.lint.unknownAtRules": "ignore",
+    "npm.packageManager": "pnpm"
 }

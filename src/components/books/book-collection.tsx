@@ -17,6 +17,11 @@ import { BookCollectionLoadMore } from './book-collection-load-more';
 import { BookCollectionError } from './book-collection-error';
 import { BookCollectionEmpty } from './book-collection-empty';
 import { SITE_CONFIG } from '@/config/site-config';
+import {
+    clearLibraryReturnState,
+    readLibraryReturnState,
+} from '@/lib/library-return-state';
+import type { Book } from '@/types';
 
 // Number of books to preload images for
 const PRELOAD_COUNT = 4;
@@ -42,7 +47,8 @@ interface BookCollectionProps {
 export function BookCollection({ displayPreviews }: BookCollectionProps) {
     // Context: Global state shared across app
     const {
-        state: { viewMode, selectedBook, filters, sort, pagination },
+        state: { books: cachedBooks, viewMode, selectedBook, filters, sort, pagination },
+        dispatch,
         selectBook,
         updateFilters,
     } = useLibrary();
@@ -55,7 +61,11 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     // Local state
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+    const [returnState, setReturnState] = useState(() => readLibraryReturnState());
+    const [isRestoringReturnState, setIsRestoringReturnState] = useState(() => !!returnState);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const returnControlsRestoredRef = useRef(false);
+    const selectedBookFetchStartedRef = useRef(false);
 
     // Stabilize onError callback to prevent useBookData from re-creating fetchBooks
     const onError = useCallback((message: string) => {
@@ -65,6 +75,10 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
             description: message,
         });
     }, [toast]);
+
+    const onBooksLoaded = useCallback((loadedBooks: Book[]) => {
+        dispatch({ type: 'SET_BOOKS', payload: loadedBooks });
+    }, [dispatch]);
 
     // Custom hooks for data fetching and search
     const {
@@ -77,8 +91,70 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     } = useBookData({
         displayPreviews,
         sort,
+        initialBooks: cachedBooks,
+        onBooksLoaded,
         onError,
     });
+
+    const finishReturnStateRestore = useCallback(() => {
+        clearLibraryReturnState();
+        setReturnState(null);
+        setIsRestoringReturnState(false);
+    }, []);
+
+    useEffect(() => {
+        if (!returnState || returnControlsRestoredRef.current) return;
+
+        dispatch({ type: 'SET_FILTERS', payload: returnState.filters });
+        dispatch({ type: 'SET_SORT', payload: returnState.sort });
+        dispatch({ type: 'SET_VIEW_MODE', payload: returnState.viewMode });
+        returnControlsRestoredRef.current = true;
+    }, [dispatch, returnState]);
+
+    useEffect(() => {
+        if (!returnState) return;
+
+        if (selectedBook?.id === returnState.selectedBookId) {
+            finishReturnStateRestore();
+            return;
+        }
+
+        const restoredBook = books.find((book) => book.id === returnState.selectedBookId);
+        if (restoredBook) {
+            selectBook(restoredBook);
+            finishReturnStateRestore();
+            return;
+        }
+
+        if (isInitialLoad || isLoading || selectedBookFetchStartedRef.current) return;
+
+        selectedBookFetchStartedRef.current = true;
+        void fetch(`/api/books/${returnState.selectedBookId}`)
+            .then(async (response) => {
+                if (!response.ok) {
+                    throw new Error(`Failed to restore selected book: ${response.status}`);
+                }
+
+                return response.json() as Promise<Book>;
+            })
+            .then((book) => {
+                selectBook(book);
+            })
+            .catch(() => {
+                // If the selected book cannot be restored, still allow the library to render.
+            })
+            .finally(() => {
+                finishReturnStateRestore();
+            });
+    }, [
+        books,
+        finishReturnStateRestore,
+        isInitialLoad,
+        isLoading,
+        returnState,
+        selectBook,
+        selectedBook,
+    ]);
 
     // Use ref to stabilize onSearch callback and prevent unnecessary re-renders
     const updateFiltersRef = useRef(updateFilters);
@@ -194,6 +270,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
     }, []);
 
     const showLoadingState = isLoading;
+    const showRestoringState = isRestoringReturnState && filteredBooks.length === 0;
 
     // Early return for error state
     if (error) {
@@ -225,7 +302,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
 
             {/* Books Grid/List */}
             <div className="min-h-[600px] transition-opacity duration-300">
-                {isInitialLoad && showLoadingState ? (
+                {(isInitialLoad && showLoadingState) || showRestoringState ? (
                     <BookGridSkeleton count={pageSize} />
                 ) : (
                     <div className="space-y-6 w-full">

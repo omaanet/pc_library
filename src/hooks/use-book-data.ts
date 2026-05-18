@@ -6,6 +6,8 @@ import { bookApiService } from '@/lib/services/book-api-service';
 export interface UseBookDataParams {
   displayPreviews: number;
   sort: LibrarySort;
+  initialBooks?: Book[];
+  onBooksLoaded?: (books: Book[]) => void;
   onError?: (message: string) => void;
 }
 
@@ -44,11 +46,14 @@ export interface UseBookDataReturn {
 export function useBookData({
   displayPreviews,
   sort,
+  initialBooks = [],
+  onBooksLoaded,
   onError,
 }: UseBookDataParams): UseBookDataReturn {
-  const [books, setBooks] = useState<Book[]>([]);
+  const hasInitialBooks = initialBooks.length > 0;
+  const [books, setBooks] = useState<Book[]>(initialBooks);
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(!hasInitialBooks);
   const [error, setError] = useState<Error | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -58,6 +63,7 @@ export function useBookData({
   });
 
   const activeRequestIdRef = useRef(0);
+  const seededFromCacheRef = useRef(hasInitialBooks);
 
   /**
    * Fetches books from the API using the book API service
@@ -82,6 +88,7 @@ export function useBookData({
         }
 
         setBooks(data.books);
+        onBooksLoaded?.(data.books);
 
         if (data.pagination) {
           setPagination({
@@ -106,7 +113,7 @@ export function useBookData({
         setIsInitialLoad(false);
       }
     },
-    [displayPreviews, sort.by, sort.order, onError]
+    [displayPreviews, sort.by, sort.order, onBooksLoaded, onError]
   );
 
   /**
@@ -125,6 +132,11 @@ export function useBookData({
   useEffect(() => {
     // Skip fetch on server-side rendering
     if (typeof window === 'undefined') return;
+
+    if (seededFromCacheRef.current) {
+      seededFromCacheRef.current = false;
+      return;
+    }
 
     fetchBooks();
   }, [displayPreviews, sort.by, sort.order, fetchBooks]);

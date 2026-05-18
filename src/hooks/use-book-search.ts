@@ -52,7 +52,7 @@ export function useBookSearch({
   
   // Use ref instead of state to avoid memory leaks
   const debounceTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  const hasHydratedRef = useRef(false);
+  const lastExternalSearchRef = useRef(initialSearchTerm || '');
 
   /**
    * Validates search term (must be empty or meet minimum length requirement)
@@ -134,16 +134,16 @@ export function useBookSearch({
     [isValidSearch, performSearch]
   );
 
-  // Hydrate from context once during initial render (handles SSR -> client transition)
-  // useLayoutEffect runs synchronously after DOM updates but before browser paint
+  // Keep the input aligned with externally restored filter state.
+  // useLayoutEffect runs synchronously after DOM updates but before browser paint.
   useLayoutEffect(() => {
-    if (!hasHydratedRef.current && initialSearchTerm && initialSearchTerm !== searchTerm) {
-      console.log('[useBookSearch] Hydrating from context:', initialSearchTerm);
-      setSearchTerm(initialSearchTerm);
-      setLastSearched(initialSearchTerm);
-      hasHydratedRef.current = true;
+    const externalSearchTerm = initialSearchTerm || '';
+    if (externalSearchTerm !== lastExternalSearchRef.current) {
+      lastExternalSearchRef.current = externalSearchTerm;
+      setSearchTerm(externalSearchTerm);
+      setLastSearched(externalSearchTerm);
     }
-  }, [initialSearchTerm, searchTerm]);
+  }, [initialSearchTerm]);
 
   // Cleanup timeout on unmount
   useLayoutEffect(() => {

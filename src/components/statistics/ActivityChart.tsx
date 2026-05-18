@@ -58,10 +58,14 @@ export function ActivityChart({
                                     day: 'numeric'
                                 });
                             }}
-                            formatter={(value: any, name?: string) => [
-                                value,
-                                lines.find(l => l.dataKey === name)?.name || name || ''
-                            ]}
+                            formatter={(value, name) => {
+                                const dataKey = String(name ?? '');
+
+                                return [
+                                    value,
+                                    lines.find(l => l.dataKey === dataKey)?.name || dataKey
+                                ];
+                            }}
                         />
                         {lines.map((line) => (
                             <Line
