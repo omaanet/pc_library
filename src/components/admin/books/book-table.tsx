@@ -12,9 +12,10 @@ import {
     RefreshCw,
     Eye,
     EyeOff,
-    Copy
+    Copy,
+    Sparkles
 } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, isBookEffectivelyNew } from '@/lib/utils';
 import { Book } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,7 +57,7 @@ interface BookTableProps {
     setSortDirection?: (direction: SortDirection) => void;
 }
 
-type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'book_id' | 'displayOrder' | 'isVisible';
+type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'isNew' | 'book_id' | 'displayOrder' | 'isVisible';
 type SortDirection = 'asc' | 'desc';
 
 export function BookTable({
@@ -143,6 +144,12 @@ export function BookTable({
                 return sortDirection === 'asc'
                     ? (a.isPreview ? 1 : 0) - (b.isPreview ? 1 : 0)
                     : (b.isPreview ? 1 : 0) - (a.isPreview ? 1 : 0);
+            } else if (sortField === 'isNew') {
+                const aIsNew = isBookEffectivelyNew(a);
+                const bIsNew = isBookEffectivelyNew(b);
+                return sortDirection === 'asc'
+                    ? (aIsNew ? 1 : 0) - (bIsNew ? 1 : 0)
+                    : (bIsNew ? 1 : 0) - (aIsNew ? 1 : 0);
             } else if (sortField === 'book_id') {
                 return sortDirection === 'asc'
                     ? a.id.localeCompare(b.id)
@@ -264,6 +271,15 @@ export function BookTable({
                                     Preview {getSortIcon('isPreview')}
                                 </Button>
                             </TableHead>
+                            <TableHead className="text-xs text-muted-foreground text-center">
+                                <Button
+                                    variant="ghost"
+                                    className="flex items-center gap-1 p-0 font-medium text-xs text-muted-foreground mx-auto"
+                                    onClick={() => handleSort('isNew')}
+                                >
+                                    Is New {getSortIcon('isNew')}
+                                </Button>
+                            </TableHead>
 
                             <TableHead className="text-xs text-muted-foreground text-center cursor-pointer select-none" onClick={() => handleSort('displayOrder')}>
                                 Display order {getSortIcon('displayOrder')}
@@ -277,7 +293,7 @@ export function BookTable({
                     <TableBody>
                         {filteredBooks.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-24 text-center">
+                                <TableCell colSpan={9} className="h-24 text-center">
                                     {isLoading ? 'Loading books...' : 'No books found.'}
                                 </TableCell>
                             </TableRow>
@@ -296,6 +312,11 @@ export function BookTable({
                                     <TableCell className="text-xs whitespace-nowrap text-center">
                                         {book.isPreview ? (
                                             <Eye className="h-4 w-4 text-muted-foreground mx-auto" />
+                                        ) : null}
+                                    </TableCell>
+                                    <TableCell className="text-xs whitespace-nowrap text-center">
+                                        {isBookEffectivelyNew(book) ? (
+                                            <Sparkles className="h-4 w-4 text-muted-foreground mx-auto" aria-label="New" />
                                         ) : null}
                                     </TableCell>
                                     <TableCell className="text-xs whitespace-nowrap text-center">{book.displayOrder}</TableCell>

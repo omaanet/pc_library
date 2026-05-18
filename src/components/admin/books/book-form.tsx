@@ -47,6 +47,7 @@ const bookFormSchema = z.object({
     extract: z.string().nullable().optional(),
     rating: z.number().min(1).max(5).nullable().optional(),
     isPreview: z.boolean().default(false),
+    isNew: z.boolean().default(false),
     isVisible: z.boolean().default(true),
     // Audiobook specific fields
     audiobook: z.object({
@@ -133,6 +134,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         extract: book?.extract || '',
         rating: book?.rating,
         isPreview: book?.isPreview || false,
+        isNew: book?.isNew || false,
         isVisible: book?.isVisible !== undefined ? Boolean(book.isVisible) : true,
         audiobook: {
             mediaId: book?.audiobook?.mediaId || null,
@@ -168,6 +170,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                 extract: book.extract || '',
                 rating: book.rating,
                 isPreview: book.isPreview || false,
+                isNew: book.isNew || false,
                 isVisible: book.isVisible !== undefined ? Boolean(book.isVisible) : true,
                 audiobook: {
                     mediaId: book.audiobook?.mediaId || null,
@@ -658,6 +661,28 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                                 <FormLabel className="text-base">Visible to Users</FormLabel>
                                 <FormDescription>
                                     Should this book be visible to regular users?
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    className="data-[state=checked]:bg-green-500"
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="isNew"
+                    render={({ field }) => (
+                        <FormItem className={`flex flex-row items-center justify-between rounded-lg border-2 p-4 transition-colors ${field.value ? 'border-primary/50' : 'border-border'}`}>
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base">Is New</FormLabel>
+                                <FormDescription>
+                                    Force this book to show the NEW badge. When off, the badge is based on publishing date.
                                 </FormDescription>
                             </div>
                             <FormControl>

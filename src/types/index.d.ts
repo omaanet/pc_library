@@ -13,6 +13,7 @@ export interface Book {
     readingProgress?: number;
     status?: 'unread' | 'reading' | 'completed' | 'on-hold';
     isPreview?: boolean;
+    isNew?: boolean;
     displayOrder?: number;
     isVisible?: number;
     pagesCount?: number;

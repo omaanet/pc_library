@@ -1,12 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import Image from 'next/image';
 import { Headphones } from 'lucide-react';
-import { cn, isBookNew } from '@/lib/utils';
-import { SITE_CONFIG } from '@/config/site-config';
+import { cn, isBookEffectivelyNew } from '@/lib/utils';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
-import { DEFAULT_COVER_SIZES, getImageSizeString } from '@/types/images';
+import { DEFAULT_COVER_SIZES } from '@/types/images';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Book } from '@/types';
 
@@ -21,8 +19,8 @@ export function BookCover({ book, orientation, className }: BookCoverProps) {
     const [imageLoaded, setImageLoaded] = React.useState(false);
 
     const isNew = React.useMemo(() => {
-        return isBookNew(book.publishingDate, SITE_CONFIG.BOOK_BADGES.NEW_DAYS);
-    }, [book.publishingDate]);
+        return isBookEffectivelyNew(book);
+    }, [book.isNew, book.publishingDate]);
 
     // Get image dimensions for list view
     const { width, height } = DEFAULT_COVER_SIZES.list;

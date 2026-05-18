@@ -16,6 +16,7 @@ export interface Book {
     extract?: string;
     rating?: number;
     isPreview?: boolean;
+    isNew?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
     displayOrder?: number;

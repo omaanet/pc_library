@@ -3,8 +3,7 @@
 import * as React from 'react';
 import Image from 'next/image';
 import { Headphones } from 'lucide-react';
-import { formatDate, formatAudioLength, cn, isBookNew } from '@/lib/utils';
-import { SITE_CONFIG } from '@/config/site-config';
+import { formatAudioLength, cn, isBookEffectivelyNew } from '@/lib/utils';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 import { DEFAULT_COVER_SIZES, getImageSizeString } from '@/types/images';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,8 +23,8 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
     const [imageLoaded, setImageLoaded] = React.useState(false);
 
     const isNew = React.useMemo(() => {
-        return isBookNew(book.publishingDate, SITE_CONFIG.BOOK_BADGES.NEW_DAYS);
-    }, [book.publishingDate]);
+        return isBookEffectivelyNew(book);
+    }, [book.isNew, book.publishingDate]);
 
     // Get image dimensions for this view type
     const { width, height } = DEFAULT_COVER_SIZES.grid;

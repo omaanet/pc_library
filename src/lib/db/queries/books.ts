@@ -205,7 +205,7 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
     const validColumns = [
         'id', 'title', 'publishing_date', 'summary',
         'has_audio', 'audio_length', 'extract', 'rating', 'is_preview',
-        'created_at', 'updated_at', 'display_order', 'pages_count'
+        'is_new', 'created_at', 'updated_at', 'display_order', 'pages_count'
     ];
 
     if (Array.isArray(sortBy) && sortBy.length > 0) {
@@ -245,7 +245,7 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
             : 'ORDER BY publishing_date DESC NULLS LAST'; // Final fallback if config is invalid
     }
 
-    const newPriorityClause = `CASE WHEN publishing_date::timestamptz <= NOW() AND publishing_date::timestamptz >= NOW() - INTERVAL '${SITE_CONFIG.BOOK_BADGES.NEW_DAYS} days' THEN 1 ELSE 0 END DESC`;
+    const newPriorityClause = `CASE WHEN is_new = TRUE OR (publishing_date::timestamptz <= NOW() AND publishing_date::timestamptz >= NOW() - INTERVAL '${SITE_CONFIG.BOOK_BADGES.NEW_DAYS} days') THEN 1 ELSE 0 END DESC`;
     if (orderByClause.startsWith('ORDER BY ')) {
         orderByClause = `ORDER BY ${newPriorityClause}, ${orderByClause.slice('ORDER BY '.length)}`;
     }
@@ -281,6 +281,7 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
             extract,
             rating,
             is_preview as "isPreview",
+            is_new as "isNew",
             display_order as "displayOrder",
             is_visible as "isVisible",
             created_at as "createdAt",
@@ -329,6 +330,7 @@ export async function getBookById(id: string): Promise<Book | undefined> {
             extract,
             rating,
             is_preview as "isPreview",
+            is_new as "isNew",
             is_visible as "isVisible",
             display_order as "displayOrder",
             created_at as "createdAt",
@@ -384,13 +386,13 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
             `INSERT INTO books (
                 id, title, cover_image, publishing_date, summary,
                 has_audio, audio_length, extract, rating,
-                is_preview, display_order, is_visible, pages_count,
+                is_preview, is_new, display_order, is_visible, pages_count,
                 media_id, media_title, media_uid, preview_placement
             ) VALUES (
                 $1, $2, $3, $4, $5,
                 $6, $7, $8, $9,
-                $10, $11, $12, $13,
-                $14, $15, $16, $17
+                $10, $11, $12, $13, $14,
+                $15, $16, $17, $18
             )
             RETURNING id`,
             [
@@ -404,6 +406,7 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
                 book.extract || null,
                 book.rating || null,
                 book.isPreview ? 1 : null,
+                book.isNew ? true : false,
                 book.displayOrder || null,
                 book.isVisible ? 1 : 0,
                 book.pagesCount || null,
@@ -494,6 +497,10 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
     if (book.isPreview !== undefined) {
         updates.push('is_preview = $' + (updates.length + 1));
         values.push(book.isPreview ? 1 : 0);
+    }
+    if (book.isNew !== undefined) {
+        updates.push('is_new = $' + (updates.length + 1));
+        values.push(book.isNew ? true : false);
     }
     if (book.isVisible !== undefined) {
         updates.push('is_visible = $' + (updates.length + 1));

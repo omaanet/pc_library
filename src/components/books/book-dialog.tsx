@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatAudioLength, cn, isBookNew } from '@/lib/utils';
+import { formatAudioLength, cn, isBookEffectivelyNew } from '@/lib/utils';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 import type { Book } from '@/types';
 import BookComments from './book-comments';
@@ -21,7 +21,6 @@ import { BookExtract } from './book-extract';
 import AudioBookPlayer from '../shared/AudioBookPlayer';
 import { LinkButton } from '@/components/ui/LinkButton';
 import { useToast } from '@/components/ui/use-toast';
-import { SITE_CONFIG } from '@/config/site-config';
 import { useLibrary } from '@/context/library-context';
 import { saveLibraryReturnState } from '@/lib/library-return-state';
 
@@ -50,7 +49,7 @@ const renderAudioBadge = (book: Book | null, visible: boolean) => {
 
 const renderNewBadge = (book: Book | null, visible: boolean) => {
     if (!book) return null;
-    if (!isBookNew(book.publishingDate, SITE_CONFIG.BOOK_BADGES.NEW_DAYS)) return null;
+    if (!isBookEffectivelyNew(book)) return null;
 
     return (
         <div className={cn(

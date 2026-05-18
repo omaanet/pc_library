@@ -114,7 +114,7 @@ function normalizeAudiobookPayload(payload: unknown): NormalizedAudiobookPayload
  * - sortOrder: Sort direction 'asc' or 'desc' (default: 'desc')
  * 
  * Available sort columns: id, title, publishing_date, summary, has_audio, 
- * audio_length, extract, rating, is_preview, created_at, updated_at, 
+ * audio_length, extract, rating, is_preview, is_new, created_at, updated_at,
  * display_order, pages_count
  */
 export async function GET(request: Request) {
@@ -239,6 +239,10 @@ export const POST = withCSRFProtection(async function(request: Request) {
                 customValidator: (value: any) => value === null || value === undefined || (typeof value === 'number' && value >= 0 && value <= 5)
             },
             isPreview: {
+                type: 'boolean' as const,
+                required: false
+            },
+            isNew: {
                 type: 'boolean' as const,
                 required: false
             },

@@ -30,6 +30,7 @@ const bookFormSchema = z.object({
     extract: z.string().nullable().optional(),
     rating: z.number().min(1).max(5).nullable().optional(),
     isPreview: z.boolean().default(false),
+    isNew: z.boolean().default(false),
     isVisible: z.boolean().default(true),
     audiobook: z.object({
         mediaId: z.string().nullable().optional(),
@@ -79,7 +80,7 @@ export default function AddBookPage() {
     // Filter and sorting state
     const [searchTerm, setSearchTerm] = useState('');
     const [showAudioOnly, setShowAudioOnly] = useState(false);
-    const [sortField, setSortField] = useState<'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'book_id' | 'displayOrder' | 'isVisible'>('title');
+    const [sortField, setSortField] = useState<'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'isNew' | 'book_id' | 'displayOrder' | 'isVisible'>('title');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
     // Test mail and env state

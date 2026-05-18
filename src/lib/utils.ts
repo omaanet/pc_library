@@ -1,6 +1,7 @@
 // src/lib/utils.ts
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -37,6 +38,10 @@ export function isBookNew(publishingDate: string, newDays: number): boolean {
     const windowMs = newDays * 24 * 60 * 60 * 1000;
 
     return publishedMs <= nowMs && publishedMs >= (nowMs - windowMs);
+}
+
+export function isBookEffectivelyNew(book: { isNew?: boolean; publishingDate: string }): boolean {
+    return Boolean(book.isNew) || isBookNew(book.publishingDate, SITE_CONFIG.BOOK_BADGES.NEW_DAYS);
 }
 
 /**
