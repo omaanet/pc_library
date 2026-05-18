@@ -1,10 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Minimize, ChevronLeft, ChevronRight, Fullscreen } from "lucide-react";
+import { Minimize, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Fullscreen } from "lucide-react";
 import { Book } from "@/types";
 import { User } from "@/types";
 import { useLogger } from '@/lib/logging';
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { 
     useReaderPreferences,
     useSetViewMode,
@@ -45,6 +55,7 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const sidebarRef = useRef<HTMLDivElement>(null);
     const sidebarOverlayRef = useRef<HTMLDivElement>(null);
     const toggleSidebarBtnRef = useRef<HTMLButtonElement>(null);
+    const pageJumpInputRef = useRef<HTMLInputElement>(null);
 
     // State variables - sync with store
     const [currentPage, setCurrentPage] = useState(Math.max(1, CONFIG.pageStart ?? 1));
@@ -61,6 +72,8 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(CONFIG.sidebarCollapsed);
     const [isLoading, setIsLoading] = useState(true);
     const [visiblePages, setVisiblePages] = useState<number[]>([]);
+    const [isPageJumpOpen, setIsPageJumpOpen] = useState(false);
+    const [pageJumpValue, setPageJumpValue] = useState("");
     const pinchInitialDistance = useRef<number | null>(null);
     const pinchInitialZoom = useRef<number>((readerPrefs.zoomLevel || 1.0) * 100);
     const lastTapTime = useRef<number>(0);
@@ -249,17 +262,14 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
             });
     };
 
-    // Go to previous page
-    const goToPrevPage = (e?: React.MouseEvent | React.TouchEvent) => {
-        // Stop event propagation to prevent panning/zooming
+    const stopNavigationEvent = (e?: React.MouseEvent | React.TouchEvent) => {
         if (e) {
             e.stopPropagation();
             e.preventDefault();
         }
+    };
 
-        if (currentPage <= 1) return; // Already at first page
-
-        // Add page transition effect
+    const triggerPageTransition = () => {
         if (pagesContainerRef.current) {
             pagesContainerRef.current.style.transition = 'transform 0.3s ease-in-out';
             // Reset transition after animation completes
@@ -269,6 +279,45 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 }
             }, 300);
         }
+    };
+
+    const setPageWithTransition = (targetPage: number) => {
+        const clampedPage = Math.max(1, Math.min(totalPages, targetPage));
+        if (clampedPage === currentPage) return;
+
+        triggerPageTransition();
+        resetTranslation();
+
+        // Update page after a small delay to allow for animation
+        setTimeout(() => {
+            setCurrentPage(clampedPage);
+        }, 10);
+    };
+
+    const clampPageNumber = (pageNumber: number) => {
+        if (!Number.isFinite(pageNumber)) return 1;
+
+        return Math.max(1, Math.min(totalPages, pageNumber));
+    };
+
+    // Go to first page
+    const goToFirstPage = (e?: React.MouseEvent | React.TouchEvent) => {
+        stopNavigationEvent(e);
+
+        if (currentPage <= 1) return; // Already at first page
+
+        setPageWithTransition(1);
+    };
+
+    // Go to previous page
+    const goToPrevPage = (e?: React.MouseEvent | React.TouchEvent) => {
+        // Stop event propagation to prevent panning/zooming
+        stopNavigationEvent(e);
+
+        if (currentPage <= 1) return; // Already at first page
+
+        triggerPageTransition();
+        resetTranslation();
 
         // Update page after a small delay to allow for animation
         setTimeout(() => {
@@ -284,23 +333,12 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
     // Go to next page
     const goToNextPage = (e?: React.MouseEvent | React.TouchEvent) => {
         // Stop event propagation to prevent panning/zooming
-        if (e) {
-            e.stopPropagation();
-            e.preventDefault();
-        }
+        stopNavigationEvent(e);
 
         if (currentPage >= totalPages) return; // Already at last page
 
-        // Add page transition effect
-        if (pagesContainerRef.current) {
-            pagesContainerRef.current.style.transition = 'transform 0.3s ease-in-out';
-            // Reset transition after animation completes
-            setTimeout(() => {
-                if (pagesContainerRef.current) {
-                    pagesContainerRef.current.style.transition = 'none';
-                }
-            }, 300);
-        }
+        triggerPageTransition();
+        resetTranslation();
 
         // Update page after a small delay to allow for animation
         setTimeout(() => {
@@ -311,6 +349,29 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 setCurrentPage((prev) => Math.min(totalPages, prev + 2));
             }
         }, 10);
+    };
+
+    // Go to last page
+    const goToLastPage = (e?: React.MouseEvent | React.TouchEvent) => {
+        stopNavigationEvent(e);
+
+        if (currentPage >= totalPages) return; // Already at last page
+
+        setPageWithTransition(totalPages);
+    };
+
+    const openPageJumpDialog = (e?: React.MouseEvent | React.TouchEvent) => {
+        stopNavigationEvent(e);
+        const firstVisiblePage = getVisiblePages()[0] ?? currentPage;
+        setPageJumpValue(firstVisiblePage.toString());
+        setIsPageJumpOpen(true);
+    };
+
+    const submitPageJump = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const targetPage = clampPageNumber(Number.parseInt(pageJumpValue, 10));
+        setPageWithTransition(targetPage);
+        setIsPageJumpOpen(false);
     };
 
     // Set view mode (single or double)
@@ -656,6 +717,15 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
         lazyLoadImages();
     }, [currentPage, readerPrefs.viewMode]);
 
+    useEffect(() => {
+        if (!isPageJumpOpen) return;
+
+        window.setTimeout(() => {
+            pageJumpInputRef.current?.focus();
+            pageJumpInputRef.current?.select();
+        }, 0);
+    }, [isPageJumpOpen]);
+
     // Apply transform style to container
     const getTransformStyle = () => {
         return {
@@ -693,15 +763,17 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
 
     const getButtonClassName = (
         currentPage: number,
-        direction: 'prev' | 'next',
+        direction: 'first' | 'prev' | 'next' | 'last',
         totalPages: number
     ): string => {
         // Increased touch target size and better visibility
         const baseClasses = 'w-[30px] h-[45px] sm:w-[45px] sm:h-[45px] rounded-full flex justify-center items-center shadow-lg transition-transform pointer-events-auto';
 
         const isDisabled =
+            (direction === 'first' && currentPage <= 1) ||
             (direction === 'prev' && currentPage <= 1) ||
-            (direction === 'next' && currentPage >= totalPages);
+            (direction === 'next' && currentPage >= totalPages) ||
+            (direction === 'last' && currentPage >= totalPages);
 
         if (isDisabled) {
             return `${baseClasses} opacity-0 pointer-events-none bg-transparent`;
@@ -922,22 +994,44 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
 
                 {/* Navigation Buttons are now placed outside the viewer container for better touch handling */}
                 <div className="fixed inset-0 pointer-events-none z-[25]">
-                    <div className="absolute w-full flex justify-between px-1 sm:px-4 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute left-1 sm:left-4 top-1/2 flex -translate-y-1/2 flex-col gap-2">
+                        <button
+                            className={`${getButtonClassName(currentPage, 'first', totalPages)} touch-manipulation`}
+                            onClick={goToFirstPage}
+                            onTouchEnd={goToFirstPage}
+                            aria-label="Vai alla prima pagina"
+                            title="Prima pagina"
+                        >
+                            <ChevronsLeft className="w-6 h-6 sm:w-7 sm:h-7 text-gray-100 hover:text-white" />
+                        </button>
                         <button
                             className={`${getButtonClassName(currentPage, 'prev', totalPages)} touch-manipulation`}
                             onClick={goToPrevPage}
                             onTouchEnd={goToPrevPage}
-                            aria-label="Previous page"
+                            aria-label="Pagina precedente"
+                            title="Pagina precedente"
                         >
                             <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7 text-gray-100 hover:text-white" />
                         </button>
+                    </div>
+                    <div className="absolute right-1 sm:right-4 top-1/2 flex -translate-y-1/2 flex-col gap-2">
                         <button
                             className={`${getButtonClassName(currentPage, 'next', totalPages)} touch-manipulation`}
                             onClick={goToNextPage}
                             onTouchEnd={goToNextPage}
-                            aria-label="Next page"
+                            aria-label="Pagina successiva"
+                            title="Pagina successiva"
                         >
                             <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7 text-gray-100 hover:text-white" />
+                        </button>
+                        <button
+                            className={`${getButtonClassName(currentPage, 'last', totalPages)} touch-manipulation`}
+                            onClick={goToLastPage}
+                            onTouchEnd={goToLastPage}
+                            aria-label="Vai all'ultima pagina"
+                            title="Ultima pagina"
+                        >
+                            <ChevronsRight className="w-6 h-6 sm:w-7 sm:h-7 text-gray-100 hover:text-white" />
                         </button>
                     </div>
                 </div>
@@ -959,9 +1053,15 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                 </div>
 
                 {/* Page Info */}
-                <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2 bg-gray-300/80 text-xs sm:text-sm text-gray-900 py-1 px-4 sm:py-1 sm:px-5 rounded-full shadow-sm z-[15] pointer-events-none select-none">
+                <button
+                    type="button"
+                    className="fixed bottom-3 left-1/2 z-[15] -translate-x-1/2 rounded-full bg-gray-300/80 px-4 py-1 text-xs text-gray-900 shadow-sm transition-colors pointer-events-auto select-none hover:bg-gray-200/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-600 sm:px-5 sm:py-1 sm:text-sm"
+                    onClick={openPageJumpDialog}
+                    aria-label="Vai a una pagina specifica"
+                    title="Vai a pagina"
+                >
                     {getPageInfoText()}
-                </div>
+                </button>
 
                 {/* Loading Indicator - Only show when pages are loading */}
                 {isLoading && (
@@ -970,6 +1070,39 @@ export default function PageReader({ book, bookId, user }: PageReaderProps) {
                     </div>
                 )}
             </div>
+
+            <Dialog open={isPageJumpOpen} onOpenChange={setIsPageJumpOpen}>
+                <DialogContent className="sm:max-w-[380px]">
+                    <form onSubmit={submitPageJump}>
+                        <DialogHeader>
+                            <DialogTitle>Vai a pagina</DialogTitle>
+                            <DialogDescription>
+                                Inserisci un numero da 1 a {totalPages}.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="px-4 pb-4 sm:px-6">
+                            <Input
+                                ref={pageJumpInputRef}
+                                type="number"
+                                inputMode="numeric"
+                                min={1}
+                                max={totalPages}
+                                value={pageJumpValue}
+                                onChange={(e) => setPageJumpValue(e.target.value)}
+                                aria-label="Numero pagina"
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setIsPageJumpOpen(false)}>
+                                Annulla
+                            </Button>
+                            <Button type="submit">
+                                Vai
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
