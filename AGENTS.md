@@ -23,14 +23,14 @@ pnpm knip:timestamped # Generate timestamped knip reports
 
 ## Core Stack
 
-- Framework: Next.js `16.2.4` + React `19.2.0`
+- Framework: Next.js `16.2.6` + React `19.2.0`
 - Language: TypeScript `5.9.3`
 - Database: Neon PostgreSQL via direct SQL, no ORM
 - Styling: Tailwind CSS `3.4.18`, shadcn/ui, Radix UI, `next-themes`
 - State: React Context, TanStack Query `5.90.5`, Zustand `5.0.9`
 - Charts/UI: Recharts, Lucide React
 - Media: custom HTML5 audio player, Mux player dependency, Sharp for cover resizing
-- Email: Nodemailer `6.10.1`
+- Email: Nodemailer `8.0.7`
 
 ## Architecture Overview
 
@@ -40,6 +40,7 @@ The live app pages under `src/app/` are:
 
 - `/` home page with the public library and previews
 - `/add-book` admin book management UI
+- `/animations-manager` admin animation management UI
 - `/read-book/[book_id]` image-based reader
 - `/settings` user preferences UI
 - `/user-statistics` admin analytics dashboard
@@ -89,7 +90,7 @@ Do not assume the old password-hash or email-verification flow is active. `src/l
 State-changing authenticated requests use a lightweight CSRF token flow.
 
 - Token endpoint: `src/app/api/csrf-token/route.ts`
-- Validation wrapper: `src/lib/csrf-middleware.ts`
+- Validation wrapper: `src/lib/csrf-middleware`
 - Token utilities: `src/lib/csrf.ts`
 
 Notes:
@@ -167,7 +168,7 @@ Current `src/app/api/` structure includes:
 - `auth/session` `GET`
 - `books` `GET`, `POST`
 - `books/[id]` `GET`, `PUT`, `DELETE`
-- `books/[id]/comments` `POST`
+- `books/[id]/comments` `GET`, `POST`
 - `books/[id]/replies` `GET`
 - `audiobooks/[book_id]` `GET`, `POST`
 - `covers/[...params]` `GET`
@@ -259,7 +260,6 @@ Notes:
 - `DATABASE_URL` is required for the DB client and DB scripts
 - `NEXT_PUBLIC_APP_URL` is still referenced by `src/lib/mailer.ts`
 - `scripts/check-env.js` logs `DATABASE_URL` and `MAIL_USER`; it does not validate a schema
-- `PASSWORD_SALT` appears in older docs and env files but is not part of the current passwordless auth flow
 
 ## Common Gotchas
 

@@ -1,10 +1,12 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import type { MuxCSSProperties } from '@mux/mux-player-react';
+import type { CSSProperties } from 'react';
 import { Book } from '@/types';
 import { BookCover } from '@/components/books/book-cover';
 import { DEFAULT_COVER_SIZES } from '@/types/images';
+
+type MuxPlayerStyle = CSSProperties & Record<`--${string}`, string | number | undefined>;
 
 export interface PreviewCoverProps {
     mounted: boolean;
@@ -17,7 +19,7 @@ const MuxPlayer = dynamic(() => import('@mux/mux-player-react'), {
     ssr: false,
 });
 
-const muxPlayerStyle: MuxCSSProperties = {
+const muxPlayerStyle: MuxPlayerStyle = {
     width: DEFAULT_COVER_SIZES.video.width,
     height: DEFAULT_COVER_SIZES.video.height,
     '--cast-button': 'none',

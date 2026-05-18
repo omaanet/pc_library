@@ -42,9 +42,6 @@ _covers_
 
 db/_archived
 
-# pnpm
-pnpm-lock.yaml
-
 tmp
 db/books - Copy.db3
 #db/dump-postgreSQL.sql
