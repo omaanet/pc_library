@@ -8,6 +8,8 @@
 export const SITE_CONFIG = {
     CONTACT_EMAIL: process.env.NODE_ENV === 'development' ? 'oscar@omaa.it' : 'info@raccontiinvoceecaratteri.it',
 
+    DEFAULT_CDN: 'https://s3.eu-south-1.wasabisys.com/piero-audiolibri',
+
     SHOW_CONTRIBUTION_TEXT: false,
 
     BOOK_BADGES: {

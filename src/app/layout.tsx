@@ -1,29 +1,12 @@
 // src/app/layout.tsx
-import type { Metadata, Viewport } from 'next';
+import type { Viewport } from 'next';
 import { Providers } from '@/providers/providers';
 import { Toaster } from '@/components/ui/toaster';
 import { baseFont, displayFont } from '@/config/fonts';
+import { metadata } from '@/config/metadata';
 import '@/styles/globals.css';
 
-export const metadata: Metadata = {
-    title: {
-        default: 'Racconti in Voce e Caratteri',
-        template: '%s | Racconti in Voce e Caratteri',
-    },
-    description: 'Sito web dedicato alla lettura a scopo benefico',
-    keywords: ['racconti', 'audioracconti'],
-    authors: [{ name: 'Piero Carbonetti' }],
-    icons: {
-        icon: [
-            { url: '/favicon.svg', type: 'image/svg+xml' },
-            { url: '/favicon.ico', sizes: 'any' },
-        ],
-        apple: [
-            { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
-        ],
-    },
-    manifest: '/manifest.json',
-};
+export { metadata };
 
 export const viewport: Viewport = {
     width: 'device-width',

@@ -5,6 +5,7 @@ import { Book, AudioBook } from "@/types";
 import type { AudioPlayerState } from "@/components/audio/types";
 import { useAuth } from '@/context/auth-context';
 import { useBookmarks } from '@/hooks/use-bookmarks';
+import { SITE_CONFIG } from '@/config/site-config';
 
 export interface AudioBookPlayerProps {
     book: Book | null;
@@ -112,30 +113,31 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         saveLatestAudioBookmark();
     }, [isActive, saveLatestAudioBookmark]);
 
-    const hasCustomIntro = Boolean(
-        audiobook?.intro_audio_override &&
-        audiobook.intro_audio_title?.trim() &&
-        audiobook.intro_audio_id?.trim()
-    );
+    const shouldIncludeDefaultIntroTrack = false;
+    const defaultIntroTitle = 'Nota per la beneficenza';
+    const introAudioId = audiobook?.intro_audio_id?.trim() ?? '';
+    const introAudioTitle = audiobook?.intro_audio_title?.trim() || defaultIntroTitle;
 
-    const introTrack = hasCustomIntro
+    const introTrack = introAudioId
         ? {
-            title: audiobook?.intro_audio_title as string,
-            url: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/${audiobook?.intro_audio_id}`,
+            title: introAudioTitle,
+            url: `${SITE_CONFIG.DEFAULT_CDN}/${introAudioId}`,
             kind: 'intro' as const
         }
-        : {
-            title: 'Nota per la beneficenza',
-            url: 'https://s3.eu-south-1.wasabisys.com/piero-audiolibri/Nota per la beneficenza.mp3',
-            kind: 'intro' as const
-        };
+        : shouldIncludeDefaultIntroTrack
+            ? {
+                title: defaultIntroTitle,
+                url: `${SITE_CONFIG.DEFAULT_CDN}/Nota per la beneficenza.mp3`,
+                kind: 'intro' as const
+            }
+            : null;
 
     const tracks = book && audiobook?.media_id
         ? [
-            introTrack,
+            ...(introTrack ? [introTrack] : []),
             {
                 title: book.title || '',
-                url: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/${audiobook.media_id}`,
+                url: `${SITE_CONFIG.DEFAULT_CDN}/${audiobook.media_id}`,
                 kind: 'main' as const
             },
         ]
@@ -150,7 +152,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         audiobook?.media_id &&
         (!audioBookmark.audioMediaId || audioBookmark.audioMediaId === audiobook.media_id)
     );
-    const initialTrackIndex = canResumeAudio ? 1 : 0;
+    const initialTrackIndex = canResumeAudio && introTrack ? 1 : 0;
     const initialTime = canResumeAudio ? Math.max(0, audioBookmark?.audioTimeSeconds ?? 0) : 0;
 
     const saveAudioBookmark = useCallback(async (audioTimeSeconds: number) => {

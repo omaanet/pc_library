@@ -21,6 +21,7 @@ import {
     useSetViewMode,
     useSetZoomLevel
 } from '@/stores/preferences-store';
+import { SITE_CONFIG } from '@/config/site-config';
 
 interface PageReaderProps {
     book: Book;
@@ -53,7 +54,7 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
         pageGap: 5,
         sidebarCollapsed: true,
         imagePrefix: undefined,
-        sourceCDN: `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/bookshelf/${bookId}/pages/page-`,
+        sourceCDN: `${SITE_CONFIG.DEFAULT_CDN}/bookshelf/${bookId}/pages/page-`,
         imageExt: "-or8.png",
         preloadBuffer: 4,
     };

@@ -10,6 +10,7 @@ import { PreviewsCollection } from '@/components/books/previews-collection';
 import { BookErrorBoundary } from '@/components/books/book-error-boundary';
 import { SITE_CONFIG } from '@/config/site-config';
 import { displayFontClass } from '@/config/fonts';
+import { siteContributionText, siteDescription, siteIntro, siteSubtitle, siteTitle } from '@/config/metadata';
 
 export default function HomePage() {
     const { state: { isAuthenticated, user } } = useAuth();
@@ -49,17 +50,26 @@ export default function HomePage() {
                     <div className="container relative z-10">
                         <div className="space-y-1 text-center sm:space-y-3">
                             <h1 className={`text-4xl font-medium tracking-tight md:tracking-normal sm:text-6xl text-sky-600 dark:text-sky-400 ${displayFontClass}`}>
-                                Racconti in Voce e Caratteri
+                                {siteTitle}
                             </h1>
                             <h2 className={`text-4xl font-medium tracking-tight md:tracking-normal sm:text-5xl text-sky-600 dark:text-sky-400 ${displayFontClass}`}>
-                                Espressioni di Scrittura Creativa
+                                {siteSubtitle}
                             </h2>
 
                             <div className="mx-auto max-w-5xl text-sm md:text-lg tracking-tight md:tracking-normal text-sky-500 dark:text-sky-300">
-                                <div className="block pt-3 sm:pt-5">Una variegata raccolta narrativa di fantasia.</div>
-                                <div className="block">Sito web dedicato alla lettura a scopo benefico.</div>
+                                <div className="block pt-3 sm:pt-5">{siteIntro}.</div>
+                                <div className="relative mx-auto mt-4 max-w-4xl px-2 py-1 text-left text-sm leading-6 text-sky-600/80 sm:px-6 md:text-base md:leading-7 dark:text-sky-300/75">
+                                    <div
+                                        className="[&_blockquote]:mt-5 [&_blockquote]:text-center [&_blockquote_p]:mb-1 [&_blockquote_p]:font-normal [&_blockquote_p]:italic [&_cite]:block [&_cite]:text-sm [&_cite]:font-semibold [&_cite]:not-italic md:[&_cite]:text-base [&_p]:mb-2 [&_p]:last:mb-0 [&_.signature]:text-right [&_.signature]:font-[family-name:var(--font-display)] [&_.signature]:text-2xl [&_.signature]:font-semibold [&_.signature]:leading-none md:[&_.signature]:text-3xl"
+                                        dangerouslySetInnerHTML={{ __html: siteDescription }}
+                                    />
+                                </div>
                                 {SITE_CONFIG.SHOW_CONTRIBUTION_TEXT && (
-                                    <div className="block mt-4 text-emerald-600 dark:text-emerald-400">Un libero contributo da destinarsi a scelta del lettore a favore di:<br />Organizzazioni Non Profit, Associazioni di Volontariato, Fondazioni o a cause specifiche.</div>
+                                    <div className="block mt-4 text-emerald-600 dark:text-emerald-400">
+                                        {siteContributionText.callToAction}
+                                        <br />
+                                        {siteContributionText.beneficiaries}
+                                    </div>
                                 )}
                             </div>
                         </div>

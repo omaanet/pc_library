@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth-utils"
 import { Logger } from "@/lib/logging"
 import { User } from "@/types"
 import { ApiError, HttpStatus } from "@/lib/api-error-handler"
+import { SITE_CONFIG } from "@/config/site-config"
 
 export async function GET(
     req: NextRequest,
@@ -33,7 +34,7 @@ export async function GET(
         const formattedTitle = normalizeItalianTitleWithOptions(book.title)
 
         // Construct the CDN URL for the PDF
-        const pdfUrl = `https://s3.eu-south-1.wasabisys.com/piero-audiolibri/bookshelf/${formattedTitle}`
+        const pdfUrl = `${SITE_CONFIG.DEFAULT_CDN}/bookshelf/${formattedTitle}`
 
         // Fetch the PDF file from the CDN
         const response = await fetch(pdfUrl)
