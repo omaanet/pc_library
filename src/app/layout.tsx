@@ -23,7 +23,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="it" suppressHydrationWarning data-scroll-behavior="smooth">
             <head>
                 {/* Security meta tags */}
                 <meta httpEquiv="X-Content-Type-Options" content="nosniff" />

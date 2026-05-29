@@ -46,6 +46,7 @@ const HTML5Player = ({
         isPlaying,
         currentTime,
         duration,
+        resumeStatus,
         handlePlayPause,
         handleSeek
     } = useAudioPlayer({
@@ -79,11 +80,12 @@ const HTML5Player = ({
             currentTime,
             duration,
             isPlaying,
+            resumeStatus,
         }
         : null,
-    [currentTrack, currentTrackData, currentTime, duration, isPlaying]);
+    [currentTrack, currentTrackData, currentTime, duration, isPlaying, resumeStatus]);
     const showBookmarkButton = Boolean((showBookmarkControl || onBookmark) && currentState?.track.kind === 'main');
-    const canBookmark = Boolean(onBookmark) && !isBookmarkDisabled && currentState?.track.kind === 'main';
+    const canBookmark = Boolean(onBookmark) && !isBookmarkDisabled && currentState?.track.kind === 'main' && currentState.resumeStatus !== 'pending';
     const bookmarkActive = currentState ? (isBookmarkActive?.(currentState) ?? false) : false;
 
     useEffect(() => {

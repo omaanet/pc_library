@@ -14,11 +14,18 @@ export interface AudioBookPlayerProps {
     playerKey?: string; // Optional: for React keying if needed
 }
 
+interface ResumeTarget {
+    key: string;
+    initialTrackIndex: number;
+    initialTime: number;
+}
+
 const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookPlayerProps) => {
     const [audiobook, setAudiobook] = useState<AudioBook | null>(null);
     const [audiobookBookId, setAudiobookBookId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [isSavingAudioBookmark, setIsSavingAudioBookmark] = useState(false);
+    const [resumeTarget, setResumeTarget] = useState<ResumeTarget | null>(null);
     const { state: authState } = useAuth();
     const {
         bookmarks,
@@ -30,11 +37,6 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
     const pendingAudioSaveRef = useRef<number | null>(null);
     const lastAutoSavedSecondRef = useRef<{ key: string; second: number | null } | null>(null);
     const latestMainAudioSecondRef = useRef<{ key: string; second: number } | null>(null);
-    const resumeTargetRef = useRef<{
-        key: string;
-        initialTrackIndex: number;
-        initialTime: number;
-    } | null>(null);
     const bookmarkWriteStateRef = useRef({
         canWrite: false,
         userId: undefined as number | undefined,
@@ -191,19 +193,34 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         (!audioBookmark.audioMediaId || audioBookmark.audioMediaId === activeAudiobook.media_id)
     );
 
-    if (playerKey && bookmarksInitialized && resumeTargetRef.current?.key !== playerKey) {
-        resumeTargetRef.current = {
-            key: playerKey,
-            initialTrackIndex: canResumeAudio && introTrack ? 1 : 0,
-            initialTime: canResumeAudio ? Math.max(0, audioBookmark?.audioTimeSeconds ?? 0) : 0,
-        };
-    } else if (!playerKey) {
-        resumeTargetRef.current = null;
-    }
+    useEffect(() => {
+        if (!playerKey) {
+            setResumeTarget(null);
+            return;
+        }
 
-    const resumeTarget = resumeTargetRef.current?.key === playerKey
-        ? resumeTargetRef.current
-        : null;
+        if (!bookmarksInitialized) return;
+
+        setResumeTarget((currentTarget) => {
+            if (currentTarget?.key === playerKey) {
+                if (!canResumeAudio || currentTarget.initialTime > 0) return currentTarget;
+
+                return {
+                    key: playerKey,
+                    initialTrackIndex: introTrack ? 1 : 0,
+                    initialTime: Math.max(0, audioBookmark?.audioTimeSeconds ?? 0),
+                };
+            }
+
+            return {
+                key: playerKey,
+                initialTrackIndex: canResumeAudio && introTrack ? 1 : 0,
+                initialTime: canResumeAudio ? Math.max(0, audioBookmark?.audioTimeSeconds ?? 0) : 0,
+            };
+        });
+    }, [audioBookmark?.audioTimeSeconds, bookmarksInitialized, canResumeAudio, introTrack, playerKey]);
+
+    const activeResumeTarget = resumeTarget?.key === playerKey ? resumeTarget : null;
 
     const saveAudioBookmark = useCallback(async (audioTimeSeconds: number) => {
         if (!authState.user?.id || !bookmarksCanWrite) return;
@@ -222,6 +239,8 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
     }, [authState.user?.id, bookmarksCanWrite, saveBookmark]);
 
     const handleAudioProgress = useCallback((state: AudioPlayerState) => {
+        if (state.resumeStatus === 'pending') return;
+
         if (state.track.kind === 'main') {
             const latestSecond = Math.floor(state.currentTime);
             if (playerKey && Number.isFinite(latestSecond) && latestSecond >= 1) {
@@ -274,6 +293,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
     }, [authState.user?.id, bookmarksCanWrite, bookmarksError, isActive, playerKey, saveBookmark]);
 
     const handleManualAudioBookmark = useCallback((state: AudioPlayerState) => {
+        if (state.resumeStatus === 'pending') return;
         if (state.track.kind !== 'main') return;
         void saveAudioBookmark(state.currentTime);
     }, [saveAudioBookmark]);
@@ -295,16 +315,16 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
             </div>
         );
     }
-    if (!activeAudiobook || !activeAudiobook.media_id || !playerKey || !resumeTarget) return null;
+    if (!activeAudiobook || !activeAudiobook.media_id || !playerKey || !activeResumeTarget) return null;
 
     return (
         <div className="w-full text-center py-3 px-5 rounded-md mt-2 mb-0 mx-auto bg-muted/40">
             <HTML5Player
-                key={resumeTarget.key}
+                key={activeResumeTarget.key}
                 tracks={tracks}
                 autoPlay={autoPlay}
-                initialTrackIndex={resumeTarget.initialTrackIndex}
-                initialTime={resumeTarget.initialTime}
+                initialTrackIndex={activeResumeTarget.initialTrackIndex}
+                initialTime={activeResumeTarget.initialTime}
                 onProgress={handleAudioProgress}
                 onBookmark={authState.user?.id && isActive ? handleManualAudioBookmark : undefined}
                 isBookmarkActive={isAudioBookmarkActive}

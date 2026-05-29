@@ -10,12 +10,15 @@ export interface Track {
     kind?: 'intro' | 'main';
 }
 
+export type AudioResumeStatus = 'idle' | 'pending' | 'applied' | 'skipped' | 'failed';
+
 export interface AudioPlayerState {
     currentTrack: number;
     track: Track;
     currentTime: number;
     duration: number;
     isPlaying: boolean;
+    resumeStatus: AudioResumeStatus;
 }
 
 /**
