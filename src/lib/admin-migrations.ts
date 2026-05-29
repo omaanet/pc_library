@@ -27,9 +27,26 @@ export type PendingMigration = {
     preview: string;
 };
 
+export type ArchivedMigration = {
+    filename: string;
+    checksum: string;
+    archivedAt: string;
+    executedBy: number | null;
+    fileExists: boolean;
+    currentChecksum: string | null;
+    checksumMatches: boolean | null;
+    modifiedAt: string | null;
+    size: number | null;
+    preview: string | null;
+};
+
 export type LatestMigrationResponse = {
     pending: boolean;
     migration: PendingMigration | null;
+};
+
+export type ArchivedMigrationsResponse = {
+    migrations: ArchivedMigration[];
 };
 
 export type RunMigrationResponse = {
@@ -83,6 +100,41 @@ export async function getLatestPendingMigration(): Promise<LatestMigrationRespon
     };
 }
 
+export async function getArchivedMigrations(): Promise<ArchivedMigrationsResponse> {
+    await ensureMigrationRunsTable();
+
+    const client = getNeonClient();
+    const rows = extractRows<MigrationRunRow>(
+        await client.query(
+            `SELECT filename, checksum, status, executed_by, executed_at
+             FROM admin_migration_runs
+             WHERE status = 'archived'
+             ORDER BY filename DESC`
+        )
+    );
+
+    const migrations = await Promise.all(
+        rows.map(async (row) => {
+            const metadata = await readMigrationMetadataIfExists(row.filename);
+
+            return {
+                filename: row.filename,
+                checksum: row.checksum,
+                archivedAt: row.executed_at,
+                executedBy: row.executed_by,
+                fileExists: metadata !== null,
+                currentChecksum: metadata?.checksum ?? null,
+                checksumMatches: metadata ? metadata.checksum === row.checksum : null,
+                modifiedAt: metadata?.modifiedAt ?? null,
+                size: metadata?.size ?? null,
+                preview: metadata?.preview ?? null,
+            };
+        })
+    );
+
+    return { migrations };
+}
+
 export async function runLatestPendingMigration(filename: string, user: User): Promise<RunMigrationResponse> {
     await ensureMigrationRunsTable();
     assertSafeMigrationFilename(filename);
@@ -123,6 +175,85 @@ export async function runLatestPendingMigration(filename: string, user: User): P
             error instanceof Error ? error.message : 'Unknown archive error'
         );
     }
+}
+
+export async function runArchivedMigration(filename: string, user: User): Promise<RunMigrationResponse> {
+    await ensureMigrationRunsTable();
+    assertSafeMigrationFilename(filename);
+
+    const client = getNeonClient();
+    const archived = getFirstRow<MigrationRunRow>(
+        await client.query(
+            `SELECT filename, checksum, status, executed_by, executed_at
+             FROM admin_migration_runs
+             WHERE filename = $1 AND status = 'archived'`,
+            [filename]
+        )
+    );
+
+    if (!archived) {
+        throw new ApiError(HttpStatus.NOT_FOUND, 'Archived migration not found');
+    }
+
+    const migrationFile = await readMigrationFileIfExists(filename);
+    if (!migrationFile) {
+        throw new ApiError(HttpStatus.NOT_FOUND, 'Archived migration SQL file not found');
+    }
+
+    if (migrationFile.checksum !== archived.checksum) {
+        throw new ApiError(
+            HttpStatus.CONFLICT,
+            'Archived migration checksum does not match current SQL file',
+            {
+                archivedChecksum: archived.checksum,
+                currentChecksum: migrationFile.checksum,
+            }
+        );
+    }
+
+    try {
+        await client.query(migrationFile.sql);
+    } catch (error) {
+        throw new ApiError(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            'Migration SQL execution failed',
+            error instanceof Error ? error.message : 'Unknown SQL execution error'
+        );
+    }
+
+    const updateRes = await client.query<MigrationRunRow>(
+        `UPDATE admin_migration_runs
+         SET status = 'executed',
+             executed_by = $2,
+             executed_at = CURRENT_TIMESTAMP,
+             execution_metadata = $3::jsonb
+         WHERE filename = $1 AND status = 'archived'
+         RETURNING filename, checksum, status, executed_by, executed_at`,
+        [
+            archived.filename,
+            user.id,
+            JSON.stringify({
+                size: migrationFile.size,
+                modifiedAt: migrationFile.modifiedAt,
+                ranFromArchive: true,
+            }),
+        ]
+    );
+
+    const executed = getFirstRow(updateRes);
+    if (!executed) {
+        throw new ApiError(HttpStatus.CONFLICT, 'Archived migration was already updated');
+    }
+
+    return {
+        success: true,
+        migration: {
+            filename: executed.filename,
+            checksum: executed.checksum,
+            executedAt: executed.executed_at,
+            status: executed.status,
+        },
+    };
 }
 
 export async function archiveLatestPendingMigration(filename: string, user: User): Promise<RunMigrationResponse> {
@@ -174,19 +305,78 @@ async function getExecutedMigrationFilenames(): Promise<Set<string>> {
 async function readMigrationMetadata(filename: string): Promise<PendingMigration> {
     assertSafeMigrationFilename(filename);
 
-    const filePath = path.join(MIGRATIONS_DIR, filename);
-    const [sql, stat] = await Promise.all([
-        fs.readFile(filePath, 'utf8'),
-        fs.stat(filePath),
-    ]);
+    const migrationFile = await readMigrationFile(filename);
 
     return {
         filename,
-        checksum: createHash('sha256').update(sql).digest('hex'),
-        modifiedAt: stat.mtime.toISOString(),
-        size: stat.size,
-        preview: sql.length > PREVIEW_LENGTH ? `${sql.slice(0, PREVIEW_LENGTH)}\n...` : sql,
+        checksum: migrationFile.checksum,
+        modifiedAt: migrationFile.modifiedAt,
+        size: migrationFile.size,
+        preview: migrationFile.preview,
     };
+}
+
+async function readMigrationMetadataIfExists(filename: string): Promise<PendingMigration | null> {
+    const migrationFile = await readMigrationFileIfExists(filename);
+    if (!migrationFile) {
+        return null;
+    }
+
+    return {
+        filename,
+        checksum: migrationFile.checksum,
+        modifiedAt: migrationFile.modifiedAt,
+        size: migrationFile.size,
+        preview: migrationFile.preview,
+    };
+}
+
+async function readMigrationFile(filename: string): Promise<PendingMigrationFile> {
+    const migrationFile = await readMigrationFileIfExists(filename);
+    if (!migrationFile) {
+        throw new ApiError(HttpStatus.NOT_FOUND, 'Migration SQL file not found');
+    }
+
+    return migrationFile;
+}
+
+type PendingMigrationFile = {
+    sql: string;
+    checksum: string;
+    modifiedAt: string;
+    size: number;
+    preview: string;
+};
+
+async function readMigrationFileIfExists(filename: string): Promise<PendingMigrationFile | null> {
+    assertSafeMigrationFilename(filename);
+
+    const filePath = path.join(MIGRATIONS_DIR, filename);
+
+    try {
+        const [sql, stat] = await Promise.all([
+            fs.readFile(filePath, 'utf8'),
+            fs.stat(filePath),
+        ]);
+
+        return {
+            sql,
+            checksum: createHash('sha256').update(sql).digest('hex'),
+            modifiedAt: stat.mtime.toISOString(),
+            size: stat.size,
+            preview: sql.length > PREVIEW_LENGTH ? `${sql.slice(0, PREVIEW_LENGTH)}\n...` : sql,
+        };
+    } catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+            return null;
+        }
+
+        throw new ApiError(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            'Unable to read migration SQL file',
+            error instanceof Error ? error.message : 'Unknown filesystem error'
+        );
+    }
 }
 
 async function insertMigrationRun(

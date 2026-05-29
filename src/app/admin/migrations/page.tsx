@@ -2,11 +2,12 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, Archive, ArrowLeft, CheckCircle2, Database, Loader2, Play, RefreshCw } from 'lucide-react';
+import { AlertCircle, Archive, ArrowLeft, CheckCircle2, Database, FileWarning, Loader2, Play, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -17,6 +18,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 type PendingMigration = {
     filename: string;
@@ -29,6 +38,23 @@ type PendingMigration = {
 type LatestMigrationResponse = {
     pending: boolean;
     migration: PendingMigration | null;
+};
+
+type ArchivedMigration = {
+    filename: string;
+    checksum: string;
+    archivedAt: string;
+    executedBy: number | null;
+    fileExists: boolean;
+    currentChecksum: string | null;
+    checksumMatches: boolean | null;
+    modifiedAt: string | null;
+    size: number | null;
+    preview: string | null;
+};
+
+type ArchivedMigrationsResponse = {
+    migrations: ArchivedMigration[];
 };
 
 type RunMigrationResponse = {
@@ -56,10 +82,14 @@ export default function AdminMigrationsPage() {
     const { state } = useAuth();
     const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
     const [latest, setLatest] = React.useState<LatestMigrationResponse | null>(null);
+    const [archivedMigrations, setArchivedMigrations] = React.useState<ArchivedMigration[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isRunning, setIsRunning] = React.useState(false);
     const [isArchiving, setIsArchiving] = React.useState(false);
     const [isArchiveDialogOpen, setIsArchiveDialogOpen] = React.useState(false);
+    const [archivedMigrationToRun, setArchivedMigrationToRun] = React.useState<ArchivedMigration | null>(null);
+    const [runningArchivedFilename, setRunningArchivedFilename] = React.useState<string | null>(null);
+    const [expandedArchivedFilename, setExpandedArchivedFilename] = React.useState<string | null>(null);
     const [error, setError] = React.useState<string | null>(null);
     const [success, setSuccess] = React.useState<string | null>(null);
 
@@ -68,19 +98,30 @@ export default function AdminMigrationsPage() {
         state.user?.isAdmin === true &&
         (state.user?.userLevel ?? 0) > 1;
 
-    const fetchLatestMigration = React.useCallback(async () => {
+    const fetchMigrationState = React.useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const response = await fetch('/api/admin/migrations/latest');
-            const data = await response.json();
+            const [latestResponse, archivedResponse] = await Promise.all([
+                fetch('/api/admin/migrations/latest'),
+                fetch('/api/admin/migrations/archived'),
+            ]);
+            const [latestData, archivedData] = await Promise.all([
+                latestResponse.json(),
+                archivedResponse.json(),
+            ]);
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Impossibile caricare le migrazioni');
+            if (!latestResponse.ok) {
+                throw new Error(latestData.error || 'Impossibile caricare le migrazioni');
             }
 
-            setLatest(data);
+            if (!archivedResponse.ok) {
+                throw new Error(archivedData.error || 'Impossibile caricare le migrazioni archiviate');
+            }
+
+            setLatest(latestData as LatestMigrationResponse);
+            setArchivedMigrations((archivedData as ArchivedMigrationsResponse).migrations ?? []);
         } catch (fetchError) {
             setError(fetchError instanceof Error ? fetchError.message : 'Impossibile caricare le migrazioni');
         } finally {
@@ -90,11 +131,11 @@ export default function AdminMigrationsPage() {
 
     React.useEffect(() => {
         if (!state.isLoading && isAllowed) {
-            fetchLatestMigration();
+            fetchMigrationState();
         } else if (!state.isLoading) {
             setIsLoading(false);
         }
-    }, [fetchLatestMigration, isAllowed, state.isLoading]);
+    }, [fetchMigrationState, isAllowed, state.isLoading]);
 
     const handleRunMigration = async () => {
         if (!latest?.migration) return;
@@ -122,7 +163,7 @@ export default function AdminMigrationsPage() {
 
             const result = data as RunMigrationResponse;
             setSuccess(`Migrazione eseguita: ${result.migration.filename}`);
-            await fetchLatestMigration();
+            await fetchMigrationState();
         } catch (runError) {
             setError(runError instanceof Error ? runError.message : 'Migrazione non riuscita');
         } finally {
@@ -157,11 +198,47 @@ export default function AdminMigrationsPage() {
             const result = data as RunMigrationResponse;
             setSuccess(`Migrazione archiviata: ${result.migration.filename}`);
             setIsArchiveDialogOpen(false);
-            await fetchLatestMigration();
+            await fetchMigrationState();
         } catch (archiveError) {
             setError(archiveError instanceof Error ? archiveError.message : 'Archiviazione non riuscita');
         } finally {
             setIsArchiving(false);
+        }
+    };
+
+    const handleRunArchivedMigration = async () => {
+        if (!archivedMigrationToRun) return;
+
+        const filename = archivedMigrationToRun.filename;
+        setRunningArchivedFilename(filename);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const token = await getCSRFToken();
+            const response = await fetch('/api/admin/migrations/run-archived', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': token,
+                },
+                body: JSON.stringify({ filename }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                const details = typeof data.details === 'string' ? ` ${data.details}` : '';
+                throw new Error(`${data.error || 'Migrazione archiviata non riuscita'}.${details}`.trim());
+            }
+
+            const result = data as RunMigrationResponse;
+            setSuccess(`Migrazione archiviata eseguita: ${result.migration.filename}`);
+            setArchivedMigrationToRun(null);
+            await fetchMigrationState();
+        } catch (runError) {
+            setError(runError instanceof Error ? runError.message : 'Migrazione archiviata non riuscita');
+        } finally {
+            setRunningArchivedFilename(null);
         }
     };
 
@@ -209,8 +286,8 @@ export default function AdminMigrationsPage() {
                 </div>
                 <Button
                     variant="outline"
-                    onClick={fetchLatestMigration}
-                    disabled={isRunning || isArchiving}
+                    onClick={fetchMigrationState}
+                    disabled={isRunning || isArchiving || runningArchivedFilename !== null}
                 >
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Aggiorna
@@ -299,7 +376,115 @@ export default function AdminMigrationsPage() {
                             </>
                         ) : (
                             <div className="rounded border border-dashed p-8 text-center text-muted-foreground">
-                                Tutte le migrazioni disponibili risultano archiviate.
+                                Non ci sono migrazioni pendenti.
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Archive className="h-5 w-5 text-muted-foreground" />
+                            Migrazioni archiviate
+                        </CardTitle>
+                        <CardDescription>
+                            Migrazioni nascoste dalle pendenti che possono essere eseguite manualmente.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {archivedMigrations.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>File</TableHead>
+                                        <TableHead>Archiviata il</TableHead>
+                                        <TableHead>Dimensione</TableHead>
+                                        <TableHead>Stato file</TableHead>
+                                        <TableHead className="text-right">Azioni</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {archivedMigrations.map((archivedMigration) => {
+                                        const isExpanded = expandedArchivedFilename === archivedMigration.filename;
+                                        const canRun = archivedMigration.fileExists && archivedMigration.checksumMatches === true;
+                                        const isRunningArchived = runningArchivedFilename === archivedMigration.filename;
+
+                                        return (
+                                            <React.Fragment key={archivedMigration.filename}>
+                                                <TableRow>
+                                                    <TableCell>
+                                                        <div className="max-w-[360px] break-all font-mono text-xs font-medium">
+                                                            {archivedMigration.filename}
+                                                        </div>
+                                                        <div className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
+                                                            SHA-256: {archivedMigration.checksum}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {new Date(archivedMigration.archivedAt).toLocaleString('it-IT')}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {archivedMigration.size !== null
+                                                            ? `${archivedMigration.size.toLocaleString('it-IT')} bytes`
+                                                            : '-'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {!archivedMigration.fileExists ? (
+                                                            <Badge variant="destructive" className="gap-1">
+                                                                <FileWarning className="h-3 w-3" />
+                                                                File mancante
+                                                            </Badge>
+                                                        ) : archivedMigration.checksumMatches === false ? (
+                                                            <Badge variant="destructive">Checksum diverso</Badge>
+                                                        ) : (
+                                                            <Badge variant="outline">Pronta</Badge>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                disabled={!archivedMigration.preview}
+                                                                onClick={() => setExpandedArchivedFilename(isExpanded ? null : archivedMigration.filename)}
+                                                            >
+                                                                {isExpanded ? 'Nascondi SQL' : 'Mostra SQL'}
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                disabled={!canRun || isRunning || isArchiving || runningArchivedFilename !== null}
+                                                                onClick={() => setArchivedMigrationToRun(archivedMigration)}
+                                                            >
+                                                                {isRunningArchived ? (
+                                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Play className="mr-2 h-4 w-4" />
+                                                                )}
+                                                                Esegui
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                                {isExpanded && archivedMigration.preview && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5}>
+                                                            <pre className="max-h-[360px] overflow-auto rounded border bg-muted p-4 text-xs leading-relaxed">
+                                                                {archivedMigration.preview}
+                                                            </pre>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="rounded border border-dashed p-8 text-center text-muted-foreground">
+                                Nessuna migrazione archiviata.
                             </div>
                         )}
                     </CardContent>
@@ -331,6 +516,42 @@ export default function AdminMigrationsPage() {
                         >
                             {isArchiving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Archivia migrazione
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={archivedMigrationToRun !== null}
+                onOpenChange={(open) => {
+                    if (!open && runningArchivedFilename === null) {
+                        setArchivedMigrationToRun(null);
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Eseguire questa migrazione archiviata?</DialogTitle>
+                        <DialogDescription>
+                            La migrazione {archivedMigrationToRun?.filename ? `"${archivedMigrationToRun.filename}"` : ''} verrà eseguita sul database e segnata come eseguita.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setArchivedMigrationToRun(null)}
+                            disabled={runningArchivedFilename !== null}
+                        >
+                            Annulla
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleRunArchivedMigration}
+                            disabled={runningArchivedFilename !== null}
+                        >
+                            {runningArchivedFilename !== null && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Esegui migrazione
                         </Button>
                     </DialogFooter>
                 </DialogContent>
