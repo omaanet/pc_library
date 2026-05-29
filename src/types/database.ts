@@ -25,6 +25,7 @@ export interface DatabaseBook {
     is_preview: boolean;
     display_order: number | null;
     pages_count: number | null;
+    replace_first_page_with_copyright_override: boolean | null;
     is_visible: number;
     created_at: string;
     updated_at: string;

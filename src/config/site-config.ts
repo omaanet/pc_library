@@ -10,6 +10,10 @@ export const SITE_CONFIG = {
 
     DEFAULT_CDN: 'https://s3.eu-south-1.wasabisys.com/piero-audiolibri',
 
+    REPLACE_FIRST_PAGE_WITH_COPYRIGHT: true,
+
+    COPYRIGHT_FIRST_PAGE_PATH: '/reader/copyright_page_01.png',
+
     SHOW_CONTRIBUTION_TEXT: false,
 
     BOOK_BADGES: {

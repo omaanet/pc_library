@@ -125,6 +125,8 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
         setZoomLevel(newZoom / 100);
     }, [setZoomLevel]);
     const totalPages = book.pagesCount || 10; // Default to 10 pages if not specified
+    const shouldReplaceFirstPageWithCopyright =
+        book.replaceFirstPageWithCopyrightOverride ?? SITE_CONFIG.REPLACE_FIRST_PAGE_WITH_COPYRIGHT;
 
     // Format page number with leading zeros based on total pages
     const formatPageNumber = (num: number) => {
@@ -135,6 +137,10 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
 
     // Get image path for a specific page
     const getImagePath = (pageNum: number) => {
+        if (pageNum === 1 && shouldReplaceFirstPageWithCopyright) {
+            return SITE_CONFIG.COPYRIGHT_FIRST_PAGE_PATH;
+        }
+
         // Add anti-cache query param using current time (updates on every request)
         const antiCache = `?t=${Date.now()}`;
         return `${CONFIG.sourceCDN ?? CONFIG.imagePrefix}${formatPageNumber(pageNum)}${CONFIG.imageExt}${antiCache}`;
@@ -203,6 +209,7 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
             }
 
             const img = new Image();
+            const imagePath = getImagePath(pageNum);
 
             img.onload = () => {
                 setImagesLoaded((prev) => ({ ...prev, [pageNum]: img.src }));
@@ -214,14 +221,14 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
                 logger.warning(`Failed to load image for page ${pageNum}`, {
                     pageNum,
                     bookId,
-                    imagePath: getImagePath(pageNum)
+                    imagePath
                 });
                 // Mark image as failed and resolve (don't reject) to prevent breaking the flow
                 setImagesFailed((prev) => ({ ...prev, [pageNum]: true }));
                 resolve('failed');
             };
 
-            img.src = getImagePath(pageNum);
+            img.src = imagePath;
         });
     };
 

@@ -13,6 +13,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import {
     Popover,
@@ -37,6 +44,7 @@ const bookFormSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     coverImage: z.string().default(IMAGE_CONFIG.placeholder.token),
     pagesCount: z.number().int().min(1, 'Page count must be at least 1').optional(),
+    replaceFirstPageWithCopyrightOverride: z.boolean().nullable().optional(),
     displayOrder: z.number().int().nullable().optional(),
     publishingDate: z.date({
         required_error: 'Publishing date is required',
@@ -126,6 +134,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         title: book?.title || '',
         coverImage: book?.coverImage || IMAGE_CONFIG.placeholder.token,
         pagesCount: book?.pagesCount,
+        replaceFirstPageWithCopyrightOverride: book?.replaceFirstPageWithCopyrightOverride ?? null,
         displayOrder: book?.displayOrder ?? null,
         publishingDate: book?.publishingDate ? new Date(book.publishingDate) : new Date(),
         summary: book?.summary || '',
@@ -162,6 +171,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                 title: book.title || '',
                 coverImage: book.coverImage || IMAGE_CONFIG.placeholder.token,
                 pagesCount: book.pagesCount,
+                replaceFirstPageWithCopyrightOverride: book.replaceFirstPageWithCopyrightOverride ?? null,
                 displayOrder: book.displayOrder ?? null,
                 publishingDate: book.publishingDate ? new Date(book.publishingDate) : new Date(),
                 summary: book.summary || '',
@@ -355,6 +365,49 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                                     className="w-auto"
                                 />
                             </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="replaceFirstPageWithCopyrightOverride"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Prima pagina copyright</FormLabel>
+                            <Select
+                                value={
+                                    field.value === true
+                                        ? 'replace'
+                                        : field.value === false
+                                            ? 'original'
+                                            : 'global'
+                                }
+                                onValueChange={(value) => {
+                                    field.onChange(
+                                        value === 'replace'
+                                            ? true
+                                            : value === 'original'
+                                                ? false
+                                                : null
+                                    );
+                                }}
+                            >
+                                <FormControl>
+                                    <SelectTrigger className="w-full sm:w-[320px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="global">Usa impostazione globale</SelectItem>
+                                    <SelectItem value="replace">Sostituisci prima pagina</SelectItem>
+                                    <SelectItem value="original">Usa prima pagina originale</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormDescription>
+                                Override per il lettore immagini; globale usa la configurazione del sito.
+                            </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}

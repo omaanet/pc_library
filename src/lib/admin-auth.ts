@@ -70,3 +70,19 @@ export async function requireAdmin(): Promise<User> {
         throw new ApiError(HttpStatus.UNAUTHORIZED, 'Invalid session');
     }
 }
+
+/**
+ * Require elevated admin authentication for sensitive admin-only tools.
+ *
+ * Uses the same power-admin rule as the client-only admin surfaces:
+ * authenticated admin user with userLevel greater than 1.
+ */
+export async function requirePowerAdmin(): Promise<User> {
+    const user = await requireAdmin();
+
+    if ((user.userLevel ?? 0) <= 1) {
+        throw new ApiError(HttpStatus.FORBIDDEN, 'Power admin access required');
+    }
+
+    return user;
+}

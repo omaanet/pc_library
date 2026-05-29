@@ -20,6 +20,7 @@ const bookFormSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     coverImage: z.string().default(IMAGE_CONFIG.placeholder.token),
     pagesCount: z.number().int().min(1).optional(),
+    replaceFirstPageWithCopyrightOverride: z.boolean().nullable().optional(),
     displayOrder: z.number().int().nullable().optional(),
     publishingDate: z.date({
         required_error: 'Publishing date is required',
@@ -133,6 +134,7 @@ export default function AddBookPage() {
                 mediaTitle: values.mediaTitle ?? undefined,
                 mediaUid: values.mediaUid ?? undefined,
                 previewPlacement: (values.previewPlacement as 'left' | 'right' | null | undefined) ?? undefined,
+                replaceFirstPageWithCopyrightOverride: values.replaceFirstPageWithCopyrightOverride ?? null,
                 isVisible: values.isVisible ? 1 : 0,
                 audiobook: values.audiobook ? {
                     mediaId: values.audiobook.mediaId ?? null,
@@ -176,7 +178,10 @@ export default function AddBookPage() {
             if (isClone) {
                 // Create a shallow copy of the book and remove the ID to ensure it's treated as a new book
                 const { id, ...bookWithoutId } = book;
-                setEditingBook(bookWithoutId as Book);
+                setEditingBook({
+                    ...bookWithoutId,
+                    replaceFirstPageWithCopyrightOverride: null,
+                } as Book);
             } else {
                 // Fetch complete book data to ensure we have audiobook.mediaId
                 const response = await fetch(`/api/books/${book.id}`);
@@ -205,6 +210,7 @@ export default function AddBookPage() {
         const clonedBook: Omit<Book, 'id'> = {
             ...bookWithoutId,
             title: `${book.title} (Cloned)`,
+            replaceFirstPageWithCopyrightOverride: null,
         };
         // Set the cloned book for editing
         setEditingBook(clonedBook as Book);

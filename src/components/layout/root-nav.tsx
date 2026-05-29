@@ -124,6 +124,9 @@ export function RootNav({
                                                 <DropdownMenuItem asChild>
                                                     <Link href="/animations-manager" className="font-semibold text-yellow-500 hover:text-red-600">Animazioni</Link>
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem asChild>
+                                                    <Link href="/admin/migrations" className="font-semibold text-yellow-500 hover:text-red-600">Migrazioni DB</Link>
+                                                </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                             </>
                                         )}
@@ -194,6 +197,18 @@ export function RootNav({
                                 >
                                     Stats
                                 </Link>
+                                {(state.user?.userLevel ?? 0) > 1 && (
+                                    <Link
+                                        href="/admin/migrations"
+                                        className={cn(
+                                            "text-sm font-medium transition-colors hover:text-primary",
+                                            pathname === "/admin/migrations" && "text-primary"
+                                        )}
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                    >
+                                        Migrazioni DB
+                                    </Link>
+                                )}
                             </>
                         ) : (
                             <>

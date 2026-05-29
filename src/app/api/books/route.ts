@@ -260,6 +260,10 @@ export const POST = withCSRFProtection(async function(request: Request) {
                 type: 'number' as const,
                 required: false,
                 customValidator: (value: any) => value === null || value === undefined || (typeof value === 'number' && value > 0)
+            },
+            replaceFirstPageWithCopyrightOverride: {
+                type: 'boolean' as const,
+                required: false
             }
         };
 

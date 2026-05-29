@@ -9,6 +9,7 @@ const PROTECTED_ROUTES = [
     '/settings',
     '/read-book',
     '/add-book',
+    '/admin',
 ];
 
 // Auth routes (don't redirect to login page)

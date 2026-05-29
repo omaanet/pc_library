@@ -290,7 +290,8 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
             media_id as "mediaId",
             media_title as "mediaTitle",
             media_uid as "mediaUid",
-            preview_placement as "previewPlacement"
+            preview_placement as "previewPlacement",
+            replace_first_page_with_copyright_override as "replaceFirstPageWithCopyrightOverride"
         FROM books ${whereClause} ${orderByClause} ${limitClause}`;
     const dataRes = await client.query(
         dataQuery,
@@ -339,7 +340,8 @@ export async function getBookById(id: string): Promise<Book | undefined> {
             media_id as "mediaId",
             media_title as "mediaTitle",
             media_uid as "mediaUid",
-            preview_placement as "previewPlacement"
+            preview_placement as "previewPlacement",
+            replace_first_page_with_copyright_override as "replaceFirstPageWithCopyrightOverride"
         FROM books WHERE id = $1`,
         [id]
     );
@@ -387,12 +389,14 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
                 id, title, cover_image, publishing_date, summary,
                 has_audio, audio_length, extract, rating,
                 is_preview, is_new, display_order, is_visible, pages_count,
-                media_id, media_title, media_uid, preview_placement
+                media_id, media_title, media_uid, preview_placement,
+                replace_first_page_with_copyright_override
             ) VALUES (
                 $1, $2, $3, $4, $5,
                 $6, $7, $8, $9,
                 $10, $11, $12, $13, $14,
-                $15, $16, $17, $18
+                $15, $16, $17, $18,
+                $19
             )
             RETURNING id`,
             [
@@ -413,7 +417,8 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
                 book.mediaId || null,
                 book.mediaTitle || null,
                 book.mediaUid || null,
-                book.previewPlacement || null
+                book.previewPlacement || null,
+                book.replaceFirstPageWithCopyrightOverride ?? null
             ]
         );
 
@@ -529,6 +534,10 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
     if (book.previewPlacement !== undefined) {
         updates.push('preview_placement = $' + (updates.length + 1));
         values.push(book.previewPlacement);
+    }
+    if (book.replaceFirstPageWithCopyrightOverride !== undefined) {
+        updates.push('replace_first_page_with_copyright_override = $' + (updates.length + 1));
+        values.push(book.replaceFirstPageWithCopyrightOverride);
     }
     if (updates.length === 0) {
         return false; // Nothing to update

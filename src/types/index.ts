@@ -22,6 +22,7 @@ export interface Book {
     displayOrder?: number;
     isVisible?: number;
     pagesCount?: number;
+    replaceFirstPageWithCopyrightOverride?: boolean | null;
     audiobook?: AudioBookInfo;
 
     // Preview media (Mux) fields stored on books table

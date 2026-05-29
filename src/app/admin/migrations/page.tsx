@@ -1,0 +1,340 @@
+'use client';
+
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { AlertCircle, Archive, ArrowLeft, CheckCircle2, Database, Loader2, Play, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
+import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
+import { AuthModal } from '@/components/auth/auth-modal';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+
+type PendingMigration = {
+    filename: string;
+    checksum: string;
+    modifiedAt: string;
+    size: number;
+    preview: string;
+};
+
+type LatestMigrationResponse = {
+    pending: boolean;
+    migration: PendingMigration | null;
+};
+
+type RunMigrationResponse = {
+    success: true;
+    migration: {
+        filename: string;
+        checksum: string;
+        executedAt: string;
+        status: 'executed' | 'archived';
+    };
+};
+
+async function getCSRFToken(): Promise<string> {
+    const response = await fetch('/api/csrf-token');
+    if (!response.ok) {
+        throw new Error('Impossibile recuperare il token CSRF');
+    }
+
+    const data = await response.json();
+    return data.token;
+}
+
+export default function AdminMigrationsPage() {
+    const router = useRouter();
+    const { state } = useAuth();
+    const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
+    const [latest, setLatest] = React.useState<LatestMigrationResponse | null>(null);
+    const [isLoading, setIsLoading] = React.useState(true);
+    const [isRunning, setIsRunning] = React.useState(false);
+    const [isArchiving, setIsArchiving] = React.useState(false);
+    const [isArchiveDialogOpen, setIsArchiveDialogOpen] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+    const [success, setSuccess] = React.useState<string | null>(null);
+
+    const isAllowed =
+        state.isAuthenticated &&
+        state.user?.isAdmin === true &&
+        (state.user?.userLevel ?? 0) > 1;
+
+    const fetchLatestMigration = React.useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch('/api/admin/migrations/latest');
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Impossibile caricare le migrazioni');
+            }
+
+            setLatest(data);
+        } catch (fetchError) {
+            setError(fetchError instanceof Error ? fetchError.message : 'Impossibile caricare le migrazioni');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    React.useEffect(() => {
+        if (!state.isLoading && isAllowed) {
+            fetchLatestMigration();
+        } else if (!state.isLoading) {
+            setIsLoading(false);
+        }
+    }, [fetchLatestMigration, isAllowed, state.isLoading]);
+
+    const handleRunMigration = async () => {
+        if (!latest?.migration) return;
+
+        setIsRunning(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const token = await getCSRFToken();
+            const response = await fetch('/api/admin/migrations/run', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': token,
+                },
+                body: JSON.stringify({ filename: latest.migration.filename }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                const details = typeof data.details === 'string' ? ` ${data.details}` : '';
+                throw new Error(`${data.error || 'Migrazione non riuscita'}.${details}`.trim());
+            }
+
+            const result = data as RunMigrationResponse;
+            setSuccess(`Migrazione eseguita: ${result.migration.filename}`);
+            await fetchLatestMigration();
+        } catch (runError) {
+            setError(runError instanceof Error ? runError.message : 'Migrazione non riuscita');
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
+    const handleArchiveMigration = async () => {
+        if (!latest?.migration) return;
+
+        setIsArchiving(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const token = await getCSRFToken();
+            const response = await fetch('/api/admin/migrations/archive', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': token,
+                },
+                body: JSON.stringify({ filename: latest.migration.filename }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                const details = typeof data.details === 'string' ? ` ${data.details}` : '';
+                throw new Error(`${data.error || 'Archiviazione non riuscita'}.${details}`.trim());
+            }
+
+            const result = data as RunMigrationResponse;
+            setSuccess(`Migrazione archiviata: ${result.migration.filename}`);
+            setIsArchiveDialogOpen(false);
+            await fetchLatestMigration();
+        } catch (archiveError) {
+            setError(archiveError instanceof Error ? archiveError.message : 'Archiviazione non riuscita');
+        } finally {
+            setIsArchiving(false);
+        }
+    };
+
+    if (state.isLoading || isLoading) {
+        return (
+            <div className="container mx-auto p-10 flex items-center justify-center min-h-screen">
+                <div className="flex items-center gap-3 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Verifica migrazioni...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isAllowed) {
+        return (
+            <>
+                <AdminAccessDenied
+                    action="gestire le migrazioni del database"
+                    onAuthClick={() => setIsAuthModalOpen(true)}
+                />
+                <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
+            </>
+        );
+    }
+
+    const migration = latest?.migration ?? null;
+
+    return (
+        <div className="container mx-auto px-4 py-6 lg:px-0">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => router.back()}
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                        <span className="sr-only">Indietro</span>
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Migrazioni DB</h1>
+                        <p className="text-sm text-muted-foreground">Esecuzione controllata delle migrazioni SQL.</p>
+                    </div>
+                </div>
+                <Button
+                    variant="outline"
+                    onClick={fetchLatestMigration}
+                    disabled={isRunning || isArchiving}
+                >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Aggiorna
+                </Button>
+            </div>
+
+            <div className="space-y-4">
+                {error && (
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Errore</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
+
+                {success && (
+                    <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-900 dark:bg-green-950 dark:text-green-100">
+                        <CheckCircle2 className="h-4 w-4 text-green-700 dark:text-green-300" />
+                        <AlertTitle>Completata</AlertTitle>
+                        <AlertDescription>{success}</AlertDescription>
+                    </Alert>
+                )}
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Database className="h-5 w-5 text-yellow-500" />
+                            Ultima migrazione disponibile
+                        </CardTitle>
+                        <CardDescription>
+                            {migration ? 'Migrazione pendente più recente.' : 'Nessuna migrazione pendente.'}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                        {migration ? (
+                            <>
+                                <div className="grid gap-3 text-sm md:grid-cols-2">
+                                    <div>
+                                        <div className="text-muted-foreground">File</div>
+                                        <div className="font-mono font-medium">{migration.filename}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-muted-foreground">Ultima modifica</div>
+                                        <div>{new Date(migration.modifiedAt).toLocaleString('it-IT')}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-muted-foreground">Dimensione</div>
+                                        <div>{migration.size.toLocaleString('it-IT')} bytes</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-muted-foreground">Checksum SHA-256</div>
+                                        <div className="break-all font-mono text-xs">{migration.checksum}</div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="mb-2 text-sm font-medium text-muted-foreground">Anteprima SQL</div>
+                                    <pre className="max-h-[420px] overflow-auto rounded border bg-muted p-4 text-xs leading-relaxed">
+                                        {migration.preview}
+                                    </pre>
+                                </div>
+
+                                <div className="flex flex-col justify-end gap-2 sm:flex-row">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsArchiveDialogOpen(true)}
+                                        disabled={isRunning || isArchiving}
+                                    >
+                                        {isArchiving ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Archive className="mr-2 h-4 w-4" />
+                                        )}
+                                        Archivia migrazione
+                                    </Button>
+                                    <Button onClick={handleRunMigration} disabled={isRunning || isArchiving}>
+                                        {isRunning ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Play className="mr-2 h-4 w-4" />
+                                        )}
+                                        Esegui migrazione
+                                    </Button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="rounded border border-dashed p-8 text-center text-muted-foreground">
+                                Tutte le migrazioni disponibili risultano archiviate.
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Archiviare questa migrazione?</DialogTitle>
+                        <DialogDescription>
+                            La migrazione {migration?.filename ? `"${migration.filename}"` : ''} verrà nascosta dalle migrazioni pendenti senza eseguire il suo SQL.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsArchiveDialogOpen(false)}
+                            disabled={isArchiving}
+                        >
+                            Annulla
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleArchiveMigration}
+                            disabled={isArchiving}
+                        >
+                            {isArchiving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Archivia migrazione
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}

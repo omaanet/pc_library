@@ -17,6 +17,7 @@ export interface Book {
     displayOrder?: number;
     isVisible?: number;
     pagesCount?: number;
+    replaceFirstPageWithCopyrightOverride?: boolean | null;
     audiobook?: {
         mediaId?: string | null;
         introAudioOverride?: boolean;
