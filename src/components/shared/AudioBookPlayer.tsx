@@ -16,6 +16,7 @@ export interface AudioBookPlayerProps {
 
 const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookPlayerProps) => {
     const [audiobook, setAudiobook] = useState<AudioBook | null>(null);
+    const [audiobookBookId, setAudiobookBookId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [isSavingAudioBookmark, setIsSavingAudioBookmark] = useState(false);
     const { state: authState } = useAuth();
@@ -27,30 +28,45 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         saveBookmark,
     } = useBookmarks(book?.id, Boolean(authState.user?.id));
     const pendingAudioSaveRef = useRef<number | null>(null);
-    const lastAutoSavedSecondRef = useRef<number | null>(null);
-    const latestMainAudioSecondRef = useRef<number | null>(null);
+    const lastAutoSavedSecondRef = useRef<{ key: string; second: number | null } | null>(null);
+    const latestMainAudioSecondRef = useRef<{ key: string; second: number } | null>(null);
+    const resumeTargetRef = useRef<{
+        key: string;
+        initialTrackIndex: number;
+        initialTime: number;
+    } | null>(null);
     const bookmarkWriteStateRef = useRef({
         canWrite: false,
         userId: undefined as number | undefined,
+        playerKey: null as string | null,
         saveBookmark,
     });
 
     useEffect(() => {
-        if (!book || !book.hasAudio) return;
+        if (!book || !book.hasAudio) {
+            setAudiobook(null);
+            setAudiobookBookId(null);
+            setLoading(false);
+            return;
+        }
 
         const controller = new AbortController();
 
         setLoading(true);
+        setAudiobook(null);
+        setAudiobookBookId(null);
         fetch(`/api/audiobooks/${book.id}`, { signal: controller.signal })
             .then(res => res.ok ? res.json() : null)
             .then(data => {
                 setAudiobook(data && data.media_id ? data : null);
+                setAudiobookBookId(book.id);
                 setLoading(false);
             })
             .catch((error) => {
                 // Ignore abort errors (component unmounted)
                 if (error.name === 'AbortError') return;
                 setAudiobook(null);
+                setAudiobookBookId(book.id);
                 setLoading(false);
             });
 
@@ -60,10 +76,28 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         };
     }, [book]);
 
+    const activeAudiobook = book && audiobookBookId === book.id ? audiobook : null;
+    const playerKey = book && activeAudiobook?.media_id
+        ? `${book.id}:${activeAudiobook.media_id}`
+        : null;
+
     useEffect(() => {
-        if (!bookmarksInitialized) return;
-        lastAutoSavedSecondRef.current = bookmarks.audio?.audioTimeSeconds ?? null;
-    }, [bookmarks.audio?.audioTimeSeconds, bookmarksInitialized]);
+        if (pendingAudioSaveRef.current !== null) {
+            window.clearTimeout(pendingAudioSaveRef.current);
+            pendingAudioSaveRef.current = null;
+        }
+
+        latestMainAudioSecondRef.current = null;
+        lastAutoSavedSecondRef.current = null;
+    }, [playerKey]);
+
+    useEffect(() => {
+        if (!bookmarksInitialized || !playerKey) return;
+        lastAutoSavedSecondRef.current = {
+            key: playerKey,
+            second: bookmarks.audio?.audioTimeSeconds ?? null,
+        };
+    }, [bookmarks.audio?.audioTimeSeconds, bookmarksInitialized, playerKey]);
 
     useEffect(() => {
         return () => {
@@ -71,11 +105,11 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
                 window.clearTimeout(pendingAudioSaveRef.current);
             }
 
-            const latestSecond = latestMainAudioSecondRef.current;
-            const { canWrite, userId, saveBookmark: saveLatestBookmark } = bookmarkWriteStateRef.current;
-            if (!userId || !canWrite || latestSecond === null) return;
+            const latest = latestMainAudioSecondRef.current;
+            const { canWrite, userId, playerKey: latestPlayerKey, saveBookmark: saveLatestBookmark } = bookmarkWriteStateRef.current;
+            if (!userId || !canWrite || !latest || latest.key !== latestPlayerKey) return;
 
-            void saveLatestBookmark({ kind: 'audio', audioTimeSeconds: latestSecond });
+            void saveLatestBookmark({ kind: 'audio', audioTimeSeconds: latest.second });
         };
     }, []);
 
@@ -83,24 +117,28 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         bookmarkWriteStateRef.current = {
             canWrite: bookmarksCanWrite,
             userId: authState.user?.id,
+            playerKey,
             saveBookmark,
         };
-    }, [authState.user?.id, bookmarksCanWrite, saveBookmark]);
+    }, [authState.user?.id, bookmarksCanWrite, playerKey, saveBookmark]);
 
     const saveLatestAudioBookmark = useCallback(() => {
-        const latestSecond = latestMainAudioSecondRef.current;
-        if (!authState.user?.id || !bookmarksCanWrite || latestSecond === null) return;
+        const latest = latestMainAudioSecondRef.current;
+        if (!authState.user?.id || !bookmarksCanWrite || !latest || latest.key !== playerKey) return;
 
-        void saveBookmark({ kind: 'audio', audioTimeSeconds: latestSecond })
+        void saveBookmark({ kind: 'audio', audioTimeSeconds: latest.second })
             .then((bookmark) => {
                 if (bookmark) {
-                    lastAutoSavedSecondRef.current = latestSecond;
+                    lastAutoSavedSecondRef.current = {
+                        key: latest.key,
+                        second: latest.second,
+                    };
                 }
             })
             .catch((error) => {
                 console.error('Failed to save audio bookmark on close:', error);
             });
-    }, [authState.user?.id, bookmarksCanWrite, saveBookmark]);
+    }, [authState.user?.id, bookmarksCanWrite, playerKey, saveBookmark]);
 
     useEffect(() => {
         if (isActive) return;
@@ -115,8 +153,8 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
 
     const shouldIncludeDefaultIntroTrack = false;
     const defaultIntroTitle = 'Nota per la beneficenza';
-    const introAudioId = audiobook?.intro_audio_id?.trim() ?? '';
-    const introAudioTitle = audiobook?.intro_audio_title?.trim() || defaultIntroTitle;
+    const introAudioId = activeAudiobook?.intro_audio_id?.trim() ?? '';
+    const introAudioTitle = activeAudiobook?.intro_audio_title?.trim() || defaultIntroTitle;
 
     const introTrack = introAudioId
         ? {
@@ -132,12 +170,12 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
             }
             : null;
 
-    const tracks = book && audiobook?.media_id
+    const tracks = book && activeAudiobook?.media_id
         ? [
             ...(introTrack ? [introTrack] : []),
             {
                 title: book.title || '',
-                url: `${SITE_CONFIG.DEFAULT_CDN}/${audiobook.media_id}`,
+                url: `${SITE_CONFIG.DEFAULT_CDN}/${activeAudiobook.media_id}`,
                 kind: 'main' as const
             },
         ]
@@ -149,11 +187,23 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         !bookmarksError &&
         audioBookmark?.audioTimeSeconds !== null &&
         audioBookmark?.audioTimeSeconds !== undefined &&
-        audiobook?.media_id &&
-        (!audioBookmark.audioMediaId || audioBookmark.audioMediaId === audiobook.media_id)
+        activeAudiobook?.media_id &&
+        (!audioBookmark.audioMediaId || audioBookmark.audioMediaId === activeAudiobook.media_id)
     );
-    const initialTrackIndex = canResumeAudio && introTrack ? 1 : 0;
-    const initialTime = canResumeAudio ? Math.max(0, audioBookmark?.audioTimeSeconds ?? 0) : 0;
+
+    if (playerKey && bookmarksInitialized && resumeTargetRef.current?.key !== playerKey) {
+        resumeTargetRef.current = {
+            key: playerKey,
+            initialTrackIndex: canResumeAudio && introTrack ? 1 : 0,
+            initialTime: canResumeAudio ? Math.max(0, audioBookmark?.audioTimeSeconds ?? 0) : 0,
+        };
+    } else if (!playerKey) {
+        resumeTargetRef.current = null;
+    }
+
+    const resumeTarget = resumeTargetRef.current?.key === playerKey
+        ? resumeTargetRef.current
+        : null;
 
     const saveAudioBookmark = useCallback(async (audioTimeSeconds: number) => {
         if (!authState.user?.id || !bookmarksCanWrite) return;
@@ -174,8 +224,11 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
     const handleAudioProgress = useCallback((state: AudioPlayerState) => {
         if (state.track.kind === 'main') {
             const latestSecond = Math.floor(state.currentTime);
-            if (Number.isFinite(latestSecond) && latestSecond >= 1) {
-                latestMainAudioSecondRef.current = latestSecond;
+            if (playerKey && Number.isFinite(latestSecond) && latestSecond >= 1) {
+                latestMainAudioSecondRef.current = {
+                    key: playerKey,
+                    second: latestSecond,
+                };
             }
         }
 
@@ -191,17 +244,25 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         const nextSecond = Math.floor(state.currentTime);
         if (!Number.isFinite(nextSecond) || nextSecond < 1) return;
 
-        const lastSavedSecond = lastAutoSavedSecondRef.current;
+        const lastSavedSecond = lastAutoSavedSecondRef.current?.key === playerKey
+            ? lastAutoSavedSecondRef.current.second
+            : null;
         if (lastSavedSecond !== null && Math.abs(nextSecond - lastSavedSecond) < 10) return;
 
         if (pendingAudioSaveRef.current !== null) {
             window.clearTimeout(pendingAudioSaveRef.current);
         }
 
+        const progressPlayerKey = playerKey;
         pendingAudioSaveRef.current = window.setTimeout(() => {
             saveBookmark({ kind: 'audio', audioTimeSeconds: nextSecond })
                 .then(() => {
-                    lastAutoSavedSecondRef.current = nextSecond;
+                    if (progressPlayerKey) {
+                        lastAutoSavedSecondRef.current = {
+                            key: progressPlayerKey,
+                            second: nextSecond,
+                        };
+                    }
                 })
                 .catch((error) => {
                     console.error('Failed to auto-save audio bookmark:', error);
@@ -210,7 +271,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
                     pendingAudioSaveRef.current = null;
                 });
         }, 500);
-    }, [authState.user?.id, bookmarksCanWrite, bookmarksError, isActive, saveBookmark]);
+    }, [authState.user?.id, bookmarksCanWrite, bookmarksError, isActive, playerKey, saveBookmark]);
 
     const handleManualAudioBookmark = useCallback((state: AudioPlayerState) => {
         if (state.track.kind !== 'main') return;
@@ -227,22 +288,23 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
 
     if (!book || !book.hasAudio) return null;
 
-    if (loading) {
+    if (loading || !bookmarksInitialized) {
         return (
             <div className="w-full text-center p-0 rounded-md mt-2 mb-0">
                 <Skeleton className="w-full rounded-md" style={{ minHeight: 120 }} />
             </div>
         );
     }
-    if (!audiobook || !audiobook.media_id) return null;
+    if (!activeAudiobook || !activeAudiobook.media_id || !playerKey || !resumeTarget) return null;
 
     return (
         <div className="w-full text-center py-3 px-5 rounded-md mt-2 mb-0 mx-auto bg-muted/40">
             <HTML5Player
+                key={resumeTarget.key}
                 tracks={tracks}
                 autoPlay={autoPlay}
-                initialTrackIndex={initialTrackIndex}
-                initialTime={initialTime}
+                initialTrackIndex={resumeTarget.initialTrackIndex}
+                initialTime={resumeTarget.initialTime}
                 onProgress={handleAudioProgress}
                 onBookmark={authState.user?.id && isActive ? handleManualAudioBookmark : undefined}
                 isBookmarkActive={isAudioBookmarkActive}

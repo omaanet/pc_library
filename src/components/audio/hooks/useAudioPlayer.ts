@@ -65,6 +65,10 @@ export function useAudioPlayer({ autoPlay, currentTrack, initialTime = 0, onTrac
         audio.addEventListener('timeupdate', setAudioTime);
         audio.addEventListener('ended', onTrackEnd);
 
+        if (audio.readyState >= 1) {
+            setAudioData();
+        }
+
         return () => {
             audio.removeEventListener('loadedmetadata', setAudioData);
             audio.removeEventListener('loadeddata', setAudioData);
