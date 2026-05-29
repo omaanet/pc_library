@@ -21,6 +21,15 @@ if (process.env.NODE_ENV === 'development') {
 
 // Create a singleton Neon client
 let neonClient: NeonClient | null = null;
+let neonQueryFunction: ReturnType<typeof neon> | null = null;
+
+function getNeonQueryFunction(): ReturnType<typeof neon> {
+    if (!neonQueryFunction) {
+        neonQueryFunction = neon(connectionString);
+    }
+
+    return neonQueryFunction;
+}
 
 /**
  * Get or create the singleton Neon database client
@@ -29,7 +38,7 @@ let neonClient: NeonClient | null = null;
 export function getNeonClient(): NeonClient {
     if (!neonClient) {
         // Create the base Neon client
-        const baseClient = neon(connectionString);
+        const baseClient = getNeonQueryFunction();
 
         // Only apply debugging wrapper in development
         if (process.env.NODE_ENV === 'development') {
@@ -74,4 +83,13 @@ export function getNeonClient(): NeonClient {
     }
 
     return neonClient;
+}
+
+export async function runSqlTransaction(statements: string[]): Promise<void> {
+    if (!statements.length) {
+        return;
+    }
+
+    const sql = getNeonQueryFunction();
+    await sql.transaction((txn) => statements.map((statement) => txn.query(statement)));
 }

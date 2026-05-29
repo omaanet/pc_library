@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { getNeonClient } from '@/lib/db/client';
+import { getNeonClient, runSqlTransaction } from '@/lib/db/client';
 import { extractRows, getFirstRow } from '@/lib/db/utils';
 import { ApiError, HttpStatus } from '@/lib/api-error-handler';
 import type { User } from '@/types';
@@ -152,12 +152,11 @@ export async function runLatestPendingMigration(filename: string, user: User): P
         );
     }
 
-    const client = getNeonClient();
     const filePath = path.join(MIGRATIONS_DIR, filename);
     const sql = await fs.readFile(filePath, 'utf8');
 
     try {
-        await client.query(sql);
+        await executeMigrationSql(sql);
     } catch (error) {
         throw new ApiError(
             HttpStatus.INTERNAL_SERVER_ERROR,
@@ -212,7 +211,7 @@ export async function runArchivedMigration(filename: string, user: User): Promis
     }
 
     try {
-        await client.query(migrationFile.sql);
+        await executeMigrationSql(migrationFile.sql);
     } catch (error) {
         throw new ApiError(
             HttpStatus.INTERNAL_SERVER_ERROR,
@@ -421,6 +420,155 @@ async function insertMigrationRun(
             status: archived.status,
         },
     };
+}
+
+async function executeMigrationSql(sql: string): Promise<void> {
+    await runSqlTransaction(splitSqlStatements(sql));
+}
+
+function splitSqlStatements(sql: string): string[] {
+    const statements: string[] = [];
+    let current = '';
+    let singleQuote = false;
+    let doubleQuote = false;
+    let lineComment = false;
+    let blockComment = false;
+    let dollarQuote: string | null = null;
+
+    for (let i = 0; i < sql.length; i += 1) {
+        const char = sql[i];
+        const next = sql[i + 1];
+
+        if (lineComment) {
+            current += char;
+            if (char === '\n') {
+                lineComment = false;
+            }
+            continue;
+        }
+
+        if (blockComment) {
+            current += char;
+            if (char === '*' && next === '/') {
+                current += next;
+                i += 1;
+                blockComment = false;
+            }
+            continue;
+        }
+
+        if (dollarQuote) {
+            if (sql.startsWith(dollarQuote, i)) {
+                current += dollarQuote;
+                i += dollarQuote.length - 1;
+                dollarQuote = null;
+            } else {
+                current += char;
+            }
+            continue;
+        }
+
+        if (singleQuote) {
+            current += char;
+            if (char === '\'' && next === '\'') {
+                current += next;
+                i += 1;
+            } else if (char === '\'') {
+                singleQuote = false;
+            }
+            continue;
+        }
+
+        if (doubleQuote) {
+            current += char;
+            if (char === '"' && next === '"') {
+                current += next;
+                i += 1;
+            } else if (char === '"') {
+                doubleQuote = false;
+            }
+            continue;
+        }
+
+        if (char === '-' && next === '-') {
+            current += char + next;
+            i += 1;
+            lineComment = true;
+            continue;
+        }
+
+        if (char === '/' && next === '*') {
+            current += char + next;
+            i += 1;
+            blockComment = true;
+            continue;
+        }
+
+        if (char === '\'') {
+            current += char;
+            singleQuote = true;
+            continue;
+        }
+
+        if (char === '"') {
+            current += char;
+            doubleQuote = true;
+            continue;
+        }
+
+        if (char === '$') {
+            const tag = readDollarQuoteTag(sql, i);
+            if (tag) {
+                current += tag;
+                i += tag.length - 1;
+                dollarQuote = tag;
+                continue;
+            }
+        }
+
+        if (char === ';') {
+            pushSqlStatement(statements, current);
+            current = '';
+            continue;
+        }
+
+        current += char;
+    }
+
+    if (singleQuote || doubleQuote || blockComment || dollarQuote) {
+        throw new ApiError(HttpStatus.BAD_REQUEST, 'Migration SQL contains an unterminated quoted block');
+    }
+
+    pushSqlStatement(statements, current);
+    return statements;
+}
+
+function readDollarQuoteTag(sql: string, start: number): string | null {
+    const end = sql.indexOf('$', start + 1);
+    if (end === -1) {
+        return null;
+    }
+
+    const tagName = sql.slice(start + 1, end);
+    if (tagName !== '' && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(tagName)) {
+        return null;
+    }
+
+    return sql.slice(start, end + 1);
+}
+
+function pushSqlStatement(statements: string[], statement: string): void {
+    const trimmed = statement.trim();
+    if (hasExecutableSql(trimmed)) {
+        statements.push(trimmed);
+    }
+}
+
+function hasExecutableSql(statement: string): boolean {
+    return statement
+        .replace(/--.*$/gm, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .trim().length > 0;
 }
 
 function assertSafeMigrationFilename(filename: string): void {
