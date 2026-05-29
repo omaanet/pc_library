@@ -75,9 +75,10 @@ export const SITE_CONFIG = {
      * Site metadata for copyright and attribution
      */
     METADATA: {
-        AUTHOR: 'Oscar e Paolo Mucchiati',
+        COPYRIGHT_HOLDER: 'Piero Carbonetti',
         SITE_NAME: 'OMAA.net',
         SITE_URL: 'https://www.omaa.it',
+        SITE_CREATORS: 'Oscar e Paolo Mucchiati',
         ESTABLISHED_YEAR: 2025,
     },
 
