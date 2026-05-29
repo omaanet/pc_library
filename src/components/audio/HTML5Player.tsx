@@ -15,6 +15,15 @@ import { SeekBar } from './components/SeekBar';
 import { VolumeControl } from './components/VolumeControl';
 import { AudioControls } from './components/AudioControls';
 
+function getAudioSourceType(url: string): string | undefined {
+    const pathname = url.split('?')[0]?.toLowerCase() ?? '';
+
+    if (pathname.endsWith('.mp3')) return 'audio/mpeg';
+    if (pathname.endsWith('.mp4') || pathname.endsWith('.m4a')) return 'audio/mp4';
+
+    return undefined;
+}
+
 const HTML5Player = ({
     tracks,
     autoPlay = false,
@@ -62,6 +71,7 @@ const HTML5Player = ({
 
     const showPlaylist: boolean = false;
     const currentTrackData = tracks[currentTrack];
+    const currentSourceType = currentTrackData ? getAudioSourceType(currentTrackData.url) : undefined;
     const currentState = useMemo(() => currentTrackData
         ? {
             currentTrack,
@@ -90,7 +100,10 @@ const HTML5Player = ({
         <div>
             <div className="audio-player w-full">
                 <audio ref={audioRef} muted={muted || volume === 0} preload="auto">
-                    <source src={tracks[currentTrack].url} type="audio/mpeg" />
+                    <source
+                        src={tracks[currentTrack].url}
+                        {...(currentSourceType ? { type: currentSourceType } : {})}
+                    />
                     Your browser does not support the audio element.
                 </audio>
 

@@ -288,7 +288,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
 
     if (!book || !book.hasAudio) return null;
 
-    if (loading || !bookmarksInitialized) {
+    if (loading || authState.isLoading || !bookmarksInitialized) {
         return (
             <div className="w-full text-center p-0 rounded-md mt-2 mb-0">
                 <Skeleton className="w-full rounded-md" style={{ minHeight: 120 }} />

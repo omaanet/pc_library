@@ -49,18 +49,24 @@ export function useBookmarks(bookId: string | undefined, enabled = true) {
     const [bookmarks, setBookmarks] = useState<ClientBookmarks>({ reader: null, audio: null });
     const [loading, setLoading] = useState(false);
     const [initialized, setInitialized] = useState(false);
+    const [initializedKey, setInitializedKey] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const canWrite = Boolean(bookId && enabled && initialized && !error);
+    const requestKey = bookId && enabled ? bookId : null;
+    const initializedForRequest = requestKey ? initialized && initializedKey === requestKey : initialized;
+    const canWrite = Boolean(bookId && enabled && initializedForRequest && !error);
 
     const fetchBookmarks = useCallback(async (signal?: AbortSignal) => {
         if (!bookId || !enabled) {
             setBookmarks({ reader: null, audio: null });
             setInitialized(true);
+            setInitializedKey(null);
             return;
         }
 
+        const currentRequestKey = bookId;
         setLoading(true);
         setInitialized(false);
+        setInitializedKey(null);
         setError(null);
 
         try {
@@ -91,6 +97,7 @@ export function useBookmarks(bookId: string | undefined, enabled = true) {
         } finally {
             setLoading(false);
             setInitialized(true);
+            setInitializedKey(currentRequestKey);
         }
     }, [bookId, enabled]);
 
@@ -166,7 +173,7 @@ export function useBookmarks(bookId: string | undefined, enabled = true) {
     return {
         bookmarks,
         loading,
-        initialized,
+        initialized: initializedForRequest,
         error,
         canWrite,
         fetchBookmarks,
