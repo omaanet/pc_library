@@ -107,9 +107,9 @@ function BookExtractToggle({ disclosure }: { disclosure: BookExtractDisclosureSt
         <button
             type="button"
             className={cn(
-                "absolute bottom-1 right-1 flex h-11 w-11 items-center justify-center rounded-full",
+                "group absolute bottom-1 right-1 flex h-11 w-11 items-center justify-center rounded-full",
                 "text-cyan-300 transition-colors hover:bg-background/70 hover:text-cyan-100",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                "active:bg-transparent focus-visible:outline-none"
             )}
             onClick={() => disclosure.setExpanded(!disclosure.expanded)}
             aria-controls={disclosure.extractId}
@@ -117,7 +117,10 @@ function BookExtractToggle({ disclosure }: { disclosure: BookExtractDisclosureSt
             aria-label={label}
             title={label}
         >
-            <Info className="h-4 w-4" aria-hidden="true" />
+            <Info
+                className="h-4 w-4 rounded-full group-focus-visible:ring-2 group-focus-visible:ring-black dark:group-focus-visible:ring-white"
+                aria-hidden="true"
+            />
         </button>
     );
 }
