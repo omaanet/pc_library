@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useId, useState, useRef } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { Headphones, X, BookOpen, Download, MailOpen, Loader2 } from 'lucide-react';
+import { Headphones, X, BookOpen, Download, MailOpen, Loader2, Info } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -23,7 +23,11 @@ import { LinkButton } from '@/components/ui/LinkButton';
 import { useToast } from '@/components/ui/use-toast';
 import { useLibrary } from '@/context/library-context';
 import { saveLibraryReturnState } from '@/lib/library-return-state';
-import { isAudioAvailable, isReadingAvailable } from '@/lib/book-visibility';
+import {
+    getBookPresentationMode,
+    isAudioAvailable,
+    type BookPresentationMode,
+} from '@/lib/book-visibility';
 
 interface BookDialogProps {
     book: Book | null;
@@ -63,6 +67,90 @@ const renderNewBadge = (book: Book | null, visible: boolean) => {
     );
 };
 
+interface BookExtractDisclosureState {
+    expanded: boolean;
+    extractId: string;
+    hasExtract: boolean;
+    isCollapsible: boolean;
+    setExpanded: (expanded: boolean) => void;
+}
+
+function useBookExtractDisclosure(
+    book: Book | null,
+    open: boolean,
+    mode: BookPresentationMode
+): BookExtractDisclosureState {
+    const [expanded, setExpanded] = useState(false);
+    const reactId = useId();
+    const hasExtract = Boolean(book?.extract?.trim());
+    const isCollapsible = mode === 'audio-only' || mode === 'reading-and-audio';
+
+    useEffect(() => {
+        setExpanded(false);
+    }, [book?.id, open]);
+
+    return {
+        expanded,
+        extractId: `book-extract-${reactId.replace(/:/g, '')}`,
+        hasExtract,
+        isCollapsible,
+        setExpanded,
+    };
+}
+
+function BookExtractToggle({ disclosure }: { disclosure: BookExtractDisclosureState }) {
+    if (!disclosure.hasExtract || !disclosure.isCollapsible) return null;
+
+    const label = disclosure.expanded ? 'Nascondi estratto' : 'Mostra estratto';
+
+    return (
+        <button
+            type="button"
+            className={cn(
+                "absolute bottom-1 right-1 flex h-11 w-11 items-center justify-center rounded-full",
+                "text-cyan-300 transition-colors hover:bg-background/70 hover:text-cyan-100",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            )}
+            onClick={() => disclosure.setExpanded(!disclosure.expanded)}
+            aria-controls={disclosure.extractId}
+            aria-expanded={disclosure.expanded}
+            aria-label={label}
+            title={label}
+        >
+            <Info className="h-4 w-4" aria-hidden="true" />
+        </button>
+    );
+}
+
+function BookExtractSection({
+    book,
+    disclosure,
+}: {
+    book: Book | null;
+    disclosure: BookExtractDisclosureState;
+}) {
+    if (!book || !disclosure.hasExtract) return null;
+    if (disclosure.isCollapsible && !disclosure.expanded) return null;
+
+    return (
+        <div id={disclosure.extractId} className="mt-2">
+            <BookExtract extract={book.extract} />
+        </div>
+    );
+}
+
+function getLoginLabel(mode: BookPresentationMode, includeComments = false): string {
+    const suffix = includeComments ? ' e commentare' : '';
+
+    if (mode === 'reading-and-audio') {
+        return includeComments
+            ? 'Accedi per leggere, ascoltare e commentare'
+            : 'Accedi per leggere e ascoltare';
+    }
+    if (mode === 'audio-only') return `Accedi per ascoltare${suffix}`;
+    return `Accedi per leggere${suffix}`;
+}
+
 export function BookDialogSimple({
     book,
     open,
@@ -79,8 +167,10 @@ export function BookDialogSimple({
     } = useLibrary();
     const pendingActionRef = useRef<{ type: 'request-pdf'; bookId: string } | null>(null);
     const isReaderNavigationRef = useRef(false);
-    const hasVisibleReading = !!book && isReadingAvailable(book);
-    const hasVisibleAudio = !!book && isAudioAvailable(book);
+    const presentationMode = book ? getBookPresentationMode(book) : 'unavailable';
+    const hasVisibleReading = presentationMode === 'reading-only' || presentationMode === 'reading-and-audio';
+    const hasVisibleAudio = presentationMode === 'audio-only' || presentationMode === 'reading-and-audio';
+    const extractDisclosure = useBookExtractDisclosure(book, open, presentationMode);
 
     const handleReaderNavigation = () => {
         if (!book) return;
@@ -216,14 +306,15 @@ export function BookDialogSimple({
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* Content - auto-sizing with max height constraint */}
-                <div className="flex flex-col max-h-[calc(100vh-8rem)] overflow-y-auto">
-                    {/* Book Cover with container - no overlap layout */}
+                <div className="flex min-h-0 flex-col overflow-y-auto">
                     <div className="flex justify-center">
-                        <div className="w-full flex flex-col items-center rounded-lg bg-muted/30 px-3 py-3">
+                        <div className={cn(
+                            "relative flex w-full flex-col items-center rounded-lg bg-muted/30 px-3 py-3",
+                            extractDisclosure.hasExtract && extractDisclosure.isCollapsible && "pb-12"
+                        )}>
                             <div className="flex flex-col items-center space-y-2">
 
-                                <div className="relative w-40 sm:w-48 md:w-56 aspect-[3/4] max-h-[30vh] sm:max-h-[35vh] flex-shrink-0 mx-auto">
+                                <div className="relative mx-auto aspect-[3/4] w-36 flex-shrink-0 sm:w-44 md:w-52">
                                     {!imageLoaded && (
                                         <Skeleton className="absolute inset-0 rounded-lg" />
                                     )}
@@ -247,14 +338,13 @@ export function BookDialogSimple({
                                     {renderNewBadge(book, imageLoaded)}
                                 </div>
 
-                                {/* Actions - horizontal, compact for vertical space */}
                                 {isAuthenticated && hasVisibleReading && (
                                     <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">
                                         <div className="flex-1">
                                             <LinkButton url={`/read-book/${book.id}`}
                                                 icon={BookOpen}
                                                 onClick={handleReaderNavigation}
-                                                className="w-full px-3 py-1 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate">
+                                                className="h-11 w-full px-3 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-cyan-400">
                                                 Leggi Racconto<span className="hidden sm:inline"> on-line</span>
                                             </LinkButton>
                                         </div>
@@ -263,7 +353,7 @@ export function BookDialogSimple({
                                             <Button
                                                 onClick={handleRequestPdf}
                                                 disabled={isPdfRequesting}
-                                                className="w-full px-3 py-1 text-xs font-normal text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 shadow select-none transition-colors duration-200 truncate">
+                                                className="h-11 w-full px-3 text-xs font-normal text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-emerald-400">
                                                 {isPdfRequesting ? (
                                                     <>
                                                         <Loader2 className="h-5 w-5 mr-2 animate-spin" />
@@ -279,32 +369,26 @@ export function BookDialogSimple({
                                         </div>
                                     </div>
                                 )}
-
                             </div>
+                            <BookExtractToggle disclosure={extractDisclosure} />
                         </div>
                     </div>
 
-                    <div className="flex flex-col-reverse">
-                        <div className="p-1 flex flex-col items-end">
-                            {isAuthenticated && hasVisibleAudio ? (
-                                <AudioBookPlayer book={book} isActive={open} />
-                            ) : !isAuthenticated && (
-                                <Button
-                                    onClick={onLoginClick}
-                                    size="lg"
-                                    className="mt-3 px-5 text-base bg-cyan-800 hover:bg-emerald-900 text-cyan-50"
-                                >
-                                    {hasVisibleAudio ? 'Accedi per ascoltare' : 'Accedi per leggere'}
-                                </Button>
-                            )}
-                        </div>
+                    <BookExtractSection book={book} disclosure={extractDisclosure} />
 
-                        {/* Book Extract - Auto height with scrolling when needed */}
-                        <div className="overflow-y-auto mt-1 sm:mt-2 px-0 max-h-[25vh] sm:max-h-[30vh] z-0">
-                            <BookExtract extract={book.extract} />
-                        </div>
+                    <div className="flex w-full flex-col items-stretch pt-2">
+                        {isAuthenticated && hasVisibleAudio ? (
+                            <AudioBookPlayer book={book} isActive={open} />
+                        ) : !isAuthenticated && presentationMode !== 'unavailable' ? (
+                            <Button
+                                onClick={onLoginClick}
+                                size="lg"
+                                className="min-h-11 w-full bg-cyan-800 px-5 text-base text-cyan-50 hover:bg-emerald-900 focus-visible:ring-2 focus-visible:ring-cyan-400 sm:ml-auto sm:w-auto"
+                            >
+                                {getLoginLabel(presentationMode)}
+                            </Button>
+                        ) : null}
                     </div>
-
                 </div>
             </DialogContent>
         </Dialog>
@@ -323,8 +407,10 @@ export function BookDialog({
         state: { filters, sort, viewMode },
     } = useLibrary();
     const isReaderNavigationRef = useRef(false);
-    const hasVisibleReading = !!book && isReadingAvailable(book);
-    const hasVisibleAudio = !!book && isAudioAvailable(book);
+    const presentationMode = book ? getBookPresentationMode(book) : 'unavailable';
+    const hasVisibleReading = presentationMode === 'reading-only' || presentationMode === 'reading-and-audio';
+    const hasVisibleAudio = presentationMode === 'audio-only' || presentationMode === 'reading-and-audio';
+    const extractDisclosure = useBookExtractDisclosure(book, open, presentationMode);
 
     const handleReaderNavigation = () => {
         if (!book) return;
@@ -380,12 +466,15 @@ export function BookDialog({
                                 </DialogDescription>
                             </div>
                         </DialogHeader>
-                        <div className="flex flex-col max-h-[calc(100vh-8rem)] overflow-hidden">
-                            <div className="flex flex-col md:flex-row gap-y-2 md:gap-4 px-4 pt-0 pb-3 overflow-hidden">
+                        <div className="min-h-0 overflow-y-auto">
+                            <div className="flex flex-col gap-y-2 px-4 pb-3 pt-0 md:flex-row md:gap-4">
                                 {/* Left column: Book cover with audio badge, responsive */}
                                 <div className="flex-shrink-0 flex flex-col items-center justify-start w-full md:w-1/3 md:max-w-xs mx-auto md:mx-0 mt-0 mb-2 md:mb-0">
 
-                                    <div className="relative w-full flex flex-col items-center justify-center rounded-lg bg-muted/30 px-3 py-2 space-y-1">
+                                    <div className={cn(
+                                        "relative w-full flex flex-col items-center justify-center rounded-lg bg-muted/30 px-3 py-2 space-y-1",
+                                        extractDisclosure.hasExtract && extractDisclosure.isCollapsible && "pb-12"
+                                    )}>
 
                                         <div className="">
                                             <div>
@@ -420,13 +509,13 @@ export function BookDialog({
                                             {isAuthenticated && hasVisibleReading && (
                                                 <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">
                                                     <div className="flex-1">
-                                                        <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} onClick={handleReaderNavigation} className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate">
+                                                        <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} onClick={handleReaderNavigation} className="h-11 w-full px-2 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-cyan-400">
                                                             Leggi Racconto
                                                         </LinkButton>
                                                     </div>
 
                                                     <div className="flex-1">
-                                                        <LinkButton url={`/api/download-book/${book.id}`} icon={Download} className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-red-700/30 hover:bg-red-800 border border-red-900 shadow select-none transition-colors duration-200 truncate">
+                                                        <LinkButton url={`/api/download-book/${book.id}`} icon={Download} className="h-11 w-full px-2 text-xs font-normal text-dark hover:text-white bg-red-700/30 hover:bg-red-800 border border-red-900 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-red-400">
                                                             Scarica PDF
                                                         </LinkButton>
                                                     </div>
@@ -434,15 +523,16 @@ export function BookDialog({
                                             )}
                                         </div>
 
+                                        <BookExtractToggle disclosure={extractDisclosure} />
                                     </div>
 
                                 </div>
 
                                 {/* Right column: Extract, Comments, Posting Form */}
-                                <div className="flex flex-col md:flex-1 overflow-hidden">
+                                <div className="flex flex-col md:flex-1">
                                     {/* Estratto section */}
                                     <div className="mb-3 sm:mb-2">
-                                        <BookExtract extract={book.extract} />
+                                        <BookExtractSection book={book} disclosure={extractDisclosure} />
 
                                         {/* AudioBookPlayer: show only if authenticated and has audio */}
                                         {isAuthenticated && hasVisibleAudio && (
@@ -455,9 +545,9 @@ export function BookDialog({
                                     </div>
 
                                     {/* Comments section: header, scrollable list, posting form at bottom */}
-                                    <div className="flex flex-col bg-muted/40 rounded px-2 sm:px-4 py-2 max-h-[35vh] overflow-hidden">
+                                    <div className="flex flex-col rounded bg-muted/40 px-2 py-2 sm:px-4">
                                         <h3 className="text-md sm:text-lg font-medium mb-2 text-cyan-400">Commenti</h3>
-                                        <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                                        <div className="pr-1">
                                             <BookComments
                                                 bookId={book.id}
                                                 isAuthenticated={isAuthenticated}
@@ -465,10 +555,10 @@ export function BookDialog({
                                             />
                                         </div>
                                     </div>
-                                    {!isAuthenticated && (
+                                    {!isAuthenticated && presentationMode !== 'unavailable' && (
                                         <div className="mt-4 mb-1 flex justify-end">
-                                            <Button onClick={onLoginClick} size="default" className="bg-cyan-800 hover:bg-emerald-900 text-cyan-50 hover:text-emerald-50 font-normal">
-                                                {hasVisibleAudio ? 'Accedi per ascoltare e commentare' : 'Accedi per leggere e commentare'}
+                                            <Button onClick={onLoginClick} size="default" className="min-h-11 w-full bg-cyan-800 font-normal text-cyan-50 hover:bg-emerald-900 hover:text-emerald-50 focus-visible:ring-2 focus-visible:ring-cyan-400 sm:w-auto">
+                                                {getLoginLabel(presentationMode, true)}
                                             </Button>
                                         </div>
                                     )}

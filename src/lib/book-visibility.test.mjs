@@ -5,6 +5,7 @@ import {
     canAccessAudio,
     canAccessBook,
     canAccessReading,
+    getBookPresentationMode,
     getBulkVisibilityUpdate,
     getMasterVisibilityState,
     isAudioAvailable,
@@ -26,6 +27,14 @@ test('availability follows the four format visibility combinations', () => {
     assert.equal(isBookAvailable(states.audio), true);
     assert.equal(isBookAvailable(states.neither), false);
     assert.equal(isAudioAvailable(states.noAudio), false);
+});
+
+test('presentation mode follows effective format visibility', () => {
+    assert.equal(getBookPresentationMode(states.both), 'reading-and-audio');
+    assert.equal(getBookPresentationMode(states.reading), 'reading-only');
+    assert.equal(getBookPresentationMode(states.audio), 'audio-only');
+    assert.equal(getBookPresentationMode(states.neither), 'unavailable');
+    assert.equal(getBookPresentationMode(states.noAudio), 'reading-only');
 });
 
 test('master visibility is checked, unchecked, or indeterminate', () => {

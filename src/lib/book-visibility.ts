@@ -15,6 +15,11 @@ type VisibilityDefaults = {
 };
 
 export type MasterVisibilityState = boolean | 'indeterminate';
+export type BookPresentationMode =
+    | 'reading-only'
+    | 'audio-only'
+    | 'reading-and-audio'
+    | 'unavailable';
 
 export function isReadingAvailable(book: BookVisibility): boolean {
     return book.isReadingVisible;
@@ -26,6 +31,16 @@ export function isAudioAvailable(book: BookVisibility): boolean {
 
 export function isBookAvailable(book: BookVisibility): boolean {
     return isReadingAvailable(book) || isAudioAvailable(book);
+}
+
+export function getBookPresentationMode(book: BookVisibility): BookPresentationMode {
+    const hasReading = isReadingAvailable(book);
+    const hasAudio = isAudioAvailable(book);
+
+    if (hasReading && hasAudio) return 'reading-and-audio';
+    if (hasReading) return 'reading-only';
+    if (hasAudio) return 'audio-only';
+    return 'unavailable';
 }
 
 export function canAccessReading(book: BookVisibility, isAdmin = false): boolean {
