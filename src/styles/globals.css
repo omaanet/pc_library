@@ -36,6 +36,12 @@
 
         --radius: 1.00rem;
 
+        /* Home grid book badge positions */
+        --book-grid-new-badge-top: 6px;
+        --book-grid-new-badge-left: -5px;
+        --book-grid-audio-badge-top: -6px;
+        --book-grid-audio-badge-right: -12px;
+
         /* Icon Colors Light Mode */
         --gold-main: hsl(46, 80%, 50%);
         --gold-highlight: hsl(46, 92%, 65%);
@@ -113,6 +119,12 @@
     @media (prefers-reduced-motion: reduce) {
         html {
             scroll-behavior: auto;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        :root {
+            --book-grid-audio-badge-right: -6px;
         }
     }
 }

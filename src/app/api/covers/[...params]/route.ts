@@ -98,7 +98,8 @@ async function processImage(
     filePath: string,
     width: number,
     height: number,
-    quality = 80
+    quality = 80,
+    fit: 'contain' | 'inside' = 'contain'
 ): Promise<Buffer> {
     try {
         const image = sharp(filePath);
@@ -129,7 +130,7 @@ async function processImage(
             image.resize({
                 width,
                 height,
-                fit: 'contain',
+                fit,
                 // Use black transparent background {r:0,g:0,b:0,alpha:0}
                 background: { r: 255, g: 255, b: 0, alpha: 0 },
                 kernel: 'lanczos3', // High-quality resampling
@@ -243,7 +244,8 @@ export async function GET(
             filePath,
             dimensions.width,
             dimensions.height,
-            Number(req.nextUrl.searchParams.get('q')) || 80
+            Number(req.nextUrl.searchParams.get('q')) || 80,
+            req.nextUrl.searchParams.get('fit') === 'inside' ? 'inside' : 'contain'
         );
 
         return new Response(buffer.buffer as ArrayBuffer, {

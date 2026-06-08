@@ -34,64 +34,69 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
     // Generate image URL - memoized to prevent unnecessary recalculations
     const imageUrl = React.useMemo(() => {
         const isPlaceholder = book.coverImage === IMAGE_CONFIG.placeholder.token;
-        return getCoverImageUrl(
+        const coverUrl = getCoverImageUrl(
             book.coverImage,
             'grid',
             { bookId: isPlaceholder ? book.id : undefined }
         );
+
+        return isPlaceholder ? coverUrl : `${coverUrl}?fit=inside`;
     }, [book.coverImage, book.id]);
 
     // Memoize the cover image component to prevent unnecessary re-renders
     const coverImage = React.useMemo(() => (
-        // style={{ minHeight: height }}
         <div
-            className="relative w-full h-auto flex justify-center items-center cursor-pointer pt-4 pb-0 px-0 select-none"
+            className="flex w-full cursor-pointer select-none items-center justify-center px-2 pb-0 pt-4"
             onClick={() => onSelect(book)}
         >
-            {/* Loading skeleton */}
-            {!imageLoaded && (
-                <Skeleton className="absolute inset-0" />
-            )}
-
-            {/* Book cover image */}
-            <Image
-                src={imageUrl}
-                alt={`Cover of ${book.title}`}
-                width={width}
-                height={height}
-                className={cn(
-                    "max-w-full max-h-full object-contain transition-opacity duration-300 transition-transform duration-300",
-                    imageLoaded ? "opacity-100" : "opacity-0",
-                    "group-hover:scale-105"
+            <div className="relative inline-flex max-w-full">
+                {/* Loading skeleton */}
+                {!imageLoaded && (
+                    <Skeleton className="absolute inset-0" />
                 )}
-                sizes={getImageSizeString('grid')}
-                priority={false}
-                loading="lazy"
-                onLoad={() => setImageLoaded(true)}
-                onError={() => setImageLoaded(true)} // Ensure we remove loading state even on error
-                unoptimized
-            />
 
-            {/* Audio badge */}
-            {hasVisibleAudio && (
-                <div className={cn(
-                    "absolute top-2 right-2 rounded-full bg-yellow-600/80 p-1.5",
-                    "backdrop-blur-sm transition-opacity duration-200",
-                    imageLoaded ? "opacity-100" : "opacity-0"
-                )}>
-                    <Headphones className="h-6 w-6" />
-                </div>
-            )}
+                {/* Book cover image */}
+                <Image
+                    src={imageUrl}
+                    alt={`Cover of ${book.title}`}
+                    width={width}
+                    height={height}
+                    className={cn(
+                        "h-auto w-auto max-w-full object-contain transition-opacity duration-300 transition-transform duration-300",
+                        imageLoaded ? "opacity-100" : "opacity-0",
+                        "group-hover:scale-105"
+                    )}
+                    style={{ maxHeight: height }}
+                    sizes={getImageSizeString('grid')}
+                    priority={false}
+                    loading="lazy"
+                    onLoad={() => setImageLoaded(true)}
+                    onError={() => setImageLoaded(true)} // Ensure we remove loading state even on error
+                    unoptimized
+                />
 
-            {isNew && (
-                <div className={cn(
-                    "absolute top-2 left-2 rounded bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white",
-                    "backdrop-blur-sm transition-opacity duration-200",
-                    imageLoaded ? "opacity-100" : "opacity-0"
-                )}>
-                    NEW
-                </div>
-            )}
+                {/* Audio badge */}
+                {hasVisibleAudio && (
+                    <div className={cn(
+                        "absolute right-[var(--book-grid-audio-badge-right)] top-[var(--book-grid-audio-badge-top)] z-10 rounded-full bg-yellow-600/80 p-1.5",
+                        "backdrop-blur-sm transition-opacity duration-200",
+                        imageLoaded ? "opacity-100" : "opacity-0"
+                    )}>
+                        <Headphones className="h-6 w-6" />
+                    </div>
+                )}
+
+                {isNew && (
+                    <div className={cn(
+                        "absolute left-[var(--book-grid-new-badge-left)] top-[var(--book-grid-new-badge-top)] z-10 rounded",
+                        "bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white",
+                        "backdrop-blur-sm transition-opacity duration-200",
+                        imageLoaded ? "opacity-100" : "opacity-0"
+                    )}>
+                        NEW
+                    </div>
+                )}
+            </div>
         </div>
     ), [imageUrl, book.title, hasVisibleAudio, isNew, imageLoaded, width, height, onSelect, book]);
 
