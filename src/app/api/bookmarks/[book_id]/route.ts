@@ -10,6 +10,11 @@ import {
     upsertBookmark,
     type BookmarkKind,
 } from '@/lib/db';
+import {
+    canAccessAudio,
+    canAccessBook,
+    canAccessReading,
+} from '@/lib/book-visibility';
 
 type RouteContext = { params: Promise<{ book_id: string }> };
 
@@ -54,10 +59,16 @@ export async function GET(request: NextRequest, context: RouteContext) {
         }
 
         const { book_id: bookId } = await context.params;
-        await validateBookId(bookId);
+        const book = await validateBookId(bookId);
+        if (!canAccessBook(book, !!user.isAdmin)) {
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Book not found');
+        }
 
         const bookmarks = await getBookmarksForBook(user.id, bookId);
-        return NextResponse.json(bookmarks);
+        return NextResponse.json({
+            reader: canAccessReading(book, !!user.isAdmin) ? bookmarks.reader : null,
+            audio: canAccessAudio(book, !!user.isAdmin) ? bookmarks.audio : null,
+        });
     } catch (error) {
         return handleApiError(error, 'Failed to fetch bookmarks', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -79,6 +90,9 @@ export const PUT = withCSRFProtection(async function(request: NextRequest, conte
         }
 
         if (body.kind === 'reader') {
+            if (!canAccessReading(book, !!user.isAdmin)) {
+                throw new ApiError(HttpStatus.NOT_FOUND, 'Book not found');
+            }
             const pageNumber = parseFiniteInteger(body.pageNumber, 'pageNumber');
             const totalPages = book.pagesCount;
 
@@ -98,6 +112,9 @@ export const PUT = withCSRFProtection(async function(request: NextRequest, conte
             return NextResponse.json({ bookmark });
         }
 
+        if (!canAccessAudio(book, !!user.isAdmin)) {
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Audiobook not found');
+        }
         if (!book.hasAudio) {
             throw new ApiError(HttpStatus.BAD_REQUEST, 'Book does not have audio');
         }
@@ -137,11 +154,17 @@ export const DELETE = withCSRFProtection(async function(request: NextRequest, co
         }
 
         const { book_id: bookId } = await context.params;
-        await validateBookId(bookId);
+        const book = await validateBookId(bookId);
 
         const kind = request.nextUrl.searchParams.get('kind');
         if (!isBookmarkKind(kind)) {
             throw new ApiError(HttpStatus.BAD_REQUEST, 'kind must be reader or audio');
+        }
+        if (
+            (kind === 'reader' && !canAccessReading(book, !!user.isAdmin)) ||
+            (kind === 'audio' && !canAccessAudio(book, !!user.isAdmin))
+        ) {
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Book not found');
         }
 
         const deleted = await deleteBookmark(user.id, bookId, kind);

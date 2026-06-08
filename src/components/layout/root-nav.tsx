@@ -112,7 +112,7 @@ export function RootNav({
                                 {state.user?.isAdmin && (
                                     <>
                                         <DropdownMenuItem asChild>
-                                            <Link href="/add-book">Gestisci Racconti</Link>
+                                            <Link href="/add-book?tab=manage">Gestisci Racconti</Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
 

@@ -20,7 +20,9 @@ export interface Book {
     createdAt?: Date;
     updatedAt?: Date;
     displayOrder?: number;
-    isVisible?: number;
+    readonly isVisible?: number;
+    isReadingVisible: boolean;
+    isAudioVisible: boolean;
     pagesCount?: number;
     replaceFirstPageWithCopyrightOverride?: boolean | null;
     audiobook?: AudioBookInfo;

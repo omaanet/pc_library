@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchAudioBook, saveOrUpdateAudioBook } from '@/lib/services/audiobooks-service';
 import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
+import { getBookById } from '@/lib/db';
+import { getSessionUser } from '@/lib/auth-utils';
+import { canAccessAudio } from '@/lib/book-visibility';
+import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET(
     req: NextRequest,
@@ -8,6 +12,11 @@ export async function GET(
 ) {
     try {
         const bookId = (await params).book_id;
+        const book = await getBookById(bookId);
+        const user = await getSessionUser(req);
+        if (!book || !canAccessAudio(book, !!user?.isAdmin)) {
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Audiobook not found');
+        }
         const audiobook = await fetchAudioBook(bookId);
 
         if (!audiobook) {
@@ -26,6 +35,7 @@ export async function POST(
     { params }: { params: Promise<{ book_id: string }> }
 ) {
     try {
+        await requireAdmin();
         const bookId = (await params).book_id;
         const body = await req.json();
 

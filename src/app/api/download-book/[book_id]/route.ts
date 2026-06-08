@@ -4,8 +4,9 @@ import { normalizeItalianTitleWithOptions } from "@/lib/utils"
 import { getSessionUser } from "@/lib/auth-utils"
 import { Logger } from "@/lib/logging"
 import { User } from "@/types"
-import { ApiError, HttpStatus } from "@/lib/api-error-handler"
+import { ApiError, handleApiError, HttpStatus } from "@/lib/api-error-handler"
 import { SITE_CONFIG } from "@/config/site-config"
+import { canAccessReading } from "@/lib/book-visibility"
 
 export async function GET(
     req: NextRequest,
@@ -27,6 +28,9 @@ export async function GET(
         const book = await getBookById(bookId)
 
         if (!book) {
+            throw new ApiError(HttpStatus.NOT_FOUND, "Libro non trovato");
+        }
+        if (!canAccessReading(book, !!user.isAdmin)) {
             throw new ApiError(HttpStatus.NOT_FOUND, "Libro non trovato");
         }
 
@@ -95,6 +99,6 @@ export async function GET(
             console.error("Errore durante il logging:", logError);
         }
 
-        return new NextResponse("Errore scaricamento libro", { status: 500 })
+        return handleApiError(error, "Errore scaricamento libro", HttpStatus.INTERNAL_SERVER_ERROR)
     }
 }

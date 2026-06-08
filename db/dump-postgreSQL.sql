@@ -27,7 +27,14 @@ CREATE TABLE IF NOT EXISTS "books" (
     "audio_length" INTEGER,
     "extract" TEXT,
     "rating" INTEGER,
-    "is_visible" INTEGER DEFAULT 1,
+    "is_reading_visible" BOOLEAN NOT NULL DEFAULT TRUE,
+    "is_audio_visible" BOOLEAN NOT NULL DEFAULT FALSE,
+    "is_visible" INTEGER GENERATED ALWAYS AS (
+        CASE
+            WHEN "is_reading_visible" OR ("has_audio" AND "is_audio_visible") THEN 1
+            ELSE 0
+        END
+    ) STORED,
     "is_preview" INTEGER,
     "display_order" INTEGER,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -237,6 +244,8 @@ CREATE INDEX idx_reading_sessions_user ON reading_sessions("user_id");
 CREATE INDEX idx_comments_book_id ON comments("book_id");
 CREATE INDEX idx_comments_parent_id ON comments("parent_id");
 CREATE INDEX idx_books_has_audio ON books("has_audio");
+CREATE INDEX idx_books_is_visible ON books("is_visible");
+CREATE INDEX idx_books_is_audio_visible ON books("is_audio_visible");
 CREATE INDEX idx_books_title ON books("title");
 
 -- Now commit and check constraints

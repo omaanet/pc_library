@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Select,
     SelectContent,
@@ -38,6 +39,10 @@ import {
 import { Book } from '@/types';
 import { IMAGE_CONFIG } from '@/lib/image-utils';
 import ThemedButton from '@/components/ThemedButton';
+import {
+    getBulkVisibilityUpdate,
+    getMasterVisibilityState,
+} from '@/lib/book-visibility';
 
 // Form validation schema
 const bookFormSchema = z.object({
@@ -56,7 +61,8 @@ const bookFormSchema = z.object({
     rating: z.number().min(1).max(5).nullable().optional(),
     isPreview: z.boolean().default(false),
     isNew: z.boolean().default(false),
-    isVisible: z.boolean().default(true),
+    isReadingVisible: z.boolean().default(true),
+    isAudioVisible: z.boolean().default(false),
     // Audiobook specific fields
     audiobook: z.object({
         mediaId: z.string().nullable().optional(),
@@ -144,7 +150,10 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         rating: book?.rating,
         isPreview: book?.isPreview || false,
         isNew: book?.isNew || false,
-        isVisible: book?.isVisible !== undefined ? Boolean(book.isVisible) : true,
+        isReadingVisible: book?.isReadingVisible ?? (book?.isVisible !== undefined ? Boolean(book.isVisible) : true),
+        isAudioVisible: book?.hasAudio
+            ? (book?.isAudioVisible ?? (book?.isVisible !== undefined ? Boolean(book.isVisible) : true))
+            : false,
         audiobook: {
             mediaId: book?.audiobook?.mediaId || null,
             introAudioOverride: Boolean(book?.audiobook?.introAudioOverride),
@@ -181,7 +190,10 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                 rating: book.rating,
                 isPreview: book.isPreview || false,
                 isNew: book.isNew || false,
-                isVisible: book.isVisible !== undefined ? Boolean(book.isVisible) : true,
+                isReadingVisible: book.isReadingVisible ?? (book.isVisible !== undefined ? Boolean(book.isVisible) : true),
+                isAudioVisible: book.hasAudio
+                    ? (book.isAudioVisible ?? (book.isVisible !== undefined ? Boolean(book.isVisible) : true))
+                    : false,
                 audiobook: {
                     mediaId: book.audiobook?.mediaId || null,
                     introAudioOverride: Boolean(book.audiobook?.introAudioOverride),
@@ -198,9 +210,21 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
 
     // Watch hasAudio to show/hide audioLength field
     const hasAudio = form.watch('hasAudio');
+    const isReadingVisible = form.watch('isReadingVisible');
+    const isAudioVisible = form.watch('isAudioVisible');
     useEffect(() => {
         setShowAudioLength(hasAudio);
     }, [hasAudio]);
+
+    const visibility = { hasAudio, isReadingVisible, isAudioVisible };
+    const masterVisibilityState = getMasterVisibilityState(visibility);
+    const allAvailableVersionsVisible = masterVisibilityState === true;
+
+    const setAllAvailableVersionsVisible = () => {
+        const next = getBulkVisibilityUpdate(visibility);
+        form.setValue('isReadingVisible', next.isReadingVisible, { shouldDirty: true });
+        form.setValue('isAudioVisible', next.isAudioVisible, { shouldDirty: true });
+    };
 
     // Submit handler that properly logs and calls the parent's onSubmit function
     const handleSubmit = async (data: BookFormValues) => {
@@ -455,7 +479,10 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                                 <FormControl>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={field.onChange}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked);
+                                            form.setValue('isAudioVisible', false, { shouldDirty: true });
+                                        }}
                                         className="data-[state=checked]:bg-green-500"
                                     />
                                 </FormControl>
@@ -705,27 +732,69 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     )}
                 />
 
-                <FormField
-                    control={form.control}
-                    name="isVisible"
-                    render={({ field }) => (
-                        <FormItem className={`flex flex-row items-center justify-between rounded-lg border-2 p-4 transition-colors ${field.value ? 'border-primary/50' : 'border-border'}`}>
-                            <div className="space-y-0.5">
-                                <FormLabel className="text-base">Visible to Users</FormLabel>
-                                <FormDescription>
-                                    Should this book be visible to regular users?
-                                </FormDescription>
-                            </div>
-                            <FormControl>
-                                <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    className="data-[state=checked]:bg-green-500"
-                                />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
+                <div className={`space-y-4 rounded-lg border-2 p-4 transition-colors ${allAvailableVersionsVisible ? 'border-primary/50' : 'border-border'}`}>
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">Visible to Users</FormLabel>
+                            <FormDescription>
+                                Bulk control for all available versions. A minus means that only one version is visible.
+                            </FormDescription>
+                        </div>
+                        <Checkbox
+                            checked={masterVisibilityState}
+                            onCheckedChange={setAllAvailableVersionsVisible}
+                            aria-label="Toggle visibility for all available versions"
+                            className="h-5 w-5"
+                        />
+                    </div>
+
+                    <div className="ms-6 space-y-3 border-s ps-4">
+                        <FormField
+                            control={form.control}
+                            name="isReadingVisible"
+                            render={({ field }) => (
+                                <FormItem className="flex items-center justify-between gap-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel>Visible reading version</FormLabel>
+                                        <FormDescription>
+                                            Temporarily publish or hide the online reader, PDF download, and PDF request.
+                                        </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                            className="data-[state=checked]:bg-green-500"
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="isAudioVisible"
+                            render={({ field }) => (
+                                <FormItem className="flex items-center justify-between gap-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel>Visible audio version</FormLabel>
+                                        <FormDescription>
+                                            Temporarily publish or hide audio without deleting its media configuration.
+                                        </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={hasAudio && field.value}
+                                            onCheckedChange={field.onChange}
+                                            disabled={!hasAudio}
+                                            className="data-[state=checked]:bg-green-500"
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </div>
 
                 <FormField
                     control={form.control}

@@ -4,6 +4,9 @@ import { getBookById, updateBook, deleteBook, getAudioBookById, deleteAudioBook 
 import { saveOrUpdateAudioBook, fetchAudioBook } from '@/lib/services/audiobooks-service';
 import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 import { requireAdmin } from '@/lib/admin-auth';
+import { normalizeBookVisibility } from '@/lib/book-visibility';
+import { canAccessBook } from '@/lib/book-visibility';
+import { getSessionUser } from '@/lib/auth-utils';
 
 type NormalizedAudiobookPayload = {
     mediaId?: string | null;
@@ -108,6 +111,10 @@ export async function GET(
         if (!book) {
             throw new ApiError(HttpStatus.NOT_FOUND, 'Book not found');
         }
+        const user = await getSessionUser(request);
+        if (!canAccessBook(book, !!user?.isAdmin)) {
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Book not found');
+        }
 
         // If the book has audio, populate audiobook.mediaId from AudioBook record
         if (book.hasAudio) {
@@ -162,6 +169,13 @@ export async function PUT(
 
         const hadAudio = currentBook.hasAudio;
         const hasAudioChanged = hadAudio !== book.hasAudio;
+        const visibility = normalizeBookVisibility(book, {
+            isReadingVisible: currentBook.isReadingVisible,
+            isAudioVisible: currentBook.isAudioVisible,
+        });
+        book.isReadingVisible = visibility.isReadingVisible;
+        book.isAudioVisible = visibility.isAudioVisible;
+        delete book.isVisible;
 
         // Update the book
         const success = await updateBook(id, book);

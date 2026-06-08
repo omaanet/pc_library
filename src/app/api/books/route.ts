@@ -1,5 +1,5 @@
 // src/app/api/books/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getAllBooksOptimized, createBook, BookQueryOptions, getBookById } from '@/lib/db';
 import { saveOrUpdateAudioBook } from '@/lib/services/audiobooks-service';
 import { validateObject } from '@/lib/validation';
@@ -7,6 +7,7 @@ import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
 import { requireAdmin } from '@/lib/admin-auth';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
+import { normalizeBookVisibility } from '@/lib/book-visibility';
 
 type NormalizedAudiobookPayload = {
     mediaId?: string | null;
@@ -117,7 +118,7 @@ function normalizeAudiobookPayload(payload: unknown): NormalizedAudiobookPayload
  * audio_length, extract, rating, is_preview, is_new, created_at, updated_at,
  * display_order, pages_count
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     try {
         const url = new URL(request.url);
 
@@ -145,7 +146,11 @@ export async function GET(request: Request) {
 
         const isVisibleParam = url.searchParams.get('isVisible');
         const isVisible: number | null = isVisibleParam ?
-            parseInt(isVisibleParam) : -1; // Default to visible books (-1)
+            parseInt(isVisibleParam) : 1;
+
+        if (isVisible === -1) {
+            await requireAdmin();
+        }
 
         // Parse sorting parameters
         // If sortBy is provided, use it; otherwise, getAllBooksOptimized will use SITE_CONFIG.DEFAULT_SORT
@@ -185,6 +190,10 @@ export const POST = withCSRFProtection(async function(request: Request) {
         await requireAdmin();
 
         const bookData = await request.json();
+        const visibility = normalizeBookVisibility(bookData, {
+            isReadingVisible: true,
+            isAudioVisible: false,
+        });
 
         const normalizedAudiobook = normalizeAudiobookPayload(bookData.audiobook);
 
@@ -256,6 +265,14 @@ export const POST = withCSRFProtection(async function(request: Request) {
                 required: false,
                 customValidator: (value: any) => value === null || value === undefined || [0, 1, -1].includes(value)
             },
+            isReadingVisible: {
+                type: 'boolean' as const,
+                required: false
+            },
+            isAudioVisible: {
+                type: 'boolean' as const,
+                required: false
+            },
             pagesCount: {
                 type: 'number' as const,
                 required: false,
@@ -284,6 +301,9 @@ export const POST = withCSRFProtection(async function(request: Request) {
         if (normalizedAudiobook !== undefined) {
             sanitizedData.audiobook = normalizedAudiobook;
         }
+        sanitizedData.isReadingVisible = visibility.isReadingVisible;
+        sanitizedData.isAudioVisible = visibility.isAudioVisible;
+        delete sanitizedData.isVisible;
 
         const newBook = await createBook(sanitizedData);
         if (!newBook) {

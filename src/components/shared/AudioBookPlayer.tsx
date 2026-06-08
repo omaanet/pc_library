@@ -3,6 +3,7 @@ import HTML5Player from "@/components/audio/HTML5Player";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Book, AudioBook } from "@/types";
 import type { AudioPlayerState } from "@/components/audio/types";
+import { isAudioAvailable } from "@/lib/book-visibility";
 import { useAuth } from '@/context/auth-context';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { SITE_CONFIG } from '@/config/site-config';
@@ -45,7 +46,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
     });
 
     useEffect(() => {
-        if (!book || !book.hasAudio) {
+        if (!book || !isAudioAvailable(book)) {
             setAudiobook(null);
             setAudiobookBookId(null);
             setLoading(false);
@@ -306,7 +307,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         return Math.abs(Math.floor(state.currentTime) - audioBookmark.audioTimeSeconds) <= 1;
     };
 
-    if (!book || !book.hasAudio) return null;
+    if (!book || !isAudioAvailable(book)) return null;
 
     if (loading || authState.isLoading || !bookmarksInitialized) {
         return (

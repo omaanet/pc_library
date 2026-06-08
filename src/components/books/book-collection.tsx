@@ -22,6 +22,7 @@ import {
     readLibraryReturnState,
 } from '@/lib/library-return-state';
 import type { Book } from '@/types';
+import { isAudioAvailable } from '@/lib/book-visibility';
 
 // Number of books to preload images for
 const PRELOAD_COUNT = 4;
@@ -193,7 +194,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         let result = books;
 
         if (filters.hasAudio) {
-            result = result.filter((book) => book.hasAudio);
+            result = result.filter(isAudioAvailable);
         }
 
         if (normalizedSearchTerm.length > 0) {

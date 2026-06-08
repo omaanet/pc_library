@@ -15,7 +15,9 @@ export interface Book {
     isPreview?: boolean;
     isNew?: boolean;
     displayOrder?: number;
-    isVisible?: number;
+    readonly isVisible?: number;
+    isReadingVisible: boolean;
+    isAudioVisible: boolean;
     pagesCount?: number;
     replaceFirstPageWithCopyrightOverride?: boolean | null;
     audiobook?: {

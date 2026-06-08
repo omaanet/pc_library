@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Book } from '@/types';
 import { formatBookDomId } from './book-dom-id';
+import { isAudioAvailable } from '@/lib/book-visibility';
 
 interface BookListCardProps {
     book: Book;
@@ -18,6 +19,7 @@ interface BookListCardProps {
 }
 
 export function BookListCard({ book, onSelect, className }: BookListCardProps) {
+    const hasVisibleAudio = isAudioAvailable(book);
     // Track image loading state
     const [imageLoaded, setImageLoaded] = React.useState(false);
 
@@ -69,7 +71,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
             />
 
             {/* Audio badge */}
-            {book.hasAudio && (
+            {hasVisibleAudio && (
                 <div className={cn(
                     "absolute top-1 right-1 rounded-full bg-background/80 p-1",
                     "backdrop-blur-sm transition-opacity duration-200",
@@ -90,20 +92,20 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                 </div>
             )}
         </div>
-    ), [imageUrl, book.title, book.hasAudio, isNew, imageLoaded, width, height, onSelect, book]);
+    ), [imageUrl, book.title, hasVisibleAudio, isNew, imageLoaded, width, height, onSelect, book]);
 
     // Memoize metadata to prevent unnecessary re-renders
     const metadata = React.useMemo(() => (
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>{formatDate(book.publishingDate)}</span>
-            {book.hasAudio && book.audioLength && (
+            {hasVisibleAudio && book.audioLength && (
                 <span className="flex items-center gap-1">
                     <Headphones className="h-4 w-4" />
                     {formatAudioLength(book.audioLength)}
                 </span>
             )}
         </div>
-    ), [book.publishingDate, book.hasAudio, book.audioLength]);
+    ), [book.publishingDate, hasVisibleAudio, book.audioLength]);
 
     // Memoize book info to prevent unnecessary re-renders
     const bookInfo = React.useMemo(() => (
@@ -120,7 +122,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                     size="sm"
                     onClick={() => onSelect(book)}
                 >
-                    {book.hasAudio ? 'Ascolta' : 'Leggi'}
+                    {hasVisibleAudio ? 'Ascolta' : 'Leggi'}
                 </Button>
             </div>
             <p className="text-sm text-muted-foreground line-clamp-2">

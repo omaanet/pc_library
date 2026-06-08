@@ -187,10 +187,17 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
         params.push(searchParam, searchParam);
     }
 
-    // Handle audio filter (using index on has_audio)
+    // Public queries only expose audio that both exists and is published.
+    // Admin queries use isVisible=-1 and retain structural has_audio filtering.
     if (hasAudio !== undefined) {
-        whereConditions.push(`has_audio = $${params.length + 1}`);
-        params.push(hasAudio ? 1 : 0);
+        if (isVisible === -1) {
+            whereConditions.push(`has_audio = $${params.length + 1}`);
+            params.push(hasAudio ? 1 : 0);
+        } else if (hasAudio) {
+            whereConditions.push('has_audio = TRUE AND is_audio_visible = TRUE');
+        } else {
+            whereConditions.push('(has_audio = FALSE OR is_audio_visible = FALSE)');
+        }
     }
 
     // Construct WHERE clause if conditions exist
@@ -284,6 +291,8 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
             is_new as "isNew",
             display_order as "displayOrder",
             is_visible as "isVisible",
+            is_reading_visible as "isReadingVisible",
+            is_audio_visible as "isAudioVisible",
             created_at as "createdAt",
             updated_at as "updatedAt",
             pages_count as "pagesCount",
@@ -333,6 +342,8 @@ export async function getBookById(id: string): Promise<Book | undefined> {
             is_preview as "isPreview",
             is_new as "isNew",
             is_visible as "isVisible",
+            is_reading_visible as "isReadingVisible",
+            is_audio_visible as "isAudioVisible",
             display_order as "displayOrder",
             created_at as "createdAt",
             updated_at as "updatedAt",
@@ -388,15 +399,15 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
             `INSERT INTO books (
                 id, title, cover_image, publishing_date, summary,
                 has_audio, audio_length, extract, rating,
-                is_preview, is_new, display_order, is_visible, pages_count,
+                is_preview, is_new, display_order, is_reading_visible, is_audio_visible, pages_count,
                 media_id, media_title, media_uid, preview_placement,
                 replace_first_page_with_copyright_override
             ) VALUES (
                 $1, $2, $3, $4, $5,
                 $6, $7, $8, $9,
-                $10, $11, $12, $13, $14,
-                $15, $16, $17, $18,
-                $19
+                $10, $11, $12, $13, $14, $15,
+                $16, $17, $18, $19,
+                $20
             )
             RETURNING id`,
             [
@@ -412,7 +423,8 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
                 book.isPreview ? 1 : null,
                 book.isNew ? true : false,
                 book.displayOrder || null,
-                book.isVisible ? 1 : 0,
+                book.isReadingVisible,
+                book.hasAudio && book.isAudioVisible,
                 book.pagesCount || null,
                 book.mediaId || null,
                 book.mediaTitle || null,
@@ -507,9 +519,13 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
         updates.push('is_new = $' + (updates.length + 1));
         values.push(book.isNew ? true : false);
     }
-    if (book.isVisible !== undefined) {
-        updates.push('is_visible = $' + (updates.length + 1));
-        values.push(book.isVisible ? 1 : 0);
+    if (book.isReadingVisible !== undefined) {
+        updates.push('is_reading_visible = $' + (updates.length + 1));
+        values.push(book.isReadingVisible);
+    }
+    if (book.isAudioVisible !== undefined) {
+        updates.push('is_audio_visible = $' + (updates.length + 1));
+        values.push(book.hasAudio === false ? false : book.isAudioVisible);
     }
     if (book.displayOrder !== undefined) {
         updates.push('display_order = $' + (updates.length + 1));

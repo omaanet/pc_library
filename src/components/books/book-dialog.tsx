@@ -23,6 +23,7 @@ import { LinkButton } from '@/components/ui/LinkButton';
 import { useToast } from '@/components/ui/use-toast';
 import { useLibrary } from '@/context/library-context';
 import { saveLibraryReturnState } from '@/lib/library-return-state';
+import { isAudioAvailable, isReadingAvailable } from '@/lib/book-visibility';
 
 interface BookDialogProps {
     book: Book | null;
@@ -34,7 +35,7 @@ interface BookDialogProps {
 
 // Audio badge to show on the book cover if the book has audio
 const renderAudioBadge = (book: Book | null, visible: boolean) => {
-    if (!book?.hasAudio) return null;
+    if (!book || !isAudioAvailable(book)) return null;
 
     return (
         <div className={cn(
@@ -78,6 +79,8 @@ export function BookDialogSimple({
     } = useLibrary();
     const pendingActionRef = useRef<{ type: 'request-pdf'; bookId: string } | null>(null);
     const isReaderNavigationRef = useRef(false);
+    const hasVisibleReading = !!book && isReadingAvailable(book);
+    const hasVisibleAudio = !!book && isAudioAvailable(book);
 
     const handleReaderNavigation = () => {
         if (!book) return;
@@ -201,7 +204,7 @@ export function BookDialogSimple({
                         {book.title}
                     </DialogTitle>
                     <DialogDescription className="pb-2 sm:pb-0 text-xs text-muted-foreground flex items-center justify-center">
-                        {book.hasAudio && book.audioLength ? (
+                        {hasVisibleAudio && book.audioLength ? (
                             <>
                                 <Headphones className="h-3 w-3 mr-1" />
                                 {formatAudioLength(book.audioLength)}
@@ -245,7 +248,7 @@ export function BookDialogSimple({
                                 </div>
 
                                 {/* Actions - horizontal, compact for vertical space */}
-                                {isAuthenticated /*&& !book.hasAudio*/ && (
+                                {isAuthenticated && hasVisibleReading && (
                                     <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">
                                         <div className="flex-1">
                                             <LinkButton url={`/read-book/${book.id}`}
@@ -283,7 +286,7 @@ export function BookDialogSimple({
 
                     <div className="flex flex-col-reverse">
                         <div className="p-1 flex flex-col items-end">
-                            {isAuthenticated && book.hasAudio ? (
+                            {isAuthenticated && hasVisibleAudio ? (
                                 <AudioBookPlayer book={book} isActive={open} />
                             ) : !isAuthenticated && (
                                 <Button
@@ -291,7 +294,7 @@ export function BookDialogSimple({
                                     size="lg"
                                     className="mt-3 px-5 text-base bg-cyan-800 hover:bg-emerald-900 text-cyan-50"
                                 >
-                                    {book.hasAudio ? 'Accedi per ascoltare' : 'Accedi per leggere'}
+                                    {hasVisibleAudio ? 'Accedi per ascoltare' : 'Accedi per leggere'}
                                 </Button>
                             )}
                         </div>
@@ -320,6 +323,8 @@ export function BookDialog({
         state: { filters, sort, viewMode },
     } = useLibrary();
     const isReaderNavigationRef = useRef(false);
+    const hasVisibleReading = !!book && isReadingAvailable(book);
+    const hasVisibleAudio = !!book && isAudioAvailable(book);
 
     const handleReaderNavigation = () => {
         if (!book) return;
@@ -364,7 +369,7 @@ export function BookDialog({
                                     {book.title}
                                 </DialogTitle>
                                 <DialogDescription className="flex items-center gap-4">
-                                    {book.hasAudio && book.audioLength ? (
+                                    {hasVisibleAudio && book.audioLength ? (
                                         <span className="inline-flex items-center gap-1">
                                             <Headphones className="h-4 w-4" />
                                             Versione Audio: {formatAudioLength(book.audioLength)}
@@ -412,7 +417,7 @@ export function BookDialog({
                                                 </div>
                                             </div>
 
-                                            {isAuthenticated /*&& !book.hasAudio*/ && (
+                                            {isAuthenticated && hasVisibleReading && (
                                                 <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">
                                                     <div className="flex-1">
                                                         <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} onClick={handleReaderNavigation} className="w-full px-2 py-1 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate">
@@ -440,7 +445,7 @@ export function BookDialog({
                                         <BookExtract extract={book.extract} />
 
                                         {/* AudioBookPlayer: show only if authenticated and has audio */}
-                                        {isAuthenticated && book.hasAudio && (
+                                        {isAuthenticated && hasVisibleAudio && (
                                             <>
                                                 {/* AudioBookPlayer is self-contained for tracks */}
                                                 <AudioBookPlayer book={book} isActive={open} />
@@ -463,7 +468,7 @@ export function BookDialog({
                                     {!isAuthenticated && (
                                         <div className="mt-4 mb-1 flex justify-end">
                                             <Button onClick={onLoginClick} size="default" className="bg-cyan-800 hover:bg-emerald-900 text-cyan-50 hover:text-emerald-50 font-normal">
-                                                {book?.hasAudio ? 'Accedi per ascoltare e commentare' : 'Accedi per leggere e commentare'}
+                                                {hasVisibleAudio ? 'Accedi per ascoltare e commentare' : 'Accedi per leggere e commentare'}
                                             </Button>
                                         </div>
                                     )}

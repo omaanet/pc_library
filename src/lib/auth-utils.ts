@@ -1,5 +1,6 @@
 // src/lib/auth-utils.ts
 import { NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
 import { getUserById } from './user-db';
 
 type CookieStoreLike = {
@@ -22,12 +23,8 @@ function getSessionCookieValue(req: RequestWithCookies): string | undefined {
     return cookieStore.session;
 }
 
-// Get the user from the session cookie
-// Supports both NextRequest (App Router) and other request types with cookies
-export async function getSessionUser(req: RequestWithCookies) {
+async function getUserFromSessionCookie(sessionCookieValue: string | undefined) {
     try {
-        const sessionCookieValue = getSessionCookieValue(req);
-        
         if (!sessionCookieValue) return null;
         
         // Parse the session cookie
@@ -53,4 +50,15 @@ export async function getSessionUser(req: RequestWithCookies) {
         console.error('Error parsing session:', error);
         return null;
     }
+}
+
+// Get the user from the session cookie
+// Supports both NextRequest (App Router) and other request types with cookies
+export async function getSessionUser(req: RequestWithCookies) {
+    return getUserFromSessionCookie(getSessionCookieValue(req));
+}
+
+export async function getCurrentSessionUser() {
+    const sessionCookieValue = (await cookies()).get('session')?.value;
+    return getUserFromSessionCookie(sessionCookieValue);
 }

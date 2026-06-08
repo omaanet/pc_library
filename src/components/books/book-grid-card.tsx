@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Book } from '@/types';
 import { formatBookDomId } from './book-dom-id';
+import { isAudioAvailable } from '@/lib/book-visibility';
 
 interface BookGridCardProps {
     book: Book;
@@ -19,6 +20,7 @@ interface BookGridCardProps {
 }
 
 export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
+    const hasVisibleAudio = isAudioAvailable(book);
     // Track image loading state
     const [imageLoaded, setImageLoaded] = React.useState(false);
 
@@ -71,7 +73,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
             />
 
             {/* Audio badge */}
-            {book.hasAudio && (
+            {hasVisibleAudio && (
                 <div className={cn(
                     "absolute top-2 right-2 rounded-full bg-yellow-600/80 p-1.5",
                     "backdrop-blur-sm transition-opacity duration-200",
@@ -91,12 +93,12 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                 </div>
             )}
         </div>
-    ), [imageUrl, book.title, book.hasAudio, isNew, imageLoaded, width, height, onSelect, book]);
+    ), [imageUrl, book.title, hasVisibleAudio, isNew, imageLoaded, width, height, onSelect, book]);
 
     // Memoize book metadata to prevent unnecessary re-renders
     const bookMetadata = React.useMemo(() => (
         <div className="flex flex-col items-center justify-center text-sm">
-            {book.hasAudio && book.audioLength ? (
+            {hasVisibleAudio && book.audioLength ? (
                 <div className="flex items-center gap-y-0 gap-x-2 text-muted-foreground">
                     <Headphones className="h-4 w-4" />
                     {formatAudioLength(book.audioLength)}
@@ -107,7 +109,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                 </>
             )}
         </div>
-    ), [/*book.publishingDate,*/ book.hasAudio, book.audioLength]);
+    ), [hasVisibleAudio, book.audioLength]);
 
     return (
         <Card
@@ -136,7 +138,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                         onClick={() => onSelect(book)}
                         size="lg"
                     >
-                        {book.hasAudio ? 'Ascolta' : 'Leggi'}
+                        {hasVisibleAudio ? 'Ascolta' : 'Leggi'}
                     </Button>
                 </div>
             </CardContent>

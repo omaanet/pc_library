@@ -13,7 +13,8 @@ import {
     Eye,
     EyeOff,
     Copy,
-    Sparkles
+    Sparkles,
+    BookOpen
 } from 'lucide-react';
 import { formatDate, isBookEffectivelyNew } from '@/lib/utils';
 import { Book } from '@/types';
@@ -57,7 +58,7 @@ interface BookTableProps {
     setSortDirection?: (direction: SortDirection) => void;
 }
 
-type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'isNew' | 'book_id' | 'displayOrder' | 'isVisible';
+type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'isNew' | 'book_id' | 'displayOrder' | 'isReadingVisible' | 'isAudioVisible';
 type SortDirection = 'asc' | 'desc';
 
 export function BookTable({
@@ -159,10 +160,14 @@ export function BookTable({
                 return sortDirection === 'asc'
                     ? ((a.displayOrder ?? 0) - (b.displayOrder ?? 0))
                     : ((b.displayOrder ?? 0) - (a.displayOrder ?? 0));
-            } else if (sortField === 'isVisible') {
+            } else if (sortField === 'isReadingVisible') {
                 return sortDirection === 'asc'
-                    ? ((a.isVisible ? 1 : 0) - (b.isVisible ? 1 : 0))
-                    : ((b.isVisible ? 1 : 0) - (a.isVisible ? 1 : 0));
+                    ? Number(a.isReadingVisible) - Number(b.isReadingVisible)
+                    : Number(b.isReadingVisible) - Number(a.isReadingVisible);
+            } else if (sortField === 'isAudioVisible') {
+                return sortDirection === 'asc'
+                    ? Number(a.hasAudio && a.isAudioVisible) - Number(b.hasAudio && b.isAudioVisible)
+                    : Number(b.hasAudio && b.isAudioVisible) - Number(a.hasAudio && a.isAudioVisible);
             }
             return 0;
         });
@@ -284,8 +289,11 @@ export function BookTable({
                             <TableHead className="text-xs text-muted-foreground text-center cursor-pointer select-none" onClick={() => handleSort('displayOrder')}>
                                 Display order {getSortIcon('displayOrder')}
                             </TableHead>
-                            <TableHead className="text-xs text-muted-foreground text-center cursor-pointer select-none" onClick={() => handleSort('isVisible')}>
-                                Visible {getSortIcon('isVisible')}
+                            <TableHead className="text-xs text-muted-foreground text-center cursor-pointer select-none" onClick={() => handleSort('isReadingVisible')}>
+                                Reading visible {getSortIcon('isReadingVisible')}
+                            </TableHead>
+                            <TableHead className="text-xs text-muted-foreground text-center cursor-pointer select-none" onClick={() => handleSort('isAudioVisible')}>
+                                Audio visible {getSortIcon('isAudioVisible')}
                             </TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -293,7 +301,7 @@ export function BookTable({
                     <TableBody>
                         {filteredBooks.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={9} className="h-24 text-center">
+                                <TableCell colSpan={10} className="h-24 text-center">
                                     {isLoading ? 'Loading books...' : 'No books found.'}
                                 </TableCell>
                             </TableRow>
@@ -321,7 +329,18 @@ export function BookTable({
                                     </TableCell>
                                     <TableCell className="text-xs whitespace-nowrap text-center">{book.displayOrder}</TableCell>
                                     <TableCell className="text-xs whitespace-nowrap text-center">
-                                        {book.isVisible ? null : <EyeOff className="h-4 w-4 text-muted-foreground mx-auto" aria-label="Hidden" />}
+                                        {book.isReadingVisible
+                                            ? <BookOpen className="h-4 w-4 text-green-600 mx-auto" aria-label="Reading visible" />
+                                            : <EyeOff className="h-4 w-4 text-muted-foreground mx-auto" aria-label="Reading hidden" />}
+                                    </TableCell>
+                                    <TableCell className="text-xs whitespace-nowrap text-center">
+                                        {!book.hasAudio ? (
+                                            <span className="text-muted-foreground" aria-label="No audio version">-</span>
+                                        ) : book.isAudioVisible ? (
+                                            <Headphones className="h-4 w-4 text-green-600 mx-auto" aria-label="Audio visible" />
+                                        ) : (
+                                            <EyeOff className="h-4 w-4 text-muted-foreground mx-auto" aria-label="Audio hidden" />
+                                        )}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2 items-center">

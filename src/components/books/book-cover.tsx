@@ -7,6 +7,7 @@ import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 import { DEFAULT_COVER_SIZES } from '@/types/images';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Book } from '@/types';
+import { isAudioAvailable } from '@/lib/book-visibility';
 
 interface BookCoverProps {
     book: Book;
@@ -15,6 +16,7 @@ interface BookCoverProps {
 }
 
 export function BookCover({ book, orientation, className }: BookCoverProps) {
+    const hasVisibleAudio = isAudioAvailable(book);
     // Track image loading state
     const [imageLoaded, setImageLoaded] = React.useState(false);
 
@@ -62,7 +64,7 @@ export function BookCover({ book, orientation, className }: BookCoverProps) {
             />
 
             {/* Audio badge */}
-            {book.hasAudio && (
+            {hasVisibleAudio && (
                 <div className={cn(
                     "absolute top-1 right-1 rounded-full bg-background/80 p-1",
                     "backdrop-blur-sm transition-opacity duration-200",
@@ -83,7 +85,7 @@ export function BookCover({ book, orientation, className }: BookCoverProps) {
                 </div>
             )}
         </div>
-    ), [imageUrl, book.title, book.hasAudio, isNew, imageLoaded, width, height]);
+    ), [imageUrl, book.title, hasVisibleAudio, isNew, imageLoaded, width, height]);
 
     // Title component
     const titleComponent = (

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { getSessionUser } from '@/lib/auth-utils';
 import { getNeonClient, getBookById } from '@/lib/db';
+import { canAccessReading } from '@/lib/book-visibility';
 
 export async function POST(
     req: NextRequest,
@@ -29,6 +30,12 @@ export async function POST(
         const book = await getBookById(bookId);
 
         if (!book) {
+            return NextResponse.json(
+                { error: 'Libro non trovato' },
+                { status: 404 }
+            );
+        }
+        if (!canAccessReading(book, !!user.isAdmin)) {
             return NextResponse.json(
                 { error: 'Libro non trovato' },
                 { status: 404 }

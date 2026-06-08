@@ -1,8 +1,7 @@
 'use client';
 
-import * as React from 'react';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookForm } from '@/components/admin/books/book-form';
@@ -32,7 +31,8 @@ const bookFormSchema = z.object({
     rating: z.number().min(1).max(5).nullable().optional(),
     isPreview: z.boolean().default(false),
     isNew: z.boolean().default(false),
-    isVisible: z.boolean().default(true),
+    isReadingVisible: z.boolean().default(true),
+    isAudioVisible: z.boolean().default(false),
     audiobook: z.object({
         mediaId: z.string().nullable().optional(),
         introAudioOverride: z.boolean().default(false),
@@ -46,43 +46,54 @@ const bookFormSchema = z.object({
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
+type TopLevelTab = 'manage' | 'add' | 'users' | 'test';
+type AdminView = TopLevelTab | 'edit' | 'audio-tracks';
+type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'isNew' | 'book_id' | 'displayOrder' | 'isReadingVisible' | 'isAudioVisible';
+type SortDirection = 'asc' | 'desc';
+
+interface ManageViewState {
+    scrollY: number;
+    searchTerm: string;
+    showAudioOnly: boolean;
+    sortField: SortField;
+    sortDirection: SortDirection;
+}
+
+const TOP_LEVEL_TABS = new Set<TopLevelTab>(['manage', 'add', 'users', 'test']);
+
+function getTopLevelTab(value: string | null): TopLevelTab {
+    return value && TOP_LEVEL_TABS.has(value as TopLevelTab)
+        ? value as TopLevelTab
+        : 'manage';
+}
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/auth-context';
-import { AlertTriangle, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
 import { AuthModal } from '@/components/auth/auth-modal';
 
-export default function AddBookPage() {
+function AddBookPageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { state } = useAuth();
-    // Load active tab from localStorage on mount, default to 'manage'
-    const [activeTab, setActiveTab] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const savedTab = localStorage.getItem('add-book-active-tab');
-            return savedTab || 'manage';
-        }
-        return 'manage';
-    });
-
-    // Wrapper function to handle tab changes with localStorage persistence
-    const handleSetActiveTab = (value: string) => {
-        setActiveTab(value);
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('add-book-active-tab', value);
-        }
-    };
+    const searchParamsString = searchParams.toString();
+    const rawTab = searchParams.get('tab');
+    const requestedTopLevelTab = getTopLevelTab(rawTab);
+    const [activeView, setActiveView] = useState<AdminView>(requestedTopLevelTab);
     const [editingBook, setEditingBook] = useState<Book | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showAudioTracks, setShowAudioTracks] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const manageViewStateRef = useRef<ManageViewState | null>(null);
+    const pendingScrollRestoreRef = useRef<number | null>(null);
 
     // Filter and sorting state
     const [searchTerm, setSearchTerm] = useState('');
     const [showAudioOnly, setShowAudioOnly] = useState(false);
-    const [sortField, setSortField] = useState<'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'isNew' | 'book_id' | 'displayOrder' | 'isVisible'>('title');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const [sortField, setSortField] = useState<SortField>('title');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
     // Test mail and env state
     const [envVars, setEnvVars] = useState<Record<string, string | undefined>>({});
@@ -100,6 +111,17 @@ export default function AddBookPage() {
         deleteBook
     } = useBooks();
 
+    useEffect(() => {
+        if (rawTab !== requestedTopLevelTab) {
+            const params = new URLSearchParams(searchParamsString);
+            params.set('tab', requestedTopLevelTab);
+            router.replace(`/add-book?${params.toString()}`, { scroll: false });
+        }
+
+        setEditingBook(undefined);
+        setActiveView(requestedTopLevelTab);
+    }, [rawTab, requestedTopLevelTab, router, searchParamsString]);
+
     // Admin authorization check - requires both admin status and userLevel > 1
     useEffect(() => {
         if (!state.isLoading) {
@@ -109,10 +131,63 @@ export default function AddBookPage() {
         }
     }, [state.isAuthenticated, state.user, state.isLoading, router]);
 
-    // Check if we should show audio tracks tab
     useEffect(() => {
-        setShowAudioTracks(editingBook?.hasAudio || false);
-    }, [editingBook]);
+        if (activeView !== 'manage' || pendingScrollRestoreRef.current === null) {
+            return;
+        }
+
+        const scrollY = pendingScrollRestoreRef.current;
+        pendingScrollRestoreRef.current = null;
+        let secondFrame = 0;
+        const firstFrame = window.requestAnimationFrame(() => {
+            secondFrame = window.requestAnimationFrame(() => {
+                window.scrollTo({ top: scrollY, behavior: 'auto' });
+            });
+        });
+
+        return () => {
+            window.cancelAnimationFrame(firstFrame);
+            if (secondFrame) {
+                window.cancelAnimationFrame(secondFrame);
+            }
+        };
+    }, [activeView]);
+
+    const replaceTopLevelTab = (tab: TopLevelTab) => {
+        const params = new URLSearchParams(searchParamsString);
+        params.set('tab', tab);
+        router.replace(`/add-book?${params.toString()}`, { scroll: false });
+    };
+
+    const captureManageViewState = () => {
+        manageViewStateRef.current = {
+            scrollY: window.scrollY,
+            searchTerm,
+            showAudioOnly,
+            sortField,
+            sortDirection,
+        };
+    };
+
+    const navigateToTopLevelTab = (tab: TopLevelTab) => {
+        setEditingBook(undefined);
+        setActiveView(tab);
+        replaceTopLevelTab(tab);
+    };
+
+    const returnToManageBooks = () => {
+        const previousState = manageViewStateRef.current;
+
+        if (previousState) {
+            setSearchTerm(previousState.searchTerm);
+            setShowAudioOnly(previousState.showAudioOnly);
+            setSortField(previousState.sortField);
+            setSortDirection(previousState.sortDirection);
+            pendingScrollRestoreRef.current = previousState.scrollY;
+        }
+
+        navigateToTopLevelTab('manage');
+    };
 
     // Handle form submission
     const handleSubmit = async (values: BookFormValues) => {
@@ -121,7 +196,6 @@ export default function AddBookPage() {
 
         try {
             // Format the date to ISO string and convert null to undefined for optional fields
-            // Convert boolean isVisible to number (0 or 1) for database compatibility
             const formattedValues = {
                 ...values,
                 publishingDate: values.publishingDate.toISOString(),
@@ -135,7 +209,8 @@ export default function AddBookPage() {
                 mediaUid: values.mediaUid ?? undefined,
                 previewPlacement: (values.previewPlacement as 'left' | 'right' | null | undefined) ?? undefined,
                 replaceFirstPageWithCopyrightOverride: values.replaceFirstPageWithCopyrightOverride ?? null,
-                isVisible: values.isVisible ? 1 : 0,
+                isReadingVisible: values.isReadingVisible,
+                isAudioVisible: values.hasAudio && values.isAudioVisible,
                 audiobook: values.audiobook ? {
                     mediaId: values.audiobook.mediaId ?? null,
                     introAudioOverride: values.audiobook.introAudioOverride ?? false,
@@ -160,9 +235,11 @@ export default function AddBookPage() {
             // Refresh the book list
             await fetchBooks();
 
-            // Reset form and switch to manage tab
-            setEditingBook(undefined);
-            handleSetActiveTab('manage');
+            if (activeView === 'edit' || activeView === 'audio-tracks') {
+                returnToManageBooks();
+            } else {
+                navigateToTopLevelTab('manage');
+            }
         } catch (error) {
             console.error('Error saving book:', error);
         } finally {
@@ -171,39 +248,32 @@ export default function AddBookPage() {
     };
 
     // Handle edit button click
-    const handleEdit = async (book: Book, isClone = false) => {
+    const handleEdit = async (book: Book) => {
+        captureManageViewState();
         setIsSubmitting(true); // Show loading state
 
         try {
-            if (isClone) {
-                // Create a shallow copy of the book and remove the ID to ensure it's treated as a new book
-                const { id, ...bookWithoutId } = book;
-                setEditingBook({
-                    ...bookWithoutId,
-                    replaceFirstPageWithCopyrightOverride: null,
-                } as Book);
-            } else {
-                // Fetch complete book data to ensure we have audiobook.mediaId
-                const response = await fetch(`/api/books/${book.id}`);
-                if (!response.ok) {
-                    throw new Error(`Error fetching book details: ${response.status}`);
-                }
-
-                // The API returns the book directly, not wrapped in a data property
-                const completeBook = await response.json();
-                console.log('Fetched complete book data:', completeBook);
-                setEditingBook(completeBook);
+            // Fetch complete book data to ensure we have audiobook.mediaId
+            const response = await fetch(`/api/books/${book.id}`);
+            if (!response.ok) {
+                throw new Error(`Error fetching book details: ${response.status}`);
             }
+
+            // The API returns the book directly, not wrapped in a data property
+            const completeBook = await response.json();
+            console.log('Fetched complete book data:', completeBook);
+            setEditingBook(completeBook);
+            setActiveView('edit');
         } catch (error) {
             console.error('Error preparing book for edit:', error);
         } finally {
             setIsSubmitting(false);
-            handleSetActiveTab('add');
         }
     };
 
     // Handle clone book
     const handleClone = (book: Book) => {
+        captureManageViewState();
         // Create a copy of the book and remove the ID to ensure it's treated as a new book
         const { id, ...bookWithoutId } = book;
         // Add " (Cloned)" to the title to indicate it's a clone
@@ -211,25 +281,57 @@ export default function AddBookPage() {
             ...bookWithoutId,
             title: `${book.title} (Cloned)`,
             replaceFirstPageWithCopyrightOverride: null,
+            audiobook: bookWithoutId.hasAudio
+                ? (bookWithoutId.audiobook ?? {
+                    mediaId: null,
+                    introAudioOverride: false,
+                    introAudioTitle: null,
+                    introAudioId: null,
+                })
+                : bookWithoutId.audiobook,
         };
         // Set the cloned book for editing
         setEditingBook(clonedBook as Book);
-        handleSetActiveTab('add');
+        setActiveView('edit');
     };
 
     // Handle cancel button click
     const handleCancel = () => {
-        setEditingBook(undefined);
-        if (activeTab === 'add' || activeTab === 'audio-tracks') {
-            handleSetActiveTab('manage');
+        if (activeView === 'edit' || activeView === 'audio-tracks') {
+            returnToManageBooks();
+        } else {
+            navigateToTopLevelTab('manage');
         }
     };
 
     // Handle tab change
     const handleTabChange = (value: string) => {
-        handleSetActiveTab(value);
-        if (value === 'manage') {
-            setEditingBook(undefined);
+        if (value === 'audio-tracks' && editingBook?.id && editingBook.hasAudio) {
+            setActiveView('audio-tracks');
+            return;
+        }
+
+        if (TOP_LEVEL_TABS.has(value as TopLevelTab)) {
+            const tab = value as TopLevelTab;
+            if (tab === 'manage' && (activeView === 'edit' || activeView === 'audio-tracks')) {
+                returnToManageBooks();
+            } else {
+                navigateToTopLevelTab(tab);
+            }
+        }
+    };
+
+    const isNestedBookView = activeView === 'edit' || activeView === 'audio-tracks';
+    const canManageAudioTracks = Boolean(editingBook?.id && editingBook.hasAudio);
+    const isBackButtonDisabled = activeView === 'users' || activeView === 'test';
+
+    const handleBackButton = () => {
+        if (activeView === 'manage') {
+            router.push('/');
+        } else if (activeView === 'add') {
+            navigateToTopLevelTab('manage');
+        } else if (isNestedBookView) {
+            returnToManageBooks();
         }
     };
 
@@ -266,7 +368,8 @@ export default function AddBookPage() {
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => router.back()}
+                    onClick={handleBackButton}
+                    disabled={isBackButtonDisabled}
                     className="mr-2"
                 >
                     <ArrowLeft className="h-5 w-5" />
@@ -284,15 +387,13 @@ export default function AddBookPage() {
                 Add, edit, and manage books in the library.
             </p>
 
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-8 space-y-4">
+            <Tabs value={activeView} onValueChange={handleTabChange} className="mt-8 space-y-4">
                 <TabsList className="relative">
                     {/* Group 1: Main Tabs */}
                     <div className="inline-flex items-center rounded-md bg-muted p-1">
                         <TabsTrigger value="manage" className="select-none">Manage Books</TabsTrigger>
-                        <TabsTrigger value="add" className="select-none">
-                            {editingBook ? 'Edit Book' : 'Add Book'}
-                        </TabsTrigger>
-                        {showAudioTracks && editingBook && (
+                        <TabsTrigger value="add" className="select-none">Add Book</TabsTrigger>
+                        {canManageAudioTracks && editingBook && (
                             <TabsTrigger value="audio-tracks" className="select-none">Audio Tracks</TabsTrigger>
                         )}
                     </div>
@@ -360,24 +461,13 @@ export default function AddBookPage() {
                 <TabsContent value="add" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="select-none">
-                                {editingBook ? (
-                                    <>
-                                        Edit Book <span className="text-sm text-gray-500 ms-3">[<span className="font-bold text-cyan-400 mx-1">{editingBook.id}</span>]</span>
-                                    </>
-                                ) : (
-                                    'Add New Book'
-                                )}
-                            </CardTitle>
+                            <CardTitle className="select-none">Add New Book</CardTitle>
                             <CardDescription className="select-none">
-                                {editingBook
-                                    ? `Edit details for "${editingBook.title}"`
-                                    : 'Fill in the details to add a new book to the library.'}
+                                Fill in the details to add a new book to the library.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <BookForm
-                                book={editingBook}
                                 onSubmit={handleSubmit}
                                 onCancel={handleCancel}
                                 isSubmitting={isSubmitting}
@@ -386,7 +476,38 @@ export default function AddBookPage() {
                     </Card>
                 </TabsContent>
 
-                {showAudioTracks && editingBook && (
+                {editingBook && (
+                    <TabsContent value="edit" className="space-y-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="select-none">
+                                    {editingBook.id ? (
+                                        <>
+                                            Edit Book <span className="text-sm text-gray-500 ms-3">[<span className="font-bold text-cyan-400 mx-1">{editingBook.id}</span>]</span>
+                                        </>
+                                    ) : (
+                                        'Clone Book'
+                                    )}
+                                </CardTitle>
+                                <CardDescription className="select-none">
+                                    {editingBook.id
+                                        ? `Edit details for "${editingBook.title}"`
+                                        : 'Review the copied details before adding the cloned book.'}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <BookForm
+                                    book={editingBook}
+                                    onSubmit={handleSubmit}
+                                    onCancel={handleCancel}
+                                    isSubmitting={isSubmitting}
+                                />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                )}
+
+                {canManageAudioTracks && editingBook && (
                     <TabsContent value="audio-tracks" className="space-y-4">
                         <Card>
                             <CardHeader>
@@ -473,5 +594,17 @@ export default function AddBookPage() {
                 </TabsContent>
             </Tabs>
         </div>
+    );
+}
+
+export default function AddBookPage() {
+    return (
+        <Suspense fallback={
+            <div className="container mx-auto p-10 flex items-center justify-center min-h-screen">
+                <p className="text-lg text-muted-foreground">Caricamento...</p>
+            </div>
+        }>
+            <AddBookPageContent />
+        </Suspense>
     );
 }
