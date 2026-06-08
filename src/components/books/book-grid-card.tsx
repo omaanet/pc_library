@@ -49,7 +49,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
             className="flex w-full cursor-pointer select-none items-center justify-center px-2 pb-0 pt-4"
             onClick={() => onSelect(book)}
         >
-            <div className="relative inline-flex max-w-full">
+            <div className="relative inline-flex max-w-full transition-transform duration-300 group-hover:scale-[var(--book-grid-cover-hover-scale)]">
                 {/* Loading skeleton */}
                 {!imageLoaded && (
                     <Skeleton className="absolute inset-0" />
@@ -62,9 +62,8 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                     width={width}
                     height={height}
                     className={cn(
-                        "h-auto w-auto max-w-full object-contain transition-opacity duration-300 transition-transform duration-300",
-                        imageLoaded ? "opacity-100" : "opacity-0",
-                        "group-hover:scale-105"
+                        "h-auto w-auto max-w-full object-contain transition-opacity duration-300",
+                        imageLoaded ? "opacity-100" : "opacity-0"
                     )}
                     style={{ maxHeight: height }}
                     sizes={getImageSizeString('grid')}
@@ -79,7 +78,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                 {hasVisibleAudio && (
                     <div className={cn(
                         "absolute right-[var(--book-grid-audio-badge-right)] top-[var(--book-grid-audio-badge-top)] z-10 rounded-full bg-yellow-600/80 p-1.5",
-                        "backdrop-blur-sm transition-opacity duration-200",
+                        "backdrop-blur-sm transition-[opacity,transform] duration-300 group-hover:scale-[var(--book-grid-badge-hover-scale)]",
                         imageLoaded ? "opacity-100" : "opacity-0"
                     )}>
                         <Headphones className="h-6 w-6" />
@@ -90,7 +89,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                     <div className={cn(
                         "absolute left-[var(--book-grid-new-badge-left)] top-[var(--book-grid-new-badge-top)] z-10 rounded",
                         "bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white",
-                        "backdrop-blur-sm transition-opacity duration-200",
+                        "backdrop-blur-sm transition-[opacity,transform] duration-300 group-hover:scale-[var(--book-grid-badge-hover-scale)]",
                         imageLoaded ? "opacity-100" : "opacity-0"
                     )}>
                         NEW
@@ -121,7 +120,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
             id={formatBookDomId(book.id)}
             data-book-card
             className={cn(
-                "group overflow-hidden transition-colors hover:border-primary",
+                "group transition-colors hover:border-primary",
                 className
             )}
         >

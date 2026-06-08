@@ -41,6 +41,8 @@
         --book-grid-new-badge-left: -5px;
         --book-grid-audio-badge-top: -6px;
         --book-grid-audio-badge-right: -12px;
+        --book-grid-cover-hover-scale: 1;
+        --book-grid-badge-hover-scale: 1;
 
         /* Icon Colors Light Mode */
         --gold-main: hsl(46, 80%, 50%);
@@ -125,6 +127,13 @@
     @media (min-width: 1024px) {
         :root {
             --book-grid-audio-badge-right: -6px;
+        }
+    }
+
+    @media (any-hover: hover) {
+        :root {
+            --book-grid-cover-hover-scale: 1.05;
+            --book-grid-badge-hover-scale: 0.952381;
         }
     }
 }
