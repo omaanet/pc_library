@@ -13,7 +13,7 @@ interface TimeDisplayProps {
  */
 export function TimeDisplay({ currentTime, duration }: TimeDisplayProps) {
     return (
-        <div className="time-display flex-1 text-end font-light">
+        <div className="time-display flex-1 text-end text-zinc-300 font-light">
             {formatTime(currentTime)} / {formatTime(duration)}
         </div>
     );

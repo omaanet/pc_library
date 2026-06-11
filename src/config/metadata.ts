@@ -19,6 +19,7 @@ export const siteContributionText = {
 } as const;
 
 export const metadata: Metadata = {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3005'),
     title: {
         default: siteTitle,
         template: `%s | ${siteTitle}`,

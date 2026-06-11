@@ -10,6 +10,10 @@ export const SITE_CONFIG = {
 
     DEFAULT_CDN: 'https://s3.eu-south-1.wasabisys.com/piero-audiolibri',
 
+    // Dedicated CDN base for short promotional audio tracks used by promo pages.
+    // Kept separate from DEFAULT_CDN so promo audio lives under its own prefix.
+    PROMO_AUDIO_CDN: 'https://s3.eu-south-1.wasabisys.com/piero-audiolibri/promo/audio',
+
     REPLACE_FIRST_PAGE_WITH_COPYRIGHT: true,
 
     COPYRIGHT_FIRST_PAGE_PATH: '/reader/copyright_page_01.png',

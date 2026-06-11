@@ -36,6 +36,16 @@ export {
     deleteBookmark
 } from './queries/bookmarks';
 
+// Export promo page queries
+export {
+    getPromoPageBySlug,
+    getPromoPageById,
+    getAllPromoPages,
+    createPromoPage,
+    updatePromoPage,
+    deletePromoPage
+} from './queries/promo-pages';
+
 export type {
     Bookmark,
     BookmarkKind,

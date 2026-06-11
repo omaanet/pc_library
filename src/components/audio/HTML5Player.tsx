@@ -135,7 +135,7 @@ const HTML5Player = ({
                 </div>
 
                 <div className="grid grid-cols-[auto_1fr_auto] items-center mt-1">
-                    <div className="text-sm text-gray-400">
+                    <div className="text-xs text-gray-400">
                         {currentTrack + 1}/{tracks.length}
                     </div>
                     <AudioControls

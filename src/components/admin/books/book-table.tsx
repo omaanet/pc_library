@@ -14,9 +14,18 @@ import {
     EyeOff,
     Copy,
     Sparkles,
-    BookOpen
+    BookOpen,
+    Download
 } from 'lucide-react';
 import { formatDate, isBookEffectivelyNew } from '@/lib/utils';
+import {
+    createBooksLibraryCsv,
+    createBooksLibraryCsvFilename,
+    getBooksLibraryRows,
+    type BooksLibrarySortDirection,
+    type BooksLibrarySortField,
+} from '@/lib/books-library-csv';
+import { downloadCsv } from '@/lib/csv';
 import { Book } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,14 +61,11 @@ interface BookTableProps {
     setSearchTerm?: (term: string) => void;
     showAudioOnly?: boolean;
     setShowAudioOnly?: (show: boolean) => void;
-    sortField?: SortField;
-    setSortField?: (field: SortField) => void;
-    sortDirection?: SortDirection;
-    setSortDirection?: (direction: SortDirection) => void;
+    sortField?: BooksLibrarySortField;
+    setSortField?: (field: BooksLibrarySortField) => void;
+    sortDirection?: BooksLibrarySortDirection;
+    setSortDirection?: (direction: BooksLibrarySortDirection) => void;
 }
-
-type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'isNew' | 'book_id' | 'displayOrder' | 'isReadingVisible' | 'isAudioVisible';
-type SortDirection = 'asc' | 'desc';
 
 export function BookTable({
     books,
@@ -80,8 +86,8 @@ export function BookTable({
     // Use local state when external state is not provided
     const [localSearchTerm, setLocalSearchTerm] = useState('');
     const [localShowAudioOnly, setLocalShowAudioOnly] = useState(false);
-    const [localSortField, setLocalSortField] = useState<SortField>('title');
-    const [localSortDirection, setLocalSortDirection] = useState<SortDirection>('asc');
+    const [localSortField, setLocalSortField] = useState<BooksLibrarySortField>('title');
+    const [localSortDirection, setLocalSortDirection] = useState<BooksLibrarySortDirection>('asc');
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
@@ -101,7 +107,7 @@ export function BookTable({
     const setSortDirection = externalSetSortDirection || setLocalSortDirection;
 
     // Handle sorting
-    const handleSort = (field: SortField) => {
+    const handleSort = (field: BooksLibrarySortField) => {
         if (sortField === field) {
             // Toggle direction if same field
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -113,65 +119,26 @@ export function BookTable({
     };
 
     // Get sort icon
-    const getSortIcon = (field: SortField) => {
+    const getSortIcon = (field: BooksLibrarySortField) => {
         if (sortField !== field) return null;
         return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
     };
 
-    // Memoize filter and sort logic and pre-calc normalized search term
-    const searchTermLower = searchTerm.toLowerCase();
+    // Keep the rendered and exported row set identical.
     const filteredBooks = useMemo(() => {
-        return books.filter(book => {
-            const title = (book.title || '').toLowerCase();
-            const summary = (book.summary || '').toLowerCase();
-            const matchesSearch = searchTermLower === '' || title.includes(searchTermLower) || summary.includes(searchTermLower);
-            const matchesAudio = !showAudioOnly || book.hasAudio;
-            return matchesSearch && matchesAudio;
-        }).sort((a, b) => {
-            // Apply sorting
-            if (sortField === 'title') {
-                return sortDirection === 'asc'
-                    ? a.title.localeCompare(b.title)
-                    : b.title.localeCompare(a.title);
-            } else if (sortField === 'publishingDate') {
-                const dateA = new Date(a.publishingDate).getTime();
-                const dateB = new Date(b.publishingDate).getTime();
-                return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
-            } else if (sortField === 'hasAudio') {
-                return sortDirection === 'asc'
-                    ? (a.hasAudio ? 1 : 0) - (b.hasAudio ? 1 : 0)
-                    : (b.hasAudio ? 1 : 0) - (a.hasAudio ? 1 : 0);
-            } else if (sortField === 'isPreview') {
-                return sortDirection === 'asc'
-                    ? (a.isPreview ? 1 : 0) - (b.isPreview ? 1 : 0)
-                    : (b.isPreview ? 1 : 0) - (a.isPreview ? 1 : 0);
-            } else if (sortField === 'isNew') {
-                const aIsNew = isBookEffectivelyNew(a);
-                const bIsNew = isBookEffectivelyNew(b);
-                return sortDirection === 'asc'
-                    ? (aIsNew ? 1 : 0) - (bIsNew ? 1 : 0)
-                    : (bIsNew ? 1 : 0) - (aIsNew ? 1 : 0);
-            } else if (sortField === 'book_id') {
-                return sortDirection === 'asc'
-                    ? a.id.localeCompare(b.id)
-                    : b.id.localeCompare(a.id);
-
-            } else if (sortField === 'displayOrder') {
-                return sortDirection === 'asc'
-                    ? ((a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-                    : ((b.displayOrder ?? 0) - (a.displayOrder ?? 0));
-            } else if (sortField === 'isReadingVisible') {
-                return sortDirection === 'asc'
-                    ? Number(a.isReadingVisible) - Number(b.isReadingVisible)
-                    : Number(b.isReadingVisible) - Number(a.isReadingVisible);
-            } else if (sortField === 'isAudioVisible') {
-                return sortDirection === 'asc'
-                    ? Number(a.hasAudio && a.isAudioVisible) - Number(b.hasAudio && b.isAudioVisible)
-                    : Number(b.hasAudio && b.isAudioVisible) - Number(a.hasAudio && a.isAudioVisible);
-            }
-            return 0;
+        return getBooksLibraryRows(books, {
+            searchTerm,
+            showAudioOnly,
+            sortField,
+            sortDirection,
+            isBookNew: isBookEffectivelyNew,
         });
-    }, [books, searchTermLower, showAudioOnly, sortField, sortDirection]);
+    }, [books, searchTerm, showAudioOnly, sortField, sortDirection]);
+
+    const handleExportCsv = () => {
+        const csv = createBooksLibraryCsv(filteredBooks, isBookEffectivelyNew);
+        downloadCsv(csv, createBooksLibraryCsvFilename());
+    };
 
     // Handle delete confirmation
     const confirmDelete = (book: Book) => {
@@ -228,6 +195,14 @@ export function BookTable({
                         disabled={isLoading}
                     >
                         <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={handleExportCsv}
+                        disabled={isLoading || filteredBooks.length === 0}
+                    >
+                        <Download className="mr-2 h-4 w-4" />
+                        Export CSV
                     </Button>
                 </div>
             </div>

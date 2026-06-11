@@ -12,7 +12,7 @@ interface TrackInfoProps {
  */
 export function TrackInfo({ track }: TrackInfoProps) {
     return (
-        <div className="flex-1 text-start font-medium">
+        <div className="flex-1 text-start text-zinc-400 font-light text-sm">
             {track.title}
         </div>
     );

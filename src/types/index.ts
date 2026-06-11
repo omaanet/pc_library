@@ -5,6 +5,8 @@
  * Future feature types have been moved to ./future-features.ts
  */
 
+import type { PromoTemplate } from '@/lib/promo-page-input';
+
 export interface Book {
     id: string;
     title: string;
@@ -49,6 +51,28 @@ export interface AudioBook {
     intro_audio_id?: string | null;
     created_at?: string;
     updated_at?: string;
+}
+
+/**
+ * A promo audio page: a hidden, slug-addressable marketing page that presents a
+ * single promotional audio track for a linked book. Stores only promo-specific
+ * data; book metadata (title, extract, cover, ...) is read from the books table.
+ */
+export interface PromoPage {
+    id: number;
+    bookId: string;
+    slug: string;
+    mediaId: string | null;
+    audioLength: number | null;
+    isActive: boolean;
+    template: PromoTemplate;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+/** Promo page row enriched with the linked book's title for admin listing. */
+export interface PromoPageListItem extends PromoPage {
+    bookTitle: string | null;
 }
 
 export interface User {
