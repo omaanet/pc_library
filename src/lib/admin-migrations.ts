@@ -101,6 +101,14 @@ export async function getLatestPendingMigration(): Promise<LatestMigrationRespon
 }
 
 export async function getArchivedMigrations(): Promise<ArchivedMigrationsResponse> {
+    return getMigrationsByStatus('archived');
+}
+
+export async function getExecutedMigrations(): Promise<ArchivedMigrationsResponse> {
+    return getMigrationsByStatus('executed');
+}
+
+async function getMigrationsByStatus(status: MigrationRunStatus): Promise<ArchivedMigrationsResponse> {
     await ensureMigrationRunsTable();
 
     const client = getNeonClient();
@@ -108,8 +116,9 @@ export async function getArchivedMigrations(): Promise<ArchivedMigrationsRespons
         await client.query(
             `SELECT filename, checksum, status, executed_by, executed_at
              FROM admin_migration_runs
-             WHERE status = 'archived'
-             ORDER BY filename DESC`
+             WHERE status = $1
+             ORDER BY filename DESC`,
+            [status]
         )
     );
 
@@ -177,34 +186,48 @@ export async function runLatestPendingMigration(filename: string, user: User): P
 }
 
 export async function runArchivedMigration(filename: string, user: User): Promise<RunMigrationResponse> {
+    return rerunRecordedMigration(filename, user, 'archived');
+}
+
+export async function rerunExecutedMigration(filename: string, user: User): Promise<RunMigrationResponse> {
+    return rerunRecordedMigration(filename, user, 'executed');
+}
+
+async function rerunRecordedMigration(
+    filename: string,
+    user: User,
+    sourceStatus: MigrationRunStatus
+): Promise<RunMigrationResponse> {
     await ensureMigrationRunsTable();
     assertSafeMigrationFilename(filename);
 
+    const label = sourceStatus === 'archived' ? 'Archived' : 'Executed';
+
     const client = getNeonClient();
-    const archived = getFirstRow<MigrationRunRow>(
+    const recorded = getFirstRow<MigrationRunRow>(
         await client.query(
             `SELECT filename, checksum, status, executed_by, executed_at
              FROM admin_migration_runs
-             WHERE filename = $1 AND status = 'archived'`,
-            [filename]
+             WHERE filename = $1 AND status = $2`,
+            [filename, sourceStatus]
         )
     );
 
-    if (!archived) {
-        throw new ApiError(HttpStatus.NOT_FOUND, 'Archived migration not found');
+    if (!recorded) {
+        throw new ApiError(HttpStatus.NOT_FOUND, `${label} migration not found`);
     }
 
     const migrationFile = await readMigrationFileIfExists(filename);
     if (!migrationFile) {
-        throw new ApiError(HttpStatus.NOT_FOUND, 'Archived migration SQL file not found');
+        throw new ApiError(HttpStatus.NOT_FOUND, `${label} migration SQL file not found`);
     }
 
-    if (migrationFile.checksum !== archived.checksum) {
+    if (migrationFile.checksum !== recorded.checksum) {
         throw new ApiError(
             HttpStatus.CONFLICT,
-            'Archived migration checksum does not match current SQL file',
+            `${label} migration checksum does not match current SQL file`,
             {
-                archivedChecksum: archived.checksum,
+                recordedChecksum: recorded.checksum,
                 currentChecksum: migrationFile.checksum,
             }
         );
@@ -226,22 +249,24 @@ export async function runArchivedMigration(filename: string, user: User): Promis
              executed_by = $2,
              executed_at = CURRENT_TIMESTAMP,
              execution_metadata = $3::jsonb
-         WHERE filename = $1 AND status = 'archived'
+         WHERE filename = $1 AND status = $4
          RETURNING filename, checksum, status, executed_by, executed_at`,
         [
-            archived.filename,
+            recorded.filename,
             user.id,
             JSON.stringify({
                 size: migrationFile.size,
                 modifiedAt: migrationFile.modifiedAt,
-                ranFromArchive: true,
+                ranFromArchive: sourceStatus === 'archived',
+                reran: sourceStatus === 'executed',
             }),
+            sourceStatus,
         ]
     );
 
     const executed = getFirstRow(updateRes);
     if (!executed) {
-        throw new ApiError(HttpStatus.CONFLICT, 'Archived migration was already updated');
+        throw new ApiError(HttpStatus.CONFLICT, `${label} migration was already updated`);
     }
 
     return {
@@ -251,6 +276,53 @@ export async function runArchivedMigration(filename: string, user: User): Promis
             checksum: executed.checksum,
             executedAt: executed.executed_at,
             status: executed.status,
+        },
+    };
+}
+
+export async function updateMigrationChecksum(filename: string): Promise<RunMigrationResponse> {
+    await ensureMigrationRunsTable();
+    assertSafeMigrationFilename(filename);
+
+    const client = getNeonClient();
+    const recorded = getFirstRow<MigrationRunRow>(
+        await client.query(
+            `SELECT filename, checksum, status, executed_by, executed_at
+             FROM admin_migration_runs
+             WHERE filename = $1`,
+            [filename]
+        )
+    );
+
+    if (!recorded) {
+        throw new ApiError(HttpStatus.NOT_FOUND, 'Migration run not found');
+    }
+
+    const migrationFile = await readMigrationFileIfExists(filename);
+    if (!migrationFile) {
+        throw new ApiError(HttpStatus.NOT_FOUND, 'Migration SQL file not found');
+    }
+
+    const updateRes = await client.query<MigrationRunRow>(
+        `UPDATE admin_migration_runs
+         SET checksum = $2
+         WHERE filename = $1
+         RETURNING filename, checksum, status, executed_by, executed_at`,
+        [recorded.filename, migrationFile.checksum]
+    );
+
+    const updated = getFirstRow(updateRes);
+    if (!updated) {
+        throw new ApiError(HttpStatus.CONFLICT, 'Migration checksum could not be updated');
+    }
+
+    return {
+        success: true,
+        migration: {
+            filename: updated.filename,
+            checksum: updated.checksum,
+            executedAt: updated.executed_at,
+            status: updated.status,
         },
     };
 }

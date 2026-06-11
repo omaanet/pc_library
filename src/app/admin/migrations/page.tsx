@@ -83,6 +83,7 @@ export default function AdminMigrationsPage() {
     const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
     const [latest, setLatest] = React.useState<LatestMigrationResponse | null>(null);
     const [archivedMigrations, setArchivedMigrations] = React.useState<ArchivedMigration[]>([]);
+    const [executedMigrations, setExecutedMigrations] = React.useState<ArchivedMigration[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isRunning, setIsRunning] = React.useState(false);
     const [isArchiving, setIsArchiving] = React.useState(false);
@@ -90,6 +91,11 @@ export default function AdminMigrationsPage() {
     const [archivedMigrationToRun, setArchivedMigrationToRun] = React.useState<ArchivedMigration | null>(null);
     const [runningArchivedFilename, setRunningArchivedFilename] = React.useState<string | null>(null);
     const [expandedArchivedFilename, setExpandedArchivedFilename] = React.useState<string | null>(null);
+    const [executedMigrationToRun, setExecutedMigrationToRun] = React.useState<ArchivedMigration | null>(null);
+    const [runningExecutedFilename, setRunningExecutedFilename] = React.useState<string | null>(null);
+    const [expandedExecutedFilename, setExpandedExecutedFilename] = React.useState<string | null>(null);
+    const [checksumMismatch, setChecksumMismatch] = React.useState<ArchivedMigration | null>(null);
+    const [isUpdatingChecksum, setIsUpdatingChecksum] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [success, setSuccess] = React.useState<string | null>(null);
 
@@ -103,13 +109,15 @@ export default function AdminMigrationsPage() {
         setError(null);
 
         try {
-            const [latestResponse, archivedResponse] = await Promise.all([
+            const [latestResponse, archivedResponse, executedResponse] = await Promise.all([
                 fetch('/api/admin/migrations/latest'),
                 fetch('/api/admin/migrations/archived'),
+                fetch('/api/admin/migrations/executed'),
             ]);
-            const [latestData, archivedData] = await Promise.all([
+            const [latestData, archivedData, executedData] = await Promise.all([
                 latestResponse.json(),
                 archivedResponse.json(),
+                executedResponse.json(),
             ]);
 
             if (!latestResponse.ok) {
@@ -120,8 +128,13 @@ export default function AdminMigrationsPage() {
                 throw new Error(archivedData.error || 'Impossibile caricare le migrazioni archiviate');
             }
 
+            if (!executedResponse.ok) {
+                throw new Error(executedData.error || 'Impossibile caricare le migrazioni eseguite');
+            }
+
             setLatest(latestData as LatestMigrationResponse);
             setArchivedMigrations((archivedData as ArchivedMigrationsResponse).migrations ?? []);
+            setExecutedMigrations((executedData as ArchivedMigrationsResponse).migrations ?? []);
         } catch (fetchError) {
             setError(fetchError instanceof Error ? fetchError.message : 'Impossibile caricare le migrazioni');
         } finally {
@@ -242,6 +255,77 @@ export default function AdminMigrationsPage() {
         }
     };
 
+    const handleRunExecutedMigration = async () => {
+        if (!executedMigrationToRun) return;
+
+        const filename = executedMigrationToRun.filename;
+        setRunningExecutedFilename(filename);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const token = await getCSRFToken();
+            const response = await fetch('/api/admin/migrations/run-executed', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': token,
+                },
+                body: JSON.stringify({ filename }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                const details = typeof data.details === 'string' ? ` ${data.details}` : '';
+                throw new Error(`${data.error || 'Riesecuzione migrazione non riuscita'}.${details}`.trim());
+            }
+
+            const result = data as RunMigrationResponse;
+            setSuccess(`Migrazione rieseguita: ${result.migration.filename}`);
+            setExecutedMigrationToRun(null);
+            await fetchMigrationState();
+        } catch (runError) {
+            setError(runError instanceof Error ? runError.message : 'Riesecuzione migrazione non riuscita');
+        } finally {
+            setRunningExecutedFilename(null);
+        }
+    };
+
+    const handleUpdateChecksum = async () => {
+        if (!checksumMismatch) return;
+
+        setIsUpdatingChecksum(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const token = await getCSRFToken();
+            const response = await fetch('/api/admin/migrations/update-checksum', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': token,
+                },
+                body: JSON.stringify({ filename: checksumMismatch.filename }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                const details = typeof data.details === 'string' ? ` ${data.details}` : '';
+                throw new Error(`${data.error || 'Aggiornamento checksum non riuscito'}.${details}`.trim());
+            }
+
+            const result = data as RunMigrationResponse;
+            setSuccess(`Checksum aggiornato: ${result.migration.filename}`);
+            setChecksumMismatch(null);
+            await fetchMigrationState();
+        } catch (updateError) {
+            setError(updateError instanceof Error ? updateError.message : 'Aggiornamento checksum non riuscito');
+        } finally {
+            setIsUpdatingChecksum(false);
+        }
+    };
+
     if (state.isLoading || isLoading) {
         return (
             <div className="container mx-auto p-10 flex items-center justify-center min-h-screen">
@@ -287,7 +371,7 @@ export default function AdminMigrationsPage() {
                 <Button
                     variant="outline"
                     onClick={fetchMigrationState}
-                    disabled={isRunning || isArchiving || runningArchivedFilename !== null}
+                    disabled={isRunning || isArchiving || runningArchivedFilename !== null || runningExecutedFilename !== null}
                 >
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Aggiorna
@@ -355,7 +439,7 @@ export default function AdminMigrationsPage() {
                                         type="button"
                                         variant="outline"
                                         onClick={() => setIsArchiveDialogOpen(true)}
-                                        disabled={isRunning || isArchiving}
+                                        disabled={isRunning || isArchiving || runningArchivedFilename !== null || runningExecutedFilename !== null}
                                     >
                                         {isArchiving ? (
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -364,7 +448,7 @@ export default function AdminMigrationsPage() {
                                         )}
                                         Archivia migrazione
                                     </Button>
-                                    <Button onClick={handleRunMigration} disabled={isRunning || isArchiving}>
+                                    <Button onClick={handleRunMigration} disabled={isRunning || isArchiving || runningArchivedFilename !== null || runningExecutedFilename !== null}>
                                         {isRunning ? (
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                         ) : (
@@ -436,7 +520,13 @@ export default function AdminMigrationsPage() {
                                                                 File mancante
                                                             </Badge>
                                                         ) : archivedMigration.checksumMatches === false ? (
-                                                            <Badge variant="destructive">Checksum diverso</Badge>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setChecksumMismatch(archivedMigration)}
+                                                                className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                            >
+                                                                <Badge variant="destructive" className="cursor-pointer">Checksum diverso</Badge>
+                                                            </button>
                                                         ) : (
                                                             <Badge variant="outline">Pronta</Badge>
                                                         )}
@@ -455,7 +545,7 @@ export default function AdminMigrationsPage() {
                                                             <Button
                                                                 type="button"
                                                                 size="sm"
-                                                                disabled={!canRun || isRunning || isArchiving || runningArchivedFilename !== null}
+                                                                disabled={!canRun || isRunning || isArchiving || runningArchivedFilename !== null || runningExecutedFilename !== null}
                                                                 onClick={() => setArchivedMigrationToRun(archivedMigration)}
                                                             >
                                                                 {isRunningArchived ? (
@@ -485,6 +575,120 @@ export default function AdminMigrationsPage() {
                         ) : (
                             <div className="rounded border border-dashed p-8 text-center text-muted-foreground">
                                 Nessuna migrazione archiviata.
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                            Migrazioni eseguite
+                        </CardTitle>
+                        <CardDescription>
+                            Migrazioni già applicate al database; possono essere rieseguite manualmente.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {executedMigrations.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>File</TableHead>
+                                        <TableHead>Eseguita il</TableHead>
+                                        <TableHead>Dimensione</TableHead>
+                                        <TableHead>Stato file</TableHead>
+                                        <TableHead className="text-right">Azioni</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {executedMigrations.map((executedMigration) => {
+                                        const isExpanded = expandedExecutedFilename === executedMigration.filename;
+                                        const canRun = executedMigration.fileExists && executedMigration.checksumMatches === true;
+                                        const isRunningExecuted = runningExecutedFilename === executedMigration.filename;
+
+                                        return (
+                                            <React.Fragment key={executedMigration.filename}>
+                                                <TableRow>
+                                                    <TableCell>
+                                                        <div className="max-w-[360px] break-all font-mono text-xs font-medium">
+                                                            {executedMigration.filename}
+                                                        </div>
+                                                        <div className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
+                                                            SHA-256: {executedMigration.checksum}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {new Date(executedMigration.archivedAt).toLocaleString('it-IT')}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {executedMigration.size !== null
+                                                            ? `${executedMigration.size.toLocaleString('it-IT')} bytes`
+                                                            : '-'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {!executedMigration.fileExists ? (
+                                                            <Badge variant="destructive" className="gap-1">
+                                                                <FileWarning className="h-3 w-3" />
+                                                                File mancante
+                                                            </Badge>
+                                                        ) : executedMigration.checksumMatches === false ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setChecksumMismatch(executedMigration)}
+                                                                className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                            >
+                                                                <Badge variant="destructive" className="cursor-pointer">Checksum diverso</Badge>
+                                                            </button>
+                                                        ) : (
+                                                            <Badge variant="outline">Pronta</Badge>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                disabled={!executedMigration.preview}
+                                                                onClick={() => setExpandedExecutedFilename(isExpanded ? null : executedMigration.filename)}
+                                                            >
+                                                                {isExpanded ? 'Nascondi SQL' : 'Mostra SQL'}
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                disabled={!canRun || isRunning || isArchiving || runningArchivedFilename !== null || runningExecutedFilename !== null}
+                                                                onClick={() => setExecutedMigrationToRun(executedMigration)}
+                                                            >
+                                                                {isRunningExecuted ? (
+                                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Play className="mr-2 h-4 w-4" />
+                                                                )}
+                                                                Esegui
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                                {isExpanded && executedMigration.preview && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5}>
+                                                            <pre className="max-h-[360px] overflow-auto rounded border bg-muted p-4 text-xs leading-relaxed">
+                                                                {executedMigration.preview}
+                                                            </pre>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="rounded border border-dashed p-8 text-center text-muted-foreground">
+                                Nessuna migrazione eseguita.
                             </div>
                         )}
                     </CardContent>
@@ -552,6 +756,88 @@ export default function AdminMigrationsPage() {
                         >
                             {runningArchivedFilename !== null && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Esegui migrazione
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={executedMigrationToRun !== null}
+                onOpenChange={(open) => {
+                    if (!open && runningExecutedFilename === null) {
+                        setExecutedMigrationToRun(null);
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rieseguire questa migrazione?</DialogTitle>
+                        <DialogDescription>
+                            La migrazione {executedMigrationToRun?.filename ? `"${executedMigrationToRun.filename}"` : ''} è già stata applicata. Il suo SQL verrà eseguito di nuovo sul database.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setExecutedMigrationToRun(null)}
+                            disabled={runningExecutedFilename !== null}
+                        >
+                            Annulla
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleRunExecutedMigration}
+                            disabled={runningExecutedFilename !== null}
+                        >
+                            {runningExecutedFilename !== null && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Riesegui migrazione
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={checksumMismatch !== null}
+                onOpenChange={(open) => {
+                    if (!open && !isUpdatingChecksum) {
+                        setChecksumMismatch(null);
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Aggiornare il checksum?</DialogTitle>
+                        <DialogDescription>
+                            Il file della migrazione {checksumMismatch?.filename ? `"${checksumMismatch.filename}"` : ''} è stato modificato e non corrisponde più al checksum salvato. Aggiornando verrà memorizzato il checksum attuale del file, senza eseguire alcun SQL.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2 text-xs">
+                        <div>
+                            <div className="text-muted-foreground">Checksum salvato</div>
+                            <div className="break-all font-mono">{checksumMismatch?.checksum}</div>
+                        </div>
+                        <div>
+                            <div className="text-muted-foreground">Checksum attuale</div>
+                            <div className="break-all font-mono">{checksumMismatch?.currentChecksum ?? '-'}</div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setChecksumMismatch(null)}
+                            disabled={isUpdatingChecksum}
+                        >
+                            Chiudi
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleUpdateChecksum}
+                            disabled={isUpdatingChecksum}
+                        >
+                            {isUpdatingChecksum && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Aggiorna checksum
                         </Button>
                     </DialogFooter>
                 </DialogContent>
