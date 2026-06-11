@@ -13,7 +13,7 @@ export interface BookCoverSizes {
 
 export const DEFAULT_COVER_SIZES: BookCoverSizes = {
     grid: {
-        width: 304,
+        width: 254,
         height: 360
     },
     list: {

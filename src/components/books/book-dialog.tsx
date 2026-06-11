@@ -80,14 +80,14 @@ function useBookExtractDisclosure(
     open: boolean,
     mode: BookPresentationMode
 ): BookExtractDisclosureState {
-    const [expanded, setExpanded] = useState(false);
-    const reactId = useId();
     const hasExtract = Boolean(book?.extract?.trim());
+    const [expanded, setExpanded] = useState(hasExtract);
+    const reactId = useId();
     const isCollapsible = mode === 'audio-only' || mode === 'reading-and-audio';
 
     useEffect(() => {
-        setExpanded(false);
-    }, [book?.id, open]);
+        setExpanded(hasExtract);
+    }, [book?.id, open, hasExtract]);
 
     return {
         expanded,

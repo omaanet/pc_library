@@ -176,6 +176,87 @@ async function processImage(
 }
 
 /**
+ * Places a cover inside an exact-size transparent canvas without cropping.
+ */
+async function processCoverImage(
+    filePath: string,
+    width: number,
+    height: number,
+    quality = 80
+): Promise<Buffer> {
+    try {
+        const image = sharp(filePath);
+        const metadata = await image.metadata();
+        const isAnimated = metadata.pages && metadata.pages > 1;
+
+        // Keep animated-cover behavior aligned with the default processing path.
+        if (isAnimated) {
+            return image
+                .ensureAlpha()
+                .webp({
+                    quality,
+                    effort: 6,
+                    smartSubsample: true,
+                    force: true
+                })
+                .toBuffer();
+        }
+
+        const shouldDownscale = Boolean(
+            metadata.width &&
+            metadata.height &&
+            (metadata.width > width || metadata.height > height)
+        );
+
+        image
+            .ensureAlpha()
+            .resize({
+                width,
+                height,
+                fit: 'contain',
+                position: 'centre',
+                background: { r: 0, g: 0, b: 0, alpha: 0 },
+                kernel: 'lanczos3',
+                withoutEnlargement: true,
+                fastShrinkOnLoad: true
+            });
+
+        if (shouldDownscale) {
+            image.sharpen({
+                sigma: 0.5,
+                m1: 0.2,
+                m2: 0.3,
+                x1: 2,
+                y2: 10,
+                y3: 20
+            });
+        }
+
+        return image
+            .ensureAlpha()
+            .webp({
+                quality,
+                alphaQuality: 100,
+                lossless: quality >= 95,
+                nearLossless: quality >= 90 && quality < 95,
+                smartSubsample: true,
+                effort: 6,
+                loop: 0,
+                delay: 100,
+                force: true
+            })
+            .withMetadata({
+                orientation: metadata.orientation,
+                density: metadata.density
+            })
+            .toBuffer();
+    } catch (error) {
+        console.error('Error processing cover image:', error);
+        throw new Error(`Failed to process cover image: ${error instanceof Error ? error.message : 'unknown error'}`);
+    }
+}
+
+/**
  * Produces the fixed landscape JPEG used by Open Graph and messaging clients.
  */
 async function processSocialImage(
@@ -368,13 +449,20 @@ export async function GET(
         }
 
         // Process and serve the image
-        const buffer = await processImage(
-            filePath,
-            dimensions.width,
-            dimensions.height,
-            quality,
-            req.nextUrl.searchParams.get('fit') === 'inside' ? 'inside' : 'contain'
-        );
+        const buffer = req.nextUrl.searchParams.get('mode') === 'cover'
+            ? await processCoverImage(
+                filePath,
+                dimensions.width,
+                dimensions.height,
+                quality
+            )
+            : await processImage(
+                filePath,
+                dimensions.width,
+                dimensions.height,
+                quality,
+                req.nextUrl.searchParams.get('fit') === 'inside' ? 'inside' : 'contain'
+            );
 
         return new Response(buffer.buffer as ArrayBuffer, {
             headers: {

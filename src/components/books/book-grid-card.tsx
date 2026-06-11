@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Book } from '@/types';
 import { formatBookDomId } from './book-dom-id';
-import { isAudioAvailable } from '@/lib/book-visibility';
+import { getBookPresentationMode, isAudioAvailable } from '@/lib/book-visibility';
 
 interface BookGridCardProps {
     book: Book;
@@ -21,6 +21,12 @@ interface BookGridCardProps {
 
 export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
     const hasVisibleAudio = isAudioAvailable(book);
+    const presentationMode = getBookPresentationMode(book);
+    const actionLabel = presentationMode === 'reading-and-audio'
+        ? 'Leggi e Ascolta'
+        : presentationMode === 'audio-only'
+            ? 'Ascolta'
+            : 'Leggi';
     // Track image loading state
     const [imageLoaded, setImageLoaded] = React.useState(false);
 
@@ -40,7 +46,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
             { bookId: isPlaceholder ? book.id : undefined }
         );
 
-        return isPlaceholder ? coverUrl : `${coverUrl}?fit=inside`;
+        return isPlaceholder ? coverUrl : `${coverUrl}?mode=cover`;
     }, [book.coverImage, book.id]);
 
     // Memoize the cover image component to prevent unnecessary re-renders
@@ -142,7 +148,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                         onClick={() => onSelect(book)}
                         size="lg"
                     >
-                        {hasVisibleAudio ? 'Ascolta' : 'Leggi'}
+                        {actionLabel}
                     </Button>
                 </div>
             </CardContent>

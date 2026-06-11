@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Book } from '@/types';
 import { formatBookDomId } from './book-dom-id';
-import { isAudioAvailable } from '@/lib/book-visibility';
+import { getBookPresentationMode, isAudioAvailable } from '@/lib/book-visibility';
 
 interface BookListCardProps {
     book: Book;
@@ -20,6 +20,12 @@ interface BookListCardProps {
 
 export function BookListCard({ book, onSelect, className }: BookListCardProps) {
     const hasVisibleAudio = isAudioAvailable(book);
+    const presentationMode = getBookPresentationMode(book);
+    const actionLabel = presentationMode === 'reading-and-audio'
+        ? 'Leggi e Ascolta'
+        : presentationMode === 'audio-only'
+            ? 'Ascolta'
+            : 'Leggi';
     // Track image loading state
     const [imageLoaded, setImageLoaded] = React.useState(false);
 
@@ -122,7 +128,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
                     size="sm"
                     onClick={() => onSelect(book)}
                 >
-                    {hasVisibleAudio ? 'Ascolta' : 'Leggi'}
+                    {actionLabel}
                 </Button>
             </div>
             <p className="text-sm text-muted-foreground line-clamp-2">
