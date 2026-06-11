@@ -44,6 +44,8 @@ import {
     getMasterVisibilityState,
 } from '@/lib/book-visibility';
 
+const MIN_PUBLISHING_DATE = new Date(1900, 0, 1);
+
 // Form validation schema
 const bookFormSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -120,6 +122,10 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
     console.log('[BookForm] audiobook.mediaId:', book?.audiobook?.mediaId);
 
     const [showAudioLength, setShowAudioLength] = useState(book?.hasAudio || false);
+    const [isPublishingDateOpen, setIsPublishingDateOpen] = useState(false);
+    const [publishingMonth, setPublishingMonth] = useState(
+        book?.publishingDate ? new Date(book.publishingDate) : new Date()
+    );
 
     // Ensure book.audiobook is defined if hasAudio is true
     if (book?.hasAudio && !book.audiobook) {
@@ -176,13 +182,15 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
     useEffect(() => {
         console.log('[BookForm] Book changed, resetting form with:', book);
         if (book) {
+            const publishingDate = book.publishingDate ? new Date(book.publishingDate) : new Date();
+
             form.reset({
                 title: book.title || '',
                 coverImage: book.coverImage || IMAGE_CONFIG.placeholder.token,
                 pagesCount: book.pagesCount,
                 replaceFirstPageWithCopyrightOverride: book.replaceFirstPageWithCopyrightOverride ?? null,
                 displayOrder: book.displayOrder ?? null,
-                publishingDate: book.publishingDate ? new Date(book.publishingDate) : new Date(),
+                publishingDate,
                 summary: book.summary || '',
                 hasAudio: book.hasAudio || false,
                 audioLength: book.audioLength,
@@ -205,6 +213,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                 mediaUid: book.mediaUid ?? '1',
                 previewPlacement: book.previewPlacement ?? null,
             });
+            setPublishingMonth(publishingDate);
         }
     }, [book, form]);
 
@@ -219,6 +228,8 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
     const visibility = { hasAudio, isReadingVisible, isAudioVisible };
     const masterVisibilityState = getMasterVisibilityState(visibility);
     const allAvailableVersionsVisible = masterVisibilityState === true;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const setAllAvailableVersionsVisible = () => {
         const next = getBulkVisibilityUpdate(visibility);
@@ -264,10 +275,19 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                             <FormLabel>Publishing Date</FormLabel>
-                            <Popover>
+                            <Popover
+                                open={isPublishingDateOpen}
+                                onOpenChange={(open) => {
+                                    setIsPublishingDateOpen(open);
+                                    if (open) {
+                                        setPublishingMonth(field.value || today);
+                                    }
+                                }}
+                            >
                                 <PopoverTrigger asChild>
                                     <FormControl>
                                         <Button
+                                            type="button"
                                             variant={"outline"}
                                             className={cn(
                                                 "w-full pl-3 text-left font-normal",
@@ -283,16 +303,53 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                                         </Button>
                                     </FormControl>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
+                                <PopoverContent
+                                    className="w-auto max-w-[calc(100vw-2rem)] overflow-x-auto p-0"
+                                    align="start"
+                                    sideOffset={8}
+                                    collisionPadding={16}
+                                >
                                     <Calendar
                                         mode="single"
                                         selected={field.value}
-                                        onSelect={field.onChange}
-                                        disabled={(date) =>
-                                            date > new Date() || date < new Date("1900-01-01")
-                                        }
-                                        initialFocus
+                                        month={publishingMonth}
+                                        onMonthChange={setPublishingMonth}
+                                        onSelect={(date) => {
+                                            if (!date) {
+                                                return;
+                                            }
+
+                                            field.onChange(date);
+                                            setPublishingMonth(date);
+                                            setIsPublishingDateOpen(false);
+                                        }}
+                                        captionLayout="dropdown"
+                                        reverseYears
+                                        startMonth={MIN_PUBLISHING_DATE}
+                                        endMonth={today}
+                                        disabled={[
+                                            { before: MIN_PUBLISHING_DATE },
+                                            { after: today },
+                                        ]}
+                                        weekStartsOn={1}
+                                        autoFocus
+                                        aria-label="Publishing date"
                                     />
+                                    <div className="border-t p-2">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="w-full"
+                                            onClick={() => {
+                                                field.onChange(today);
+                                                setPublishingMonth(today);
+                                                setIsPublishingDateOpen(false);
+                                            }}
+                                        >
+                                            Today
+                                        </Button>
+                                    </div>
                                 </PopoverContent>
                             </Popover>
                             <FormMessage />
