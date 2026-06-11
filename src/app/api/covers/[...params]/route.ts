@@ -23,8 +23,8 @@ interface PlaceholderOptions extends ImageDimensions {
 const COVERS_DIR = path.join(process.cwd(), 'public', 'covers');
 const CACHE_CONTROL = {
     public: 'public, max-age=31536000, immutable',
-    private: 'private, no-cache, no-store, must-revalidate',
 };
+const SOCIAL_IMAGE_BACKGROUND = { r: 244, g: 241, b: 226 };
 
 // Type guard for valid dimensions
 function isValidDimensions(width: unknown, height: unknown): width is number {
@@ -177,6 +177,32 @@ async function processImage(
 }
 
 /**
+ * Produces the fixed landscape JPEG used by Open Graph and messaging clients.
+ */
+async function processSocialImage(
+    input: string | Buffer,
+    width: number,
+    height: number,
+    quality = 90
+): Promise<Buffer> {
+    return sharp(input)
+        .rotate()
+        .resize({
+            width,
+            height,
+            fit: 'contain',
+            background: SOCIAL_IMAGE_BACKGROUND,
+        })
+        .flatten({ background: SOCIAL_IMAGE_BACKGROUND })
+        .jpeg({
+            quality,
+            chromaSubsampling: '4:4:4',
+            progressive: true,
+        })
+        .toBuffer();
+}
+
+/**
  * Route handler for cover images
  */
 export async function GET(
@@ -198,19 +224,27 @@ export async function GET(
             width: Number(width),
             height: Number(height)
         };
+        const isSocialImage = req.nextUrl.searchParams.get('variant') === 'social';
+        const quality = Number(req.nextUrl.searchParams.get('q')) || (isSocialImage ? 90 : 80);
 
         // Handle placeholder requests
         if (imagePath[0] === '@placeholder') {
-            const { searchParams } = new URL(req.url);
-            const buffer = await generatePlaceholder({
-                ...dimensions,
-                bookId: searchParams.get('bookId') ?? undefined,
-                quality: Number(searchParams.get('q')) || 80
+            const bookId = req.nextUrl.searchParams.get('bookId') ?? undefined;
+            const placeholderDimensions = isSocialImage
+                ? { width: 400, height: 600 }
+                : dimensions;
+            const placeholder = await generatePlaceholder({
+                ...placeholderDimensions,
+                bookId,
+                quality,
             });
+            const buffer = isSocialImage
+                ? await processSocialImage(placeholder, dimensions.width, dimensions.height, quality)
+                : placeholder;
 
             return new Response(buffer.buffer as ArrayBuffer, {
                 headers: {
-                    'Content-Type': 'image/png',
+                    'Content-Type': isSocialImage ? 'image/jpeg' : 'image/png',
                     'Cache-Control': CACHE_CONTROL.public,
                 },
             });
@@ -230,10 +264,37 @@ export async function GET(
             await fs.access(filePath);
         } catch {
             // File doesn't exist, generate a placeholder
-            const buffer = await generatePlaceholder(dimensions);
+            const placeholderDimensions = isSocialImage
+                ? { width: 400, height: 600 }
+                : dimensions;
+            const placeholder = await generatePlaceholder({
+                ...placeholderDimensions,
+                bookId: req.nextUrl.searchParams.get('bookId') ?? undefined,
+                quality,
+            });
+            const buffer = isSocialImage
+                ? await processSocialImage(placeholder, dimensions.width, dimensions.height, quality)
+                : placeholder;
+
             return new Response(buffer.buffer as ArrayBuffer, {
                 headers: {
-                    'Content-Type': 'image/png',
+                    'Content-Type': isSocialImage ? 'image/jpeg' : 'image/png',
+                    'Cache-Control': CACHE_CONTROL.public,
+                },
+            });
+        }
+
+        if (isSocialImage) {
+            const buffer = await processSocialImage(
+                filePath,
+                dimensions.width,
+                dimensions.height,
+                quality
+            );
+
+            return new Response(buffer.buffer as ArrayBuffer, {
+                headers: {
+                    'Content-Type': 'image/jpeg',
                     'Cache-Control': CACHE_CONTROL.public,
                 },
             });
@@ -244,7 +305,7 @@ export async function GET(
             filePath,
             dimensions.width,
             dimensions.height,
-            Number(req.nextUrl.searchParams.get('q')) || 80,
+            quality,
             req.nextUrl.searchParams.get('fit') === 'inside' ? 'inside' : 'contain'
         );
 

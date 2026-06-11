@@ -80,6 +80,23 @@ export function getCoverImageUrl(
 }
 
 /**
+ * Generates the crawler-compatible JPEG used for social link previews.
+ */
+export function getSocialCoverImageUrl(
+    imagePath: string,
+    options: CoverImageOptions = {}
+): string {
+    const normalizedPath = normalizeImagePath(imagePath);
+    const queryParams = new URLSearchParams({ variant: 'social' });
+
+    if (options.bookId) {
+        queryParams.set('bookId', options.bookId);
+    }
+
+    return `${IMAGE_CONFIG.baseUrl}/1200/630/${normalizedPath}?${queryParams.toString()}`;
+}
+
+/**
  * Returns the appropriate size configuration for Next.js Image component
  * based on the view type.
  */

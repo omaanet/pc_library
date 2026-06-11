@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 export const siteTitle = 'Racconti in Voce e Caratteri';
+export const siteOrigin = 'https://raccontiinvoceecaratteri.it';
 
 export const siteDescription = `
 <p>Per scelta personale i contenuti di questo sito web sono gratuiti; a tutte le persone che si collegheranno chiedo solo un semplice gesto di solidarietà: un impegno morale di una libera donazione di beneficenza a chi si vuole, un atto di sostegno nei confronti di enti o persone bisognose di aiuto. Grazie di cuore</p>
@@ -19,7 +20,7 @@ export const siteContributionText = {
 } as const;
 
 export const metadata: Metadata = {
-    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3005'),
+    metadataBase: new URL(siteOrigin),
     title: {
         default: siteTitle,
         template: `%s | ${siteTitle}`,
