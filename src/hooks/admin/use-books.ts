@@ -7,6 +7,20 @@ interface UseBookOptions {
     initialRefetch?: boolean;
 }
 
+async function getCSRFToken(): Promise<string> {
+    const response = await fetch('/api/csrf-token');
+    if (!response.ok) {
+        throw new Error('Failed to fetch CSRF token');
+    }
+
+    const data = await response.json();
+    if (typeof data.token !== 'string' || data.token.length === 0) {
+        throw new Error('Missing CSRF token');
+    }
+
+    return data.token;
+}
+
 export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(false);
@@ -47,10 +61,12 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
         setError(null);
 
         try {
+            const token = await getCSRFToken();
             const response = await fetch('/api/books', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'x-csrf-token': token,
                 },
                 body: JSON.stringify(bookData),
             });
@@ -60,7 +76,7 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
                 throw new Error(errorData.error || `Error creating book: ${response.status}`);
             }
 
-            const { data: newBook } = await response.json();
+            const newBook = await response.json() as Book;
             setBooks(prev => [...prev, newBook]);
 
             toast({
@@ -88,10 +104,12 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
         setError(null);
 
         try {
+            const token = await getCSRFToken();
             const response = await fetch(`/api/books/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    'x-csrf-token': token,
                 },
                 body: JSON.stringify(bookData),
             });
@@ -101,7 +119,7 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
                 throw new Error(errorData.error || `Error updating book: ${response.status}`);
             }
 
-            const { data: updatedBook } = await response.json();
+            const updatedBook = await response.json() as Book;
             setBooks(prev => prev.map(book => book.id === id ? updatedBook : book));
 
             toast({
@@ -129,8 +147,12 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
         setError(null);
 
         try {
+            const token = await getCSRFToken();
             const response = await fetch(`/api/books/${id}`, {
                 method: 'DELETE',
+                headers: {
+                    'x-csrf-token': token,
+                },
             });
 
             if (!response.ok) {

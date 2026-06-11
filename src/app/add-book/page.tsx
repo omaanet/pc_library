@@ -223,12 +223,18 @@ function AddBookPageContent() {
             if (editingBook?.id) {
                 console.log(`Updating book with ID: ${editingBook.id}`, formattedValues);
                 // Update existing book
-                await updateBook(editingBook.id, formattedValues);
+                const updatedBook = await updateBook(editingBook.id, formattedValues);
+                if (!updatedBook) {
+                    return;
+                }
                 console.log('Book updated successfully');
             } else {
                 console.log('Creating new book', formattedValues);
                 // Create new book (including cloned books)
-                await createBook(formattedValues);
+                const createdBook = await createBook(formattedValues);
+                if (!createdBook) {
+                    return;
+                }
                 console.log('Book created successfully');
             }
 

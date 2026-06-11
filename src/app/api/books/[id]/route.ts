@@ -7,6 +7,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { normalizeBookVisibility } from '@/lib/book-visibility';
 import { canAccessBook } from '@/lib/book-visibility';
 import { getSessionUser } from '@/lib/auth-utils';
+import { withCSRFProtection } from '@/lib/csrf-middleware';
 
 type NormalizedAudiobookPayload = {
     mediaId?: string | null;
@@ -146,7 +147,7 @@ export async function GET(
     }
 }
 
-export async function PUT(
+export const PUT = withCSRFProtection(async function (
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -214,9 +215,9 @@ export async function PUT(
         console.error('API Error updating book:', error);
         return handleApiError(error, 'Failed to update book', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-}
+});
 
-export async function DELETE(
+export const DELETE = withCSRFProtection(async function (
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
@@ -249,4 +250,4 @@ export async function DELETE(
         console.error('API Error deleting book:', error);
         return handleApiError(error, 'Failed to delete book', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-}
+});
