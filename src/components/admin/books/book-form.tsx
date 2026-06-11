@@ -39,6 +39,7 @@ import {
 import { Book } from '@/types';
 import { IMAGE_CONFIG } from '@/lib/image-utils';
 import ThemedButton from '@/components/ThemedButton';
+import { CoverImagePicker } from '@/components/admin/books/cover-image-picker';
 import {
     getBulkVisibilityUpdate,
     getMasterVisibilityState,
@@ -413,14 +414,18 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                         <FormItem>
                             <FormLabel>Cover Image <span className="text-muted-foreground">(optional)</span></FormLabel>
                             <FormControl>
-                                <Input
+                                <CoverImagePicker
+                                    ref={field.ref}
+                                    name={field.name}
+                                    onBlur={field.onBlur}
                                     placeholder="Cover image path"
-                                    {...field}
-                                    value={field.value || IMAGE_CONFIG.placeholder.token}
+                                    value={field.value || ''}
+                                    onValueChange={field.onChange}
+                                    bookId={book?.id}
                                 />
                             </FormControl>
                             <FormDescription>
-                                Use {IMAGE_CONFIG.placeholder.token} for a placeholder image
+                                Inserisci un percorso libero oppure scegli una copertina dal server. Usa {IMAGE_CONFIG.placeholder.token} per un'immagine segnaposto.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>

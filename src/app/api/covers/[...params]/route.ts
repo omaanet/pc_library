@@ -24,7 +24,6 @@ const COVERS_DIR = path.join(process.cwd(), 'public', 'covers');
 const CACHE_CONTROL = {
     public: 'public, max-age=31536000, immutable',
 };
-const SOCIAL_IMAGE_BACKGROUND = { r: 244, g: 241, b: 226 };
 
 // Type guard for valid dimensions
 function isValidDimensions(width: unknown, height: unknown): width is number {
@@ -185,15 +184,83 @@ async function processSocialImage(
     height: number,
     quality = 90
 ): Promise<Buffer> {
-    return sharp(input)
+    const cover = await sharp(input)
         .rotate()
         .resize({
-            width,
-            height,
+            width: Math.round(width * 0.34),
+            height: Math.round(height * 0.9),
             fit: 'contain',
-            background: SOCIAL_IMAGE_BACKGROUND,
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
         })
-        .flatten({ background: SOCIAL_IMAGE_BACKGROUND })
+        .png()
+        .toBuffer();
+    const coverMetadata = await sharp(cover).metadata();
+    const coverWidth = coverMetadata.width ?? Math.round(width * 0.34);
+    const coverHeight = coverMetadata.height ?? Math.round(height * 0.9);
+    const framePadding = Math.max(8, Math.round(width * 0.008));
+    const frameWidth = coverWidth + framePadding * 2;
+    const frameHeight = coverHeight + framePadding * 2;
+    const frameLeft = Math.round((width - frameWidth) / 2);
+    const frameTop = Math.round((height - frameHeight) / 2);
+    const coverLeft = frameLeft + framePadding;
+    const coverTop = frameTop + framePadding;
+
+    const backdrop = Buffer.from(`
+        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#081916"/>
+                    <stop offset="58%" stop-color="#12342e"/>
+                    <stop offset="100%" stop-color="#10231f"/>
+                </linearGradient>
+                <radialGradient id="leaf" cx="10%" cy="15%" r="55%">
+                    <stop offset="0%" stop-color="#a7d977" stop-opacity="0.42"/>
+                    <stop offset="100%" stop-color="#a7d977" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="gold" cx="86%" cy="8%" r="50%">
+                    <stop offset="0%" stop-color="#efc866" stop-opacity="0.34"/>
+                    <stop offset="100%" stop-color="#efc866" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="coral" cx="72%" cy="84%" r="58%">
+                    <stop offset="0%" stop-color="#f28c6f" stop-opacity="0.26"/>
+                    <stop offset="100%" stop-color="#f28c6f" stop-opacity="0"/>
+                </radialGradient>
+                <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="22"/>
+                </filter>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#base)"/>
+            <rect width="100%" height="100%" fill="url(#leaf)"/>
+            <rect width="100%" height="100%" fill="url(#gold)"/>
+            <rect width="100%" height="100%" fill="url(#coral)"/>
+            <rect
+                x="${frameLeft - 18}"
+                y="${frameTop - 14}"
+                width="${frameWidth + 36}"
+                height="${frameHeight + 36}"
+                rx="28"
+                fill="#a7d977"
+                fill-opacity="0.28"
+                filter="url(#shadow)"
+            />
+            <rect
+                x="${frameLeft}"
+                y="${frameTop}"
+                width="${frameWidth}"
+                height="${frameHeight}"
+                rx="18"
+                fill="#fff8e8"
+                fill-opacity="0.94"
+                stroke="#ffffff"
+                stroke-opacity="0.38"
+                stroke-width="2"
+            />
+        </svg>
+    `);
+
+    return sharp(backdrop)
+        .composite([{ input: cover, left: coverLeft, top: coverTop }])
+        .flatten({ background: '#081916' })
         .jpeg({
             quality,
             chromaSubsampling: '4:4:4',
@@ -224,7 +291,7 @@ export async function GET(
             width: Number(width),
             height: Number(height)
         };
-        const isSocialImage = req.nextUrl.searchParams.get('variant') === 'social';
+        const isSocialImage = req.nextUrl.searchParams.get('variant')?.startsWith('social') ?? false;
         const quality = Number(req.nextUrl.searchParams.get('q')) || (isSocialImage ? 90 : 80);
 
         // Handle placeholder requests

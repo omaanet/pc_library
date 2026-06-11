@@ -87,7 +87,7 @@ export function getSocialCoverImageUrl(
     options: CoverImageOptions = {}
 ): string {
     const normalizedPath = normalizeImagePath(imagePath);
-    const queryParams = new URLSearchParams({ variant: 'social' });
+    const queryParams = new URLSearchParams({ variant: 'social-classic-green-v1' });
 
     if (options.bookId) {
         queryParams.set('bookId', options.bookId);

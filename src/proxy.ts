@@ -135,7 +135,7 @@ export async function proxy(request: NextRequest) {
     }
 
     // 2. Handle cover image requests
-    if (pathname.startsWith(COVERS_PATH)) {
+    if (pathname.startsWith(`${COVERS_PATH}/`)) {
         // Extract path parts
         const parts = request.nextUrl.pathname
             .replace(COVERS_PATH, '')
