@@ -1,12 +1,14 @@
 import type { BookResponse } from '@/types';
-import type { LibraryFilters, LibrarySort } from '@/types/context';
+import type { LibraryFilters } from '@/types/context';
+import type { BookSortPreset } from '@/lib/book-sort';
 import { SITE_CONFIG } from '@/config/site-config';
 
 export interface FetchBooksParams {
   page?: number;
   perPage: number;
-  sortBy: string;
-  sortOrder: string;
+  sortPreset?: BookSortPreset;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
   displayPreviews: number;
   filters?: LibraryFilters;
 }
@@ -25,16 +27,32 @@ export const bookApiService = {
    * Builds URL search parameters for book API requests
    */
   buildParams(params: FetchBooksParams): URLSearchParams {
-    const { page = SITE_CONFIG.PAGINATION.DEFAULT_PAGE, perPage, sortBy, sortOrder, displayPreviews, filters = {} } = params;
+    const {
+      page = SITE_CONFIG.PAGINATION.DEFAULT_PAGE,
+      perPage,
+      sortPreset,
+      sortBy,
+      sortOrder,
+      displayPreviews,
+      filters = {},
+    } = params;
 
     const urlParams = new URLSearchParams({
       page: page.toString(),
       perPage: perPage.toString(),
-      sortBy,
-      sortOrder,
       displayPreviews: displayPreviews.toString(),
       isVisible: '1',
     });
+
+    if (sortPreset) {
+      urlParams.set('sortPreset', sortPreset);
+    }
+    if (sortBy) {
+      urlParams.set('sortBy', sortBy);
+    }
+    if (sortOrder) {
+      urlParams.set('sortOrder', sortOrder);
+    }
 
     // Add filter parameters if they exist
     if (filters.search) {

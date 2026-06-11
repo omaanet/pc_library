@@ -3,7 +3,7 @@
 import { Book, User, UserPreferences } from './index';
 
 export type ViewMode = 'grid' | 'list';
-export type SortBy = 'hasAudio' | 'title' | 'publishingDate' | 'audioLength';
+export type SortBy = 'hasAudio' | 'title' | 'publishingDate' | 'audioLength' | 'displayOrder';
 export type SortOrder = 'asc' | 'desc';
 
 export interface LibraryFilters {

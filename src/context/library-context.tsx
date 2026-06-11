@@ -69,7 +69,7 @@ function createInitialState(): LibraryState {
         isLoading: false,
         error: null,
         filters: {}, // Always start empty to avoid hydration mismatch
-        sort: { by: 'hasAudio', order: 'desc' },
+        sort: { by: 'displayOrder', order: 'asc' },
         viewMode: 'grid',
         selectedBook: null,
         pagination: {

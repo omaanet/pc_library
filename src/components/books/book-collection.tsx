@@ -23,6 +23,7 @@ import {
 } from '@/lib/library-return-state';
 import type { Book } from '@/types';
 import { isAudioAvailable } from '@/lib/book-visibility';
+import { BOOK_SORT_PRESETS } from '@/lib/book-sort';
 
 // Number of books to preload images for
 const PRELOAD_COUNT = 4;
@@ -48,7 +49,7 @@ interface BookCollectionProps {
 export function BookCollection({ displayPreviews }: BookCollectionProps) {
     // Context: Global state shared across app
     const {
-        state: { books: cachedBooks, viewMode, selectedBook, filters, sort, pagination },
+        state: { books: cachedBooks, viewMode, selectedBook, filters, pagination },
         dispatch,
         selectBook,
         updateFilters,
@@ -91,7 +92,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         refresh,
     } = useBookData({
         displayPreviews,
-        sort,
+        sortPreset: BOOK_SORT_PRESETS.MAIN_LIBRARY,
         initialBooks: cachedBooks,
         onBooksLoaded,
         onError,

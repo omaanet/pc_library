@@ -8,6 +8,7 @@ import { SITE_CONFIG } from '@/config/site-config';
 import { requireAdmin } from '@/lib/admin-auth';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
 import { normalizeBookVisibility } from '@/lib/book-visibility';
+import { isBookSortPreset, resolveBookSortPreset } from '@/lib/book-sort';
 
 type NormalizedAudiobookPayload = {
     mediaId?: string | null;
@@ -111,6 +112,7 @@ function normalizeAudiobookPayload(payload: unknown): NormalizedAudiobookPayload
  * - hasAudio: Filter by audio availability (true/false)
  * - displayPreviews: -1 (all), 0 (non-preview only), 1 (preview only)
  * - isVisible: -1 (all), 0 (hidden), 1 (visible)
+ * - sortPreset: Named multi-column sort preset (currently: main-library)
  * - sortBy: Column to sort by (optional, uses SITE_CONFIG.DEFAULT_SORT if not provided)
  * - sortOrder: Sort direction 'asc' or 'desc' (default: 'desc')
  * 
@@ -153,7 +155,9 @@ export async function GET(request: NextRequest) {
         }
 
         // Parse sorting parameters
-        // If sortBy is provided, use it; otherwise, getAllBooksOptimized will use SITE_CONFIG.DEFAULT_SORT
+        // Named presets take precedence over a single sortBy column.
+        const sortPresetParam = url.searchParams.get('sortPreset');
+        const sortPreset = isBookSortPreset(sortPresetParam) ? sortPresetParam : undefined;
         const sortByParam = url.searchParams.get('sortBy');
         const sortOrder = (url.searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
@@ -161,7 +165,9 @@ export async function GET(request: NextRequest) {
         const queryOptions: BookQueryOptions = {
             search,
             hasAudio,
-            sortBy: sortByParam || undefined, // Pass sortBy only if provided
+            sortBy: sortPreset
+                ? resolveBookSortPreset(sortPreset)
+                : sortByParam || undefined,
             sortOrder,
             page,
             perPage,

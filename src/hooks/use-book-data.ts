@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Book, BookResponse } from '@/types';
-import type { LibrarySort } from '@/types/context';
+import type { BookSortPreset } from '@/lib/book-sort';
 import { bookApiService } from '@/lib/services/book-api-service';
 
 export interface UseBookDataParams {
   displayPreviews: number;
-  sort: LibrarySort;
+  sortPreset: BookSortPreset;
   initialBooks?: Book[];
   onBooksLoaded?: (books: Book[]) => void;
   onError?: (message: string) => void;
@@ -45,7 +45,7 @@ export interface UseBookDataReturn {
  */
 export function useBookData({
   displayPreviews,
-  sort,
+  sortPreset,
   initialBooks = [],
   onBooksLoaded,
   onError,
@@ -78,8 +78,7 @@ export function useBookData({
         const data: BookResponse = await bookApiService.fetchBooks({
           page: 1,
           perPage: -1,
-          sortBy: sort.by,
-          sortOrder: sort.order,
+          sortPreset,
           displayPreviews,
         });
 
@@ -113,7 +112,7 @@ export function useBookData({
         setIsInitialLoad(false);
       }
     },
-    [displayPreviews, sort.by, sort.order, onBooksLoaded, onError]
+    [displayPreviews, sortPreset, onBooksLoaded, onError]
   );
 
   /**
@@ -139,7 +138,7 @@ export function useBookData({
     }
 
     fetchBooks();
-  }, [displayPreviews, sort.by, sort.order, fetchBooks]);
+  }, [displayPreviews, sortPreset, fetchBooks]);
 
   return {
     books,
