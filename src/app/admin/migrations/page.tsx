@@ -812,14 +812,14 @@ export default function AdminMigrationsPage() {
                             Il file della migrazione {checksumMismatch?.filename ? `"${checksumMismatch.filename}"` : ''} è stato modificato e non corrisponde più al checksum salvato. Aggiornando verrà memorizzato il checksum attuale del file, senza eseguire alcun SQL.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-2 text-xs">
-                        <div>
+                    <div className="space-y-4 px-4 pb-2 text-xs sm:px-6">
+                        <div className="space-y-1">
                             <div className="text-muted-foreground">Checksum salvato</div>
-                            <div className="break-all font-mono">{checksumMismatch?.checksum}</div>
+                            <div className="break-all font-mono leading-relaxed">{checksumMismatch?.checksum}</div>
                         </div>
-                        <div>
+                        <div className="space-y-1">
                             <div className="text-muted-foreground">Checksum attuale</div>
-                            <div className="break-all font-mono">{checksumMismatch?.currentChecksum ?? '-'}</div>
+                            <div className="break-all font-mono leading-relaxed">{checksumMismatch?.currentChecksum ?? '-'}</div>
                         </div>
                     </div>
                     <DialogFooter>
