@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     allowedDevOrigins: ['127.0.0.1'],
+    // The admin migrations API reads .sql files from scripts/migrations at runtime
+    // via fs (process.cwd()). Next's static tracing can't detect those dynamic
+    // reads, so include them explicitly to survive a standalone/serverless build.
+    outputFileTracingIncludes: {
+        '/api/admin/migrations/**': ['./scripts/migrations/**/*'],
+    },
     images: {
         unoptimized: true, // Disables Next.js image optimization
         dangerouslyAllowSVG: true, // Enable if you use SVGs
