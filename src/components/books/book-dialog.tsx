@@ -17,6 +17,7 @@ import { formatAudioLength, cn, isBookEffectivelyNew } from '@/lib/utils';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 import type { Book } from '@/types';
 import BookComments from './book-comments';
+import { BookCoverPresentation } from './book-cover-presentation';
 import { BookExtract } from './book-extract';
 import AudioBookPlayer from '../shared/AudioBookPlayer';
 import { LinkButton } from '@/components/ui/LinkButton';
@@ -107,7 +108,7 @@ function BookExtractToggle({ disclosure }: { disclosure: BookExtractDisclosureSt
         <button
             type="button"
             className={cn(
-                "group absolute bottom-1 right-1 flex h-11 w-11 items-center justify-center rounded-full",
+                "group absolute bottom-1 right-1 z-20 flex h-11 w-11 items-center justify-center rounded-full",
                 "text-cyan-300 transition-colors hover:bg-background/70 hover:text-cyan-100",
                 "active:bg-transparent focus-visible:outline-none"
             )}
@@ -161,7 +162,6 @@ export function BookDialogSimple({
     isAuthenticated = true,
     onLoginClick,
 }: BookDialogProps) {
-    const [imageLoaded, setImageLoaded] = useState(false);
     const [isPdfRequesting, setIsPdfRequesting] = useState(false);
     const { toast } = useToast();
     const { state: authState } = useAuth();
@@ -186,11 +186,6 @@ export function BookDialogSimple({
             viewMode,
         });
     };
-
-    // Reset image loaded state when dialog opens/closes or book changes
-    useEffect(() => {
-        setImageLoaded(false);
-    }, [book, open]);
 
     // Effect to handle authentication state changes and retry pending actions
     useEffect(() => {
@@ -311,35 +306,18 @@ export function BookDialogSimple({
 
                 <div className="flex min-h-0 flex-col overflow-y-auto">
                     <div className="flex justify-center">
-                        <div className={cn(
-                            "relative flex w-full flex-col items-center rounded-lg bg-muted/30 px-3 py-3",
-                            extractDisclosure.hasExtract && extractDisclosure.isCollapsible && "pb-12"
-                        )}>
+                        <div className="relative flex w-full flex-col items-center rounded-lg bg-muted/30 px-3 py-3">
                             <div className="flex flex-col items-center space-y-2">
 
-                                <div className="relative mx-auto aspect-[3/4] w-36 flex-shrink-0 sm:w-44 md:w-52">
-                                    {!imageLoaded && (
-                                        <Skeleton className="absolute inset-0 rounded-lg" />
-                                    )}
-
-                                    <img
-                                        src={getCoverImageUrl(
-                                            book.coverImage,
-                                            'detail',
-                                            { bookId: book.coverImage === IMAGE_CONFIG.placeholder.token ? book.id : undefined }
-                                        )}
-                                        alt={`Cover of ${book.title}`}
-                                        className={cn(
-                                            "w-full h-full object-contain transition-opacity duration-400",
-                                            imageLoaded ? "opacity-100" : "opacity-0"
-                                        )}
-                                        sizes="(max-width: 640px) 70vw, (min-width: 768px) 33vw, 100vw"
-                                        onLoad={() => setImageLoaded(true)}
-                                        onError={() => setImageLoaded(true)}
-                                    />
-                                    {renderAudioBadge(book, imageLoaded)}
-                                    {renderNewBadge(book, imageLoaded)}
-                                </div>
+                                <BookCoverPresentation
+                                    book={book}
+                                    size="dialog"
+                                    alt={`Copertina di ${book.title}`}
+                                    className="mx-auto flex aspect-[400/567] w-40 max-w-[calc((100dvh-5rem)*400/567)] flex-shrink-0 sm:w-52 md:w-60"
+                                    imageClassName="h-full w-full"
+                                    skeletonClassName="rounded-lg"
+                                    sizes="(max-width: 640px) 10rem, (max-width: 767px) 13rem, 15rem"
+                                />
 
                                 {isAuthenticated && hasVisibleReading && (
                                     <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">

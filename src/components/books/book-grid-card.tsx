@@ -1,16 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
 import { Headphones } from 'lucide-react';
-import { formatAudioLength, cn, isBookEffectivelyNew } from '@/lib/utils';
-import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
+import { formatAudioLength, cn } from '@/lib/utils';
 import { DEFAULT_COVER_SIZES } from '@/types/images';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Book } from '@/types';
-import { BookAvailabilityBadge } from './book-availability-badge';
+import { BookCoverPresentation } from './book-cover-presentation';
 import { formatBookDomId } from './book-dom-id';
 import {
     getBookPresentationMode,
@@ -31,47 +27,12 @@ const ACTION_LABELS: Record<BookPresentationMode, string> = {
     unavailable: 'Non disponibile',
 };
 
-type ResolvedImageState = {
-    url: string;
-    status: 'loaded' | 'failed';
-};
-
 export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
     const hasVisibleAudio = isAudioAvailable(book);
     const presentationMode = getBookPresentationMode(book);
     const actionLabel = ACTION_LABELS[presentationMode];
     const isAvailable = presentationMode !== 'unavailable';
-    const isNew = isBookEffectivelyNew(book);
-    const { width, height } = DEFAULT_COVER_SIZES.grid;
-    const isPlaceholder = book.coverImage === IMAGE_CONFIG.placeholder.token;
-    const coverUrl = getCoverImageUrl(
-        book.coverImage,
-        'grid',
-        { bookId: isPlaceholder ? book.id : undefined }
-    );
-    const imageUrl = isPlaceholder ? coverUrl : `${coverUrl}?mode=cover`;
-    const fallbackImageUrl = getCoverImageUrl(
-        IMAGE_CONFIG.placeholder.token,
-        'grid',
-        { bookId: book.id }
-    );
-    const [fallbackForUrl, setFallbackForUrl] = useState<string | null>(null);
-    const [resolvedImage, setResolvedImage] = useState<ResolvedImageState | null>(null);
-    const activeImageUrl = fallbackForUrl === imageUrl ? fallbackImageUrl : imageUrl;
-    const imageStatus = resolvedImage?.url === activeImageUrl
-        ? resolvedImage.status
-        : 'loading';
-    const imageSettled = imageStatus !== 'loading';
-    const imageFailed = imageStatus === 'failed';
-
-    const handleImageError = () => {
-        if (!isPlaceholder && activeImageUrl === imageUrl) {
-            setFallbackForUrl(imageUrl);
-            return;
-        }
-
-        setResolvedImage({ url: activeImageUrl, status: 'failed' });
-    };
+    const { height } = DEFAULT_COVER_SIZES.grid;
 
     return (
         <Card
@@ -94,55 +55,14 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                     disabled={!isAvailable}
                     aria-label={`${actionLabel}: ${book.title}`}
                 >
-                    <span className="relative inline-flex max-w-full transition-transform duration-300 group-hover:scale-[var(--book-grid-cover-hover-scale)] motion-reduce:transition-none">
-                        {!imageSettled && (
-                            <Skeleton className="absolute inset-0" />
-                        )}
-
-                        <Image
-                            key={activeImageUrl}
-                            src={activeImageUrl}
-                            alt=""
-                            width={width}
-                            height={height}
-                            className={cn(
-                                "h-auto w-auto max-w-full object-contain transition-opacity duration-300 motion-reduce:transition-none",
-                                imageStatus === 'loaded' ? "opacity-100" : "opacity-0"
-                            )}
-                            style={{ maxHeight: height }}
-                            onLoad={() => setResolvedImage({
-                                url: activeImageUrl,
-                                status: 'loaded',
-                            })}
-                            onError={handleImageError}
-                        />
-
-                        {imageFailed && (
-                            <span
-                                aria-hidden="true"
-                                className="absolute inset-0 flex items-center justify-center bg-muted px-4 text-center text-sm text-muted-foreground"
-                            >
-                                Copertina non disponibile
-                            </span>
-                        )}
-
-                        <BookAvailabilityBadge
-                            book={book}
-                            className={imageSettled ? 'opacity-100' : 'opacity-0'}
-                            palette="gold"
-                        />
-
-                        {isNew && (
-                            <span className={cn(
-                                "absolute left-[var(--book-grid-new-badge-left)] top-[var(--book-grid-new-badge-top)] z-10 rounded",
-                                "bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white",
-                                "backdrop-blur-sm transition-[opacity,transform] duration-300 group-hover:scale-[var(--book-grid-badge-hover-scale)] motion-reduce:transition-none",
-                                imageSettled ? "opacity-100" : "opacity-0"
-                            )}>
-                                NEW
-                            </span>
-                        )}
-                    </span>
+                    <BookCoverPresentation
+                        book={book}
+                        size="grid"
+                        alt=""
+                        className="inline-flex max-w-full transition-transform duration-300 group-hover:scale-[var(--book-grid-cover-hover-scale)] motion-reduce:transition-none"
+                        imageClassName="h-auto w-auto max-w-full"
+                        imageStyle={{ maxHeight: height }}
+                    />
                 </button>
 
                 <div className="px-4 pt-2 pb-3">

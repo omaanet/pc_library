@@ -8,6 +8,7 @@ export interface BookCoverSizes {
     grid: ImageSize;
     list: ImageSize;
     detail: ImageSize;
+    dialog: ImageSize;
     video: ImageSize;
 }
 
@@ -23,6 +24,10 @@ export const DEFAULT_COVER_SIZES: BookCoverSizes = {
     detail: {
         width: 400,
         height: 600
+    },
+    dialog: {
+        width: 400,
+        height: 567
     },
     video: {
         width: 270,
@@ -42,6 +47,8 @@ export function getImageSizeString(size: keyof BookCoverSizes): string {
             return '96px';
         case 'detail':
             return '(min-width: 768px) 33vw, 100vw';
+        case 'dialog':
+            return '(min-width: 768px) 15rem, 100vw';
         case 'video':
             return '270px';
     }
