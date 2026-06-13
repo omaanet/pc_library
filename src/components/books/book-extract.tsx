@@ -12,7 +12,7 @@ export function BookExtract({ extract }: BookExtractProps) {
 
     return (
         <div className="flex flex-col bg-muted/40 rounded px-2 sm:px-4 py-2 sm:py-4">
-            <h3 className="text-sm sm:text-md md:text-lg font-medium mb-1 text-cyan-400">Estratto</h3>
+            <h3 className="text-sm sm:text-md md:text-lg font-medium mb-1 text-sky-700 dark:text-cyan-400">Estratto</h3>
             {/* bg-b2lack/70 roun2ded-lg  */}
             {/*
                 WARNING: Rendering HTML from extract. Ensure extract is sanitized to prevent XSS vulnerabilities!

@@ -109,8 +109,9 @@ function BookExtractToggle({ disclosure }: { disclosure: BookExtractDisclosureSt
         <button
             type="button"
             className={cn(
-                "group absolute bottom-1 right-1 z-20 flex h-11 w-11 items-center justify-center rounded-full",
-                "text-cyan-300 transition-colors hover:bg-background/70 hover:text-cyan-100",
+                "group absolute bottom-1 right-1 z-20 flex h-11 items-center justify-center gap-1.5 rounded-full px-3",
+                "text-sky-700 transition-colors hover:bg-background/70 hover:text-sky-900",
+                "dark:text-cyan-300 dark:hover:text-cyan-100",
                 "active:bg-transparent focus-visible:outline-none"
             )}
             onClick={() => disclosure.setExpanded(!disclosure.expanded)}
@@ -123,6 +124,7 @@ function BookExtractToggle({ disclosure }: { disclosure: BookExtractDisclosureSt
                 className="h-4 w-4 rounded-full group-focus-visible:ring-2 group-focus-visible:ring-black dark:group-focus-visible:ring-white"
                 aria-hidden="true"
             />
+            <span className="text-sm font-medium">Estratto</span>
         </button>
     );
 }
@@ -141,6 +143,59 @@ function BookExtractSection({
         <div id={disclosure.extractId} className="mt-2">
             <BookExtract extract={book.extract} />
         </div>
+    );
+}
+
+function hasBookDialogMetadata(book: Book, hasVisibleReading: boolean, hasVisibleAudio: boolean): boolean {
+    const hasPageCount = hasVisibleReading
+        && typeof book.pagesCount === 'number'
+        && Number.isFinite(book.pagesCount)
+        && book.pagesCount > 0;
+    const hasAudioDuration = hasVisibleAudio
+        && typeof book.audioLength === 'number'
+        && Number.isFinite(book.audioLength)
+        && book.audioLength > 0;
+
+    return hasPageCount || hasAudioDuration;
+}
+
+function BookDialogMetadata({
+    book,
+    hasVisibleReading,
+    hasVisibleAudio,
+}: {
+    book: Book;
+    hasVisibleReading: boolean;
+    hasVisibleAudio: boolean;
+}) {
+    const pagesCount = hasVisibleReading
+        && typeof book.pagesCount === 'number'
+        && Number.isFinite(book.pagesCount)
+        && book.pagesCount > 0
+        ? Math.trunc(book.pagesCount)
+        : null;
+    const audioLength = hasVisibleAudio
+        && typeof book.audioLength === 'number'
+        && Number.isFinite(book.audioLength)
+        && book.audioLength > 0
+        ? book.audioLength
+        : null;
+
+    return (
+        <span className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            {pagesCount !== null && (
+                <span className="inline-flex items-center gap-1">
+                    <BookOpen className="h-3 w-3" aria-hidden="true" />
+                    {pagesCount} {pagesCount === 1 ? 'pagina' : 'pagine'}
+                </span>
+            )}
+            {audioLength !== null && (
+                <span className="inline-flex items-center gap-1">
+                    <Headphones className="h-3 w-3" aria-hidden="true" />
+                    {formatAudioLength(audioLength)}
+                </span>
+            )}
+        </span>
     );
 }
 
@@ -301,20 +356,18 @@ export function BookDialogSimple({
                 <DialogContent className="p-2 sm:p-4 sm:pt-0 overflow-hidden !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0">
                 {/* Header with Title and Audio Length */}
                 <DialogHeader className="space-y-0 p-0 sm:p-0 sm:pb-0">
-                    <DialogTitle className="mt-2 sm:mt-0 text-lg font-medium text-cyan-300 line-clamp-2">
+                    <DialogTitle className="mt-2 sm:mt-0 text-xl font-medium text-sky-700 dark:text-cyan-300 line-clamp-2">
                         {book.title}
                     </DialogTitle>
-                    <DialogDescription className="pb-2 sm:pb-0 text-xs text-muted-foreground flex items-center justify-center">
-                        {hasVisibleAudio && book.audioLength ? (
-                            <>
-                                <Headphones className="h-3 w-3 mr-1" />
-                                {formatAudioLength(book.audioLength)}
-                            </>
-                        ) : (
-                            // `Published ${new Date(book.publishingDate).toLocaleDateString()}`
-                            <></>
-                        )}
-                    </DialogDescription>
+                    {hasBookDialogMetadata(book, hasVisibleReading, hasVisibleAudio) && (
+                        <DialogDescription className="pb-2 text-xs text-muted-foreground sm:pb-0">
+                            <BookDialogMetadata
+                                book={book}
+                                hasVisibleReading={hasVisibleReading}
+                                hasVisibleAudio={hasVisibleAudio}
+                            />
+                        </DialogDescription>
+                    )}
                 </DialogHeader>
 
                 <div className="flex min-h-0 flex-col overflow-y-auto">
@@ -466,19 +519,18 @@ export function BookDialog({
                     <>
                         <DialogHeader className="flex-none p-0">
                             <div className="space-y-1">
-                                <DialogTitle className="text-2xl text-cyan-300">
+                                <DialogTitle className="text-2xl text-sky-700 dark:text-cyan-300">
                                     {book.title}
                                 </DialogTitle>
-                                <DialogDescription className="flex items-center gap-4">
-                                    {hasVisibleAudio && book.audioLength ? (
-                                        <span className="inline-flex items-center gap-1">
-                                            <Headphones className="h-4 w-4" />
-                                            Versione Audio: {formatAudioLength(book.audioLength)}
-                                        </span>
-                                    ) : (
-                                        <></>
-                                    )}
-                                </DialogDescription>
+                                {hasBookDialogMetadata(book, hasVisibleReading, hasVisibleAudio) && (
+                                    <DialogDescription className="text-xs text-muted-foreground">
+                                        <BookDialogMetadata
+                                            book={book}
+                                            hasVisibleReading={hasVisibleReading}
+                                            hasVisibleAudio={hasVisibleAudio}
+                                        />
+                                    </DialogDescription>
+                                )}
                             </div>
                         </DialogHeader>
                         <div className="min-h-0 overflow-y-auto">
