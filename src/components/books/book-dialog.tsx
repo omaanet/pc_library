@@ -17,6 +17,7 @@ import { formatAudioLength, cn, isBookEffectivelyNew } from '@/lib/utils';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 import type { Book } from '@/types';
 import BookComments from './book-comments';
+import { BookCoverLightbox } from './book-cover-lightbox';
 import { BookCoverPresentation } from './book-cover-presentation';
 import { BookExtract } from './book-extract';
 import AudioBookPlayer from '../shared/AudioBookPlayer';
@@ -163,6 +164,7 @@ export function BookDialogSimple({
     onLoginClick,
 }: BookDialogProps) {
     const [isPdfRequesting, setIsPdfRequesting] = useState(false);
+    const [isCoverZoomOpen, setIsCoverZoomOpen] = useState(false);
     const { toast } = useToast();
     const { state: authState } = useAuth();
     const {
@@ -170,6 +172,7 @@ export function BookDialogSimple({
     } = useLibrary();
     const pendingActionRef = useRef<{ type: 'request-pdf'; bookId: string } | null>(null);
     const isReaderNavigationRef = useRef(false);
+    const coverZoomTriggerRef = useRef<HTMLButtonElement>(null);
     const presentationMode = book ? getBookPresentationMode(book) : 'unavailable';
     const hasVisibleReading = presentationMode === 'reading-only' || presentationMode === 'reading-and-audio';
     const hasVisibleAudio = presentationMode === 'audio-only' || presentationMode === 'reading-and-audio';
@@ -185,6 +188,14 @@ export function BookDialogSimple({
             sort,
             viewMode,
         });
+    };
+
+    const handleCoverZoomOpenChange = (nextOpen: boolean) => {
+        setIsCoverZoomOpen(nextOpen);
+
+        if (!nextOpen) {
+            requestAnimationFrame(() => coverZoomTriggerRef.current?.focus());
+        }
     };
 
     // Effect to handle authentication state changes and retry pending actions
@@ -278,14 +289,16 @@ export function BookDialogSimple({
     if (!book) return null;
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={(nextOpen) => {
-                if (!nextOpen && isReaderNavigationRef.current) return;
-                onOpenChange(nextOpen);
-            }}
-        >
-            <DialogContent className="p-2 sm:p-4 sm:pt-0 overflow-hidden !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0">
+        <>
+            <Dialog
+                open={open}
+                onOpenChange={(nextOpen) => {
+                    if (!nextOpen && isReaderNavigationRef.current) return;
+                    if (!nextOpen) setIsCoverZoomOpen(false);
+                    onOpenChange(nextOpen);
+                }}
+            >
+                <DialogContent className="p-2 sm:p-4 sm:pt-0 overflow-hidden !outline-none !focus:outline-none !focus-visible:outline-none !ring-0 !focus:ring-0 !focus-visible:ring-0 !ring-offset-0 !focus:ring-offset-0">
                 {/* Header with Title and Audio Length */}
                 <DialogHeader className="space-y-0 p-0 sm:p-0 sm:pb-0">
                     <DialogTitle className="mt-2 sm:mt-0 text-lg font-medium text-cyan-300 line-clamp-2">
@@ -309,15 +322,29 @@ export function BookDialogSimple({
                         <div className="relative flex w-full flex-col items-center rounded-lg bg-muted/30 px-3 py-3">
                             <div className="flex flex-col items-center space-y-2">
 
-                                <BookCoverPresentation
-                                    book={book}
-                                    size="dialog"
-                                    alt={`Copertina di ${book.title}`}
-                                    className="mx-auto flex aspect-[400/567] w-40 max-w-[calc((100dvh-5rem)*400/567)] flex-shrink-0 sm:w-52 md:w-60"
-                                    imageClassName="h-full w-full"
-                                    skeletonClassName="rounded-lg"
-                                    sizes="(max-width: 640px) 10rem, (max-width: 767px) 13rem, 15rem"
-                                />
+                                <button
+                                    ref={coverZoomTriggerRef}
+                                    type="button"
+                                    className="cursor-zoom-in rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                    onClick={() => setIsCoverZoomOpen(true)}
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                            event.preventDefault();
+                                            setIsCoverZoomOpen(true);
+                                        }
+                                    }}
+                                    aria-label={`Ingrandisci la copertina di ${book.title}`}
+                                >
+                                    <BookCoverPresentation
+                                        book={book}
+                                        size="dialog"
+                                        alt={`Copertina di ${book.title}`}
+                                        className="mx-auto flex aspect-[400/567] w-40 max-w-[calc((100dvh-5rem)*400/567)] flex-shrink-0 sm:w-52 md:w-60"
+                                        imageClassName="h-full w-full"
+                                        skeletonClassName="rounded-lg"
+                                        sizes="(max-width: 640px) 10rem, (max-width: 767px) 13rem, 15rem"
+                                    />
+                                </button>
 
                                 {isAuthenticated && hasVisibleReading && (
                                     <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">
@@ -371,8 +398,15 @@ export function BookDialogSimple({
                         ) : null}
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+                </DialogContent>
+            </Dialog>
+
+            <BookCoverLightbox
+                book={book}
+                open={isCoverZoomOpen}
+                onOpenChange={handleCoverZoomOpenChange}
+            />
+        </>
     );
 }
 

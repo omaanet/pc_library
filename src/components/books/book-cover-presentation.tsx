@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
@@ -9,7 +9,7 @@ import type { Book } from '@/types';
 import { DEFAULT_COVER_SIZES } from '@/types/images';
 import { BookAvailabilityBadge } from './book-availability-badge';
 
-type BookCoverPresentationSize = 'grid' | 'detail' | 'dialog';
+type BookCoverPresentationSize = 'grid' | 'detail' | 'dialog' | 'zoom';
 
 interface BookCoverPresentationProps {
     book: Book;
@@ -20,6 +20,8 @@ interface BookCoverPresentationProps {
     imageStyle?: CSSProperties;
     skeletonClassName?: string;
     sizes?: string;
+    showBadges?: boolean;
+    loadingFallback?: ReactNode;
 }
 
 type ResolvedImageState = {
@@ -36,6 +38,8 @@ export function BookCoverPresentation({
     imageStyle,
     skeletonClassName,
     sizes,
+    showBadges = true,
+    loadingFallback,
 }: BookCoverPresentationProps) {
     const { width, height } = DEFAULT_COVER_SIZES[size];
     const isPlaceholder = book.coverImage === IMAGE_CONFIG.placeholder.token;
@@ -71,7 +75,13 @@ export function BookCoverPresentation({
     return (
         <span className={cn('relative', className)}>
             {!imageSettled && (
-                <Skeleton className={cn('absolute inset-0', skeletonClassName)} />
+                <Skeleton className={cn('absolute inset-0', skeletonClassName)}>
+                    {loadingFallback && (
+                        <span className="absolute inset-0 flex items-center justify-center">
+                            {loadingFallback}
+                        </span>
+                    )}
+                </Skeleton>
             )}
 
             <Image
@@ -103,21 +113,26 @@ export function BookCoverPresentation({
                 </span>
             )}
 
-            <BookAvailabilityBadge
-                book={book}
-                className={imageSettled ? 'opacity-100' : 'opacity-0'}
-                palette="gold"
-            />
+            {showBadges && (
+                <>
+                    <BookAvailabilityBadge
+                        book={book}
+                        className={imageSettled ? 'opacity-100' : 'opacity-0'}
+                        iconSize={19}
+                        palette="gold"
+                    />
 
-            {isBookEffectivelyNew(book) && (
-                <span className={cn(
-                    'absolute left-[var(--book-grid-new-badge-left)] top-[var(--book-grid-new-badge-top)] z-10 rounded',
-                    'bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white',
-                    'backdrop-blur-sm transition-[opacity,transform] duration-300 group-hover:scale-[var(--book-grid-badge-hover-scale)] motion-reduce:transition-none',
-                    imageSettled ? 'opacity-100' : 'opacity-0'
-                )}>
-                    NEW
-                </span>
+                    {isBookEffectivelyNew(book) && (
+                        <span className={cn(
+                            'absolute left-[var(--book-grid-new-badge-left)] top-[var(--book-grid-new-badge-top)] z-10 rounded',
+                            'bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white',
+                            'backdrop-blur-sm transition-[opacity,transform] duration-300 group-hover:scale-[var(--book-grid-badge-hover-scale)] motion-reduce:transition-none',
+                            imageSettled ? 'opacity-100' : 'opacity-0'
+                        )}>
+                            NEW
+                        </span>
+                    )}
+                </>
             )}
         </span>
     );
