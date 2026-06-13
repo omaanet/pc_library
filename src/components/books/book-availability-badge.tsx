@@ -79,7 +79,7 @@ export function BookAvailabilityBadge({
                 'absolute right-[var(--book-grid-audio-badge-right)] top-[var(--book-grid-audio-badge-top)] z-10',
                 'flex flex-col items-center gap-1.5 rounded-tl-lg rounded-tr rounded-br-sm rounded-bl',
                 'px-1.5 pt-3 pb-2.5 shadow-xl ring-1 ring-inset backdrop-blur-sm',
-                'transition-[opacity,transform] duration-300 group-hover:scale-[var(--book-grid-badge-hover-scale)]',
+                'transition-[opacity,transform] duration-300 group-hover:scale-[var(--book-grid-badge-hover-scale)] motion-reduce:transition-none',
                 PALETTE_CLASSES[palette],
                 className
             )}
