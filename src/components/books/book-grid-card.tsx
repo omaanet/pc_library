@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Book } from '@/types';
+import { BookAvailabilityBadge } from './book-availability-badge';
 import { formatBookDomId } from './book-dom-id';
 import { getBookPresentationMode, isAudioAvailable } from '@/lib/book-visibility';
 
@@ -23,7 +24,7 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
     const hasVisibleAudio = isAudioAvailable(book);
     const presentationMode = getBookPresentationMode(book);
     const actionLabel = presentationMode === 'reading-and-audio'
-        ? 'Leggi e Ascolta'
+        ? 'Leggi o Ascolta'
         : presentationMode === 'audio-only'
             ? 'Ascolta'
             : 'Leggi';
@@ -80,16 +81,11 @@ export function BookGridCard({ book, onSelect, className }: BookGridCardProps) {
                     unoptimized
                 />
 
-                {/* Audio badge */}
-                {hasVisibleAudio && (
-                    <div className={cn(
-                        "absolute right-[var(--book-grid-audio-badge-right)] top-[var(--book-grid-audio-badge-top)] z-10 rounded-full bg-yellow-600/80 p-1.5",
-                        "backdrop-blur-sm transition-[opacity,transform] duration-300 group-hover:scale-[var(--book-grid-badge-hover-scale)]",
-                        imageLoaded ? "opacity-100" : "opacity-0"
-                    )}>
-                        <Headphones className="h-6 w-6" />
-                    </div>
-                )}
+                <BookAvailabilityBadge
+                    book={book}
+                    className={imageLoaded ? 'opacity-100' : 'opacity-0'}
+                    palette='gold'
+                />
 
                 {isNew && (
                     <div className={cn(

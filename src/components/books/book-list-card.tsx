@@ -22,7 +22,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
     const hasVisibleAudio = isAudioAvailable(book);
     const presentationMode = getBookPresentationMode(book);
     const actionLabel = presentationMode === 'reading-and-audio'
-        ? 'Leggi e Ascolta'
+        ? 'Leggi o Ascolta'
         : presentationMode === 'audio-only'
             ? 'Ascolta'
             : 'Leggi';
