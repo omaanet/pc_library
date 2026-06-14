@@ -156,8 +156,8 @@ const HTML5Player = ({
                                 }
                             }}
                             disabled={!canBookmark || isBookmarkSaving}
-                            aria-label="Salva segnalibro audio"
-                            title={currentState.track.kind === 'main' ? 'Salva segnalibro audio' : 'Disponibile sul racconto audio'}
+                            aria-label={bookmarkActive ? 'Rimuovi segnalibro audio' : 'Salva segnalibro audio'}
+                            title={bookmarkActive ? 'Rimuovi segnalibro audio' : 'Salva segnalibro audio'}
                         >
                             {bookmarkActive ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
                         </button>

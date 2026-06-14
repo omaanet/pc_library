@@ -45,7 +45,7 @@ const renderAudioBadge = (book: Book | null, visible: boolean) => {
 
     return (
         <div className={cn(
-            "absolute -top-1 -right-1 rounded-full bg-yellow-600/90 p-1 sm:p-1.5",
+            "book-availability-badge-colors absolute -top-1 -right-1 rounded-full p-1 sm:p-1.5",
             "backdrop-blur-sm transition-opacity duration-200 z-10",
             visible ? "opacity-100" : "opacity-0"
         )}>
@@ -60,7 +60,7 @@ const renderNewBadge = (book: Book | null, visible: boolean) => {
 
     return (
         <div className={cn(
-            "absolute -top-1 -left-1 rounded bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white",
+            "book-new-badge-colors absolute -top-1 -left-1 rounded px-2 py-0.5 text-xs font-semibold",
             "backdrop-blur-sm transition-opacity duration-200 z-10",
             visible ? "opacity-100" : "opacity-0"
         )}>
@@ -109,7 +109,7 @@ function BookExtractToggle({ disclosure }: { disclosure: BookExtractDisclosureSt
         <button
             type="button"
             className={cn(
-                "group absolute bottom-1 right-1 z-20 flex h-11 items-center justify-center gap-1.5 rounded-full px-3",
+                "group absolute bottom-1 right-1 z-20 flex h-11 w-11 items-center justify-center gap-1.5 rounded-full px-0 sm:w-auto sm:px-3",
                 "text-sky-700 transition-colors hover:bg-background/70 hover:text-sky-900",
                 "dark:text-cyan-300 dark:hover:text-cyan-100",
                 "active:bg-transparent focus-visible:outline-none"
@@ -124,7 +124,7 @@ function BookExtractToggle({ disclosure }: { disclosure: BookExtractDisclosureSt
                 className="h-4 w-4 rounded-full group-focus-visible:ring-2 group-focus-visible:ring-black dark:group-focus-visible:ring-white"
                 aria-hidden="true"
             />
-            <span className="text-sm font-medium">Estratto</span>
+            <span className="hidden text-sm font-medium sm:inline">Estratto</span>
         </button>
     );
 }

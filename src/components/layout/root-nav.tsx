@@ -23,6 +23,7 @@ import {
     Menu,
     UserCircle,
     LogOut,
+    CircleHelp,
 } from 'lucide-react';
 
 export function RootNav({
@@ -71,15 +72,31 @@ export function RootNav({
                 </nav> */}
 
                 {/* Actions */}
-                <div className="flex items-center space-x-4">
+                <div className="flex min-w-0 items-center gap-1.5 sm:gap-4">
+                    {isAuthenticated && (
+                        <Link
+                            href="/guida"
+                            className={cn(
+                                "flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium transition-colors",
+                                "hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                pathname === "/guida" && "bg-accent text-accent-foreground"
+                            )}
+                            aria-current={pathname === "/guida" ? "page" : undefined}
+                        >
+                            <CircleHelp className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                            <span>Guida</span>
+                        </Link>
+                    )}
+
                     <div className="inline-flex items-center text-xs sm:text-sm text-muted-foreground">
                         <a
                             href={`mailto:${SITE_CONFIG.CONTACT_EMAIL}`}
-                            className="flex items-center gap-1.5 align-middle hover:text-yellow-400 transition-colors"
+                            className="flex min-h-11 items-center gap-1.5 rounded-md px-1.5 align-middle transition-colors hover:text-yellow-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             rel="nofollow"
+                            aria-label={`Scrivi a ${SITE_CONFIG.CONTACT_EMAIL}`}
                         >
                             <Mail className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-                            <span className="whitespace-nowrap">{SITE_CONFIG.CONTACT_EMAIL}</span>
+                            <span className="hidden whitespace-nowrap md:inline">{SITE_CONFIG.CONTACT_EMAIL}</span>
                         </a>
                     </div>
 
@@ -92,7 +109,7 @@ export function RootNav({
                                 <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-3 text-xs sm:text-sm">
                                     <UserCircle className="h-5 w-5" />
                                     <div className="flex items-center gap-2">
-                                        <span className="font-medium">
+                                        <span className="hidden font-medium sm:inline">
                                             {state.user?.name || state.user?.fullName || 'Utente'}
                                         </span>
                                         {/* {state.user?.isAdmin && (

@@ -79,7 +79,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
             {/* Audio badge */}
             {hasVisibleAudio && (
                 <div className={cn(
-                    "absolute top-1 right-1 rounded-full bg-background/80 p-1",
+                    "book-availability-badge-colors absolute top-1 right-1 rounded-full p-1",
                     "backdrop-blur-sm transition-opacity duration-200",
                     imageLoaded ? "opacity-100" : "opacity-0"
                 )}>
@@ -90,7 +90,7 @@ export function BookListCard({ book, onSelect, className }: BookListCardProps) {
             {/* NEW badge */}
             {isNew && (
                 <div className={cn(
-                    "absolute top-1 left-1 rounded bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white",
+                    "book-new-badge-colors absolute top-1 left-1 rounded px-2 py-0.5 text-xs font-semibold",
                     "backdrop-blur-sm transition-opacity duration-200",
                     imageLoaded ? "opacity-100" : "opacity-0"
                 )}>

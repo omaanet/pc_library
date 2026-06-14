@@ -119,13 +119,12 @@ export function BookCoverPresentation({
                         book={book}
                         className={imageSettled ? 'opacity-100' : 'opacity-0'}
                         iconSize={19}
-                        palette="gold"
                     />
 
                     {isBookEffectivelyNew(book) && (
                         <span className={cn(
                             'absolute left-[var(--book-grid-new-badge-left)] top-[var(--book-grid-new-badge-top)] z-10 rounded',
-                            'bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white',
+                            'book-new-badge-colors px-2 py-0.5 text-xs font-semibold',
                             'backdrop-blur-sm transition-[opacity,transform] duration-300 group-hover:scale-[var(--book-grid-badge-hover-scale)] motion-reduce:transition-none',
                             imageSettled ? 'opacity-100' : 'opacity-0'
                         )}>

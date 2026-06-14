@@ -7,6 +7,7 @@ const COVERS_PATH = '/api/covers';
 const PROTECTED_ROUTES = [
     '/profile',
     '/settings',
+    '/guida',
     '/read-book',
     '/add-book',
     '/admin',

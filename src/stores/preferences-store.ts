@@ -1,6 +1,11 @@
 // src/stores/preferences-store.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import {
+    DEFAULT_BOOK_BADGE_PALETTE,
+    isBookBadgePalette,
+} from '@/config/book-badge-palettes';
+import type { BookBadgePalette } from '@/types/preferences';
 
 // Reader-specific preferences for the book reading page
 export interface ReaderPreferences {
@@ -8,29 +13,35 @@ export interface ReaderPreferences {
     zoomLevel: number;
 }
 
-export interface ReaderPreferencesState {
-    // Reader preferences
+export interface AppearancePreferences {
+    bookBadgePalette: BookBadgePalette;
+}
+
+export interface PreferencesState {
     reader: ReaderPreferences;
+    appearance: AppearancePreferences;
     
-    // Actions
     setViewMode: (mode: 'single' | 'double') => void;
     setZoomLevel: (level: number) => void;
+    setBookBadgePalette: (palette: BookBadgePalette) => void;
     resetToDefaults: () => void;
 }
 
-// Default values
 const defaultReaderPreferences: ReaderPreferences = {
     viewMode: 'double',
-    zoomLevel: 1.0, // Use 1.0 for 100% zoom
+    zoomLevel: 1.0,
 };
 
-export const useReaderPreferencesStore = create<ReaderPreferencesState>()(
+const defaultAppearancePreferences: AppearancePreferences = {
+    bookBadgePalette: DEFAULT_BOOK_BADGE_PALETTE,
+};
+
+export const useReaderPreferencesStore = create<PreferencesState>()(
     persist(
         (set) => ({
-            // Initial state
             reader: defaultReaderPreferences,
+            appearance: defaultAppearancePreferences,
             
-            // Actions
             setViewMode: (mode) => {
                 set((state) => ({
                     reader: { ...state.reader, viewMode: mode }
@@ -42,6 +53,12 @@ export const useReaderPreferencesStore = create<ReaderPreferencesState>()(
                     reader: { ...state.reader, zoomLevel: level }
                 }));
             },
+
+            setBookBadgePalette: (palette) => {
+                set((state) => ({
+                    appearance: { ...state.appearance, bookBadgePalette: palette }
+                }));
+            },
             
             resetToDefaults: () => {
                 set({ reader: defaultReaderPreferences });
@@ -50,12 +67,36 @@ export const useReaderPreferencesStore = create<ReaderPreferencesState>()(
         {
             name: 'reader-preferences',
             storage: createJSONStorage(() => localStorage),
-            version: 1,
+            version: 2,
+            migrate: (persistedState) => {
+                const state = persistedState as Partial<PreferencesState> | undefined;
+                const persistedPalette = state?.appearance?.bookBadgePalette;
+
+                return {
+                    ...state,
+                    reader: {
+                        ...defaultReaderPreferences,
+                        ...state?.reader,
+                    },
+                    appearance: {
+                        ...defaultAppearancePreferences,
+                        ...state?.appearance,
+                        bookBadgePalette: isBookBadgePalette(persistedPalette)
+                            ? persistedPalette
+                            : DEFAULT_BOOK_BADGE_PALETTE,
+                    },
+                } as PreferencesState;
+            },
         }
     )
 );
 
-// Selector hooks for better performance
 export const useReaderPreferences = () => useReaderPreferencesStore((state) => state.reader);
 export const useSetViewMode = () => useReaderPreferencesStore((state) => state.setViewMode);
 export const useSetZoomLevel = () => useReaderPreferencesStore((state) => state.setZoomLevel);
+export const useBookBadgePalette = () => useReaderPreferencesStore(
+    (state) => state.appearance.bookBadgePalette
+);
+export const useSetBookBadgePalette = () => useReaderPreferencesStore(
+    (state) => state.setBookBadgePalette
+);

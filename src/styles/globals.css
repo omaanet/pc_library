@@ -44,6 +44,14 @@
         --book-grid-cover-hover-scale: 1;
         --book-grid-badge-hover-scale: 1;
 
+        /* Book badge palette fallback: Gold */
+        --book-badge-background: hsl(48 96% 89% / 0.95);
+        --book-badge-icon: hsl(21 92% 14%);
+        --book-badge-ring: hsl(43 96% 56% / 0.7);
+        --book-badge-shadow: hsl(21 92% 14% / 0.3);
+        --book-new-background: hsl(160 84% 39% / 0.9);
+        --book-new-foreground: hsl(0 0% 100%);
+
         /* Icon Colors Light Mode */
         --gold-main: hsl(46, 80%, 50%);
         --gold-highlight: hsl(46, 92%, 65%);
@@ -91,6 +99,13 @@
 
         --theme-color-title: hsl(205, 84%, 27%);
 
+        --book-badge-background: hsl(35 92% 33% / 0.95);
+        --book-badge-icon: hsl(48 100% 96%);
+        --book-badge-ring: hsl(43 96% 56% / 0.6);
+        --book-badge-shadow: hsl(21 92% 14% / 0.5);
+        --book-new-background: hsl(160 84% 39% / 0.9);
+        --book-new-foreground: hsl(0 0% 100%);
+
         /* Icon Colors Dark Mode */
         --gold-main: hsl(46, 59%, 50%);
         --gold-highlight: hsl(46, 72%, 65%);
@@ -104,6 +119,120 @@
         --Abstract-Profile-Lb: hsl(187, 91%, 70%);
         --Abstract-Profile-LA: #ff7f50;
         --Abstract-Profile-Lc: hsl(156, 100%, 50%);
+    }
+
+    [data-book-badge-palette="gold"] {
+        --book-badge-background: hsl(48 96% 89% / 0.95);
+        --book-badge-icon: hsl(21 92% 14%);
+        --book-badge-ring: hsl(43 96% 56% / 0.7);
+        --book-badge-shadow: hsl(21 92% 14% / 0.3);
+        --book-new-background: hsl(160 84% 39% / 0.9);
+        --book-new-foreground: hsl(0 0% 100%);
+    }
+
+    [data-book-badge-palette="ocean"] {
+        --book-badge-background: hsl(200 94% 86% / 0.95);
+        --book-badge-icon: hsl(204 80% 16%);
+        --book-badge-ring: hsl(198 93% 60% / 0.7);
+        --book-badge-shadow: hsl(204 80% 16% / 0.3);
+        --book-new-background: hsl(221 83% 53% / 0.9);
+        --book-new-foreground: hsl(0 0% 100%);
+    }
+
+    [data-book-badge-palette="lagoon"] {
+        --book-badge-background: hsl(170 76% 86% / 0.95);
+        --book-badge-icon: hsl(179 84% 10%);
+        --book-badge-ring: hsl(172 66% 50% / 0.7);
+        --book-badge-shadow: hsl(179 84% 10% / 0.3);
+        --book-new-background: hsl(160 84% 39% / 0.9);
+        --book-new-foreground: hsl(0 0% 100%);
+    }
+
+    [data-book-badge-palette="lavender"] {
+        --book-badge-background: hsl(252 100% 93% / 0.95);
+        --book-badge-icon: hsl(261 73% 23%);
+        --book-badge-ring: hsl(255 92% 76% / 0.7);
+        --book-badge-shadow: hsl(261 73% 23% / 0.3);
+        --book-new-background: hsl(292 84% 61% / 0.9);
+        --book-new-foreground: hsl(0 0% 100%);
+    }
+
+    [data-book-badge-palette="coral"] {
+        --book-badge-background: hsl(353 96% 90% / 0.95);
+        --book-badge-icon: hsl(343 88% 16%);
+        --book-badge-ring: hsl(351 95% 71% / 0.7);
+        --book-badge-shadow: hsl(343 88% 16% / 0.3);
+        --book-new-background: hsl(21 90% 48% / 0.9);
+        --book-new-foreground: hsl(0 0% 100%);
+    }
+
+    [data-book-badge-palette="paper"] {
+        --book-badge-background: hsl(20 6% 90% / 0.95);
+        --book-badge-icon: hsl(24 10% 10%);
+        --book-badge-ring: hsl(24 6% 64% / 0.7);
+        --book-badge-shadow: hsl(24 10% 10% / 0.3);
+        --book-new-background: hsl(215 25% 27% / 0.9);
+        --book-new-foreground: hsl(0 0% 100%);
+    }
+
+    .dark[data-book-badge-palette="gold"],
+    .dark [data-book-badge-palette="gold"] {
+        --book-badge-background: hsl(35 92% 33% / 0.95);
+        --book-badge-icon: hsl(48 100% 96%);
+        --book-badge-ring: hsl(43 96% 56% / 0.6);
+        --book-badge-shadow: hsl(21 92% 14% / 0.5);
+        --book-new-background: hsl(160 84% 39% / 0.9);
+        --book-new-foreground: hsl(0 0% 100%);
+    }
+
+    .dark[data-book-badge-palette="ocean"],
+    .dark [data-book-badge-palette="ocean"] {
+        --book-badge-background: hsl(201 90% 27% / 0.95);
+        --book-badge-icon: hsl(204 100% 97%);
+        --book-badge-ring: hsl(198 93% 60% / 0.6);
+        --book-badge-shadow: hsl(204 80% 16% / 0.5);
+        --book-new-background: hsl(217 91% 60% / 0.9);
+        --book-new-foreground: hsl(222 47% 11%);
+    }
+
+    .dark[data-book-badge-palette="lagoon"],
+    .dark [data-book-badge-palette="lagoon"] {
+        --book-badge-background: hsl(175 77% 26% / 0.95);
+        --book-badge-icon: hsl(166 76% 97%);
+        --book-badge-ring: hsl(172 66% 50% / 0.6);
+        --book-badge-shadow: hsl(179 84% 10% / 0.5);
+        --book-new-background: hsl(160 84% 39% / 0.9);
+        --book-new-foreground: hsl(152 81% 96%);
+    }
+
+    .dark[data-book-badge-palette="lavender"],
+    .dark [data-book-badge-palette="lavender"] {
+        --book-badge-background: hsl(263 70% 35% / 0.95);
+        --book-badge-icon: hsl(250 100% 98%);
+        --book-badge-ring: hsl(255 92% 76% / 0.6);
+        --book-badge-shadow: hsl(261 73% 23% / 0.5);
+        --book-new-background: hsl(292 84% 61% / 0.9);
+        --book-new-foreground: hsl(0 0% 100%);
+    }
+
+    .dark[data-book-badge-palette="coral"],
+    .dark [data-book-badge-palette="coral"] {
+        --book-badge-background: hsl(346 77% 40% / 0.95);
+        --book-badge-icon: hsl(356 100% 97%);
+        --book-badge-ring: hsl(351 95% 71% / 0.6);
+        --book-badge-shadow: hsl(343 88% 16% / 0.5);
+        --book-new-background: hsl(21 90% 48% / 0.9);
+        --book-new-foreground: hsl(33 100% 96%);
+    }
+
+    .dark[data-book-badge-palette="paper"],
+    .dark [data-book-badge-palette="paper"] {
+        --book-badge-background: hsl(24 6% 32% / 0.95);
+        --book-badge-icon: hsl(60 9% 98%);
+        --book-badge-ring: hsl(24 6% 64% / 0.6);
+        --book-badge-shadow: hsl(24 10% 10% / 0.5);
+        --book-new-background: hsl(215 20% 65% / 0.9);
+        --book-new-foreground: hsl(222 47% 11%);
     }
 
     * {
@@ -139,6 +268,17 @@
 }
 
 @layer utilities {
+    .book-availability-badge-colors {
+        background-color: var(--book-badge-background);
+        color: var(--book-badge-icon);
+        --tw-ring-color: var(--book-badge-ring);
+        --tw-shadow-color: var(--book-badge-shadow);
+    }
+
+    .book-new-badge-colors {
+        background-color: var(--book-new-background);
+        color: var(--book-new-foreground);
+    }
 
     /* Icon Global Animation: Draw Lines */
     @keyframes draw {

@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { LibraryProvider } from '@/context/library-context';
 import { AuthProvider } from '@/context/auth-context';
 import { QueryProvider } from './query-provider';
+import { BookBadgePaletteProvider } from './book-badge-palette-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
@@ -16,11 +17,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 enableSystem
                 disableTransitionOnChange
             >
-                <AuthProvider>
-                    <LibraryProvider>
-                        {children}
-                    </LibraryProvider>
-                </AuthProvider>
+                <BookBadgePaletteProvider>
+                    <AuthProvider>
+                        <LibraryProvider>
+                            {children}
+                        </LibraryProvider>
+                    </AuthProvider>
+                </BookBadgePaletteProvider>
             </ThemeProvider>
         </QueryProvider>
     );

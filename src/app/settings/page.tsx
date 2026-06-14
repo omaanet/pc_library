@@ -4,10 +4,16 @@ import * as React from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from 'next-themes';
 import {
+    useBookBadgePalette,
     useReaderPreferences,
+    useSetBookBadgePalette,
     useSetViewMode,
     useSetZoomLevel
 } from '@/stores/preferences-store';
+import {
+    BOOK_BADGE_PALETTES,
+    isBookBadgePalette,
+} from '@/config/book-badge-palettes';
 import { RootNav } from '@/components/layout/root-nav';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -25,7 +31,6 @@ import {
     TabsTrigger,
 } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -35,7 +40,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
-import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, BookOpenText, Headphones, Loader2 } from 'lucide-react';
 import { CopyrightFooter } from '@/components/shared/copyright-footer';
 
 export default function SettingsPage() {
@@ -46,9 +51,11 @@ export default function SettingsPage() {
     // Reader preferences store actions
     const setViewMode = useSetViewMode();
     const setZoomLevel = useSetZoomLevel();
+    const setBookBadgePalette = useSetBookBadgePalette();
 
     // Reader preferences store values
     const readerPrefs = useReaderPreferences();
+    const bookBadgePalette = useBookBadgePalette();
 
     const [isSaving, setIsSaving] = React.useState(false);
 
@@ -58,6 +65,16 @@ export default function SettingsPage() {
         toast({
             title: 'Tema aggiornato',
             description: 'Il tema è stato salvato correttamente.',
+        });
+    };
+
+    const handleBookBadgePaletteChange = (value: string) => {
+        if (!isBookBadgePalette(value)) return;
+
+        setBookBadgePalette(value);
+        toast({
+            title: 'Palette aggiornata',
+            description: 'I badge dei libri sono stati aggiornati.',
         });
     };
 
@@ -164,6 +181,60 @@ export default function SettingsPage() {
                                             <SelectItem value="system">Sistema</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="book-badge-palette">Palette badge libri</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Scegli i colori degli indicatori di disponibilità e del badge NEW.
+                                        </p>
+                                    </div>
+                                    <Select
+                                        value={bookBadgePalette}
+                                        onValueChange={handleBookBadgePaletteChange}
+                                    >
+                                        <SelectTrigger id="book-badge-palette">
+                                            <SelectValue placeholder="Seleziona palette" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {BOOK_BADGE_PALETTES.map((palette) => (
+                                                <SelectItem key={palette.value} value={palette.value}>
+                                                    <span
+                                                        className="flex items-center gap-2"
+                                                        data-book-badge-palette={palette.value}
+                                                    >
+                                                        <span
+                                                            aria-hidden="true"
+                                                            className="book-availability-badge-colors h-4 w-4 rounded-full ring-1 ring-inset"
+                                                        />
+                                                        <span
+                                                            aria-hidden="true"
+                                                            className="book-new-badge-colors h-4 w-4 rounded"
+                                                        />
+                                                        <span>{palette.label}</span>
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    <div
+                                        className="flex flex-wrap items-center gap-4 rounded-lg border bg-muted/30 p-4"
+                                        data-book-badge-palette={bookBadgePalette}
+                                    >
+                                        <span className="text-sm font-medium">Anteprima</span>
+                                        <span className="book-availability-badge-colors flex items-center gap-2 rounded-md px-3 py-2 shadow-lg ring-1 ring-inset">
+                                            <Headphones className="h-4 w-4" aria-hidden="true" />
+                                            <BookOpenText className="h-4 w-4" aria-hidden="true" />
+                                            <span className="text-xs font-semibold">
+                                                Audio e lettura
+                                            </span>
+                                        </span>
+                                        <span className="book-new-badge-colors rounded px-2 py-0.5 text-xs font-semibold">
+                                            NEW
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {/* Hidden but keep code for future use

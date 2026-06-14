@@ -44,6 +44,7 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
         error: bookmarksError,
         canWrite: bookmarksCanWrite,
         saveBookmark,
+        deleteBookmark,
     } = useBookmarks(bookId, Boolean(user?.id));
     
     // Configuration - use values from store as defaults
@@ -92,6 +93,7 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
     const pinchInitialMidpoint = useRef<{ x: number; y: number } | null>(null);
     const pinchInitialTranslate = useRef<{ x: number; y: number } | null>(null);
     const lastSavedReaderPageRef = useRef<number | null>(initialPage > 1 ? initialPage : null);
+    const readerAutoSaveSuspendedRef = useRef(false);
 
     // Update store when viewMode changes
     const handleViewModeChange = useCallback((newMode: 'single' | 'double') => {
@@ -394,16 +396,24 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
         setIsPageJumpOpen(false);
     };
 
-    const saveReaderBookmark = async (e?: React.MouseEvent | React.TouchEvent) => {
+    const toggleReaderBookmark = async (e?: React.MouseEvent | React.TouchEvent) => {
         stopNavigationEvent(e);
         const pageNumber = clampPageNumber(getVisiblePages()[0] ?? currentPage);
+        const shouldRemove = bookmarks.reader?.pageNumber === pageNumber;
 
         setIsSavingReaderBookmark(true);
         try {
-            await saveBookmark({ kind: 'reader', pageNumber });
-            lastSavedReaderPageRef.current = pageNumber;
+            if (shouldRemove) {
+                await deleteBookmark('reader');
+                readerAutoSaveSuspendedRef.current = true;
+                lastSavedReaderPageRef.current = null;
+            } else {
+                readerAutoSaveSuspendedRef.current = false;
+                await saveBookmark({ kind: 'reader', pageNumber });
+                lastSavedReaderPageRef.current = pageNumber;
+            }
         } catch (error) {
-            logger.error('Failed to save reader bookmark', { error, bookId, pageNumber });
+            logger.error('Failed to toggle reader bookmark', { error, bookId, pageNumber });
         } finally {
             setIsSavingReaderBookmark(false);
         }
@@ -776,6 +786,7 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
 
     useEffect(() => {
         if (!bookmarksCanWrite || !bookmarksInitialized || bookmarksError || !hasAppliedReaderBookmark) return;
+        if (readerAutoSaveSuspendedRef.current) return;
         if (bookmarks.reader?.pageNumber === currentPage) return;
         if (lastSavedReaderPageRef.current === currentPage) return;
 
@@ -1129,11 +1140,10 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
                 <div className="fixed top-4 right-16 z-[25] pointer-events-none">
                     <button
                         className="p-2 bg-black/40 hover:bg-black/60 rounded-full pointer-events-auto touch-manipulation transition-colors backdrop-blur-sm disabled:cursor-not-allowed disabled:opacity-60"
-                        onClick={saveReaderBookmark}
-                        onTouchEnd={saveReaderBookmark}
+                        onClick={toggleReaderBookmark}
                         disabled={isSavingReaderBookmark || !bookmarksCanWrite}
-                        aria-label="Salva segnalibro"
-                        title="Salva segnalibro"
+                        aria-label={isCurrentPageBookmarked ? "Rimuovi segnalibro" : "Salva segnalibro"}
+                        title={isCurrentPageBookmarked ? "Rimuovi segnalibro" : "Salva segnalibro"}
                     >
                         {isCurrentPageBookmarked ? (
                             <BookmarkCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300 hover:text-emerald-200" />
