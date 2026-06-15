@@ -5,7 +5,8 @@
 
 import type { HTML5PlayerProps } from './types';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import type { SyntheticEvent } from 'react';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useVolumeControl } from './hooks/useVolumeControl';
 import { useTrackNavigation } from './hooks/useTrackNavigation';
@@ -38,7 +39,6 @@ const HTML5Player = ({
     showBookmarkControl = false,
     isBookmarkDisabled = false
 }: HTML5PlayerProps) => {
-    const firstPlayNotifiedRef = useRef(false);
     // Track navigation
     const { currentTrack, handleNext, handlePrev, handleEnd } = useTrackNavigation({ tracks, initialTrackIndex });
 
@@ -96,12 +96,15 @@ const HTML5Player = ({
         }
     }, [currentState, onProgress]);
 
-    useEffect(() => {
-        if (!currentState || firstPlayNotifiedRef.current) return;
-        if (currentState.track.kind !== 'main' || !currentState.isPlaying || currentState.resumeStatus === 'pending') return;
+    const handleAudioPlaying = useCallback((event: SyntheticEvent<HTMLAudioElement>) => {
+        if (!currentState || currentState.track.kind !== 'main') return;
 
-        firstPlayNotifiedRef.current = true;
-        onFirstPlay?.(currentState);
+        onFirstPlay?.({
+            ...currentState,
+            currentTime: event.currentTarget.currentTime,
+            duration: event.currentTarget.duration,
+            isPlaying: true,
+        });
     }, [currentState, onFirstPlay]);
 
     if (!tracks || tracks.length === 0 || !currentState) {
@@ -111,7 +114,12 @@ const HTML5Player = ({
     return (
         <div>
             <div className="audio-player w-full">
-                <audio ref={audioRef} muted={muted || volume === 0} preload="auto">
+                <audio
+                    ref={audioRef}
+                    muted={muted || volume === 0}
+                    preload="auto"
+                    onPlaying={handleAudioPlaying}
+                >
                     <source
                         src={tracks[currentTrack].url}
                         {...(currentSourceType ? { type: currentSourceType } : {})}

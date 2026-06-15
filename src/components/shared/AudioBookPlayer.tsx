@@ -351,11 +351,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
     const trackingMediaId = activeAudiobook?.media_id ?? null;
 
     const handleFirstPlay = useCallback(() => {
-        if (!trackingBookId || !trackingMediaId || !playerKey) return;
-
-        const storageKey = `audio-play:${playerKey}`;
-        if (sessionStorage.getItem(storageKey)) return;
-        sessionStorage.setItem(storageKey, 'true');
+        if (!trackingBookId || !trackingMediaId) return;
 
         void fetch('/api/statistics/audio-play', {
             method: 'POST',
@@ -365,10 +361,15 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
                 bookId: trackingBookId,
                 mediaId: trackingMediaId,
             }),
+        }).then(async (response) => {
+            if (response.ok) return;
+
+            const responseBody = await response.text().catch(() => '');
+            console.error('Failed to track audio play:', response.status, responseBody);
         }).catch((error) => {
             console.error('Failed to track audio play:', error);
         });
-    }, [playerKey, trackingBookId, trackingMediaId]);
+    }, [trackingBookId, trackingMediaId]);
 
     if (!book || !isAudioAvailable(book)) return null;
 

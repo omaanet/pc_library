@@ -9,19 +9,38 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/auth-context';
 import { StatsCard, ActivityChart, TopListCard, BarChartComponent } from '@/components/statistics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, BookOpen, Users, AlertTriangle, RefreshCw, Loader2, ArrowLeft, Volume2, Megaphone } from 'lucide-react';
+import { Download, BookOpen, Users, AlertTriangle, RefreshCw, ArrowLeft, Volume2, Megaphone } from 'lucide-react';
 import { fetchStatisticsWithErrors, retryEndpoint, type StatisticsError } from '@/lib/statistics-error-helper';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
 import { AuthModal } from '@/components/auth/auth-modal';
 
+const ACTIVE_TAB_STORAGE_KEY = 'user-statistics-active-tab';
+const STATISTICS_TAB_VALUES = ['overview', 'downloads', 'reading', 'audio', 'promo', 'users', 'errors'] as const;
+type StatisticsTab = typeof STATISTICS_TAB_VALUES[number];
+const STATISTICS_TAB_BASE_CLASS = 'flex-shrink-0 data-[state=inactive]:border data-[state=inactive]:border-gray-600 data-[state=active]:border-transparent';
+
+const STATISTICS_TAB_CLASSES: Record<StatisticsTab, string> = {
+    overview: STATISTICS_TAB_BASE_CLASS,
+    downloads: `${STATISTICS_TAB_BASE_CLASS} data-[state=inactive]:bg-blue-50 data-[state=inactive]:text-blue-700 hover:data-[state=inactive]:bg-blue-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white dark:data-[state=inactive]:bg-blue-950/50 dark:data-[state=inactive]:text-blue-200 dark:hover:data-[state=inactive]:bg-blue-900/70 dark:data-[state=active]:bg-blue-500 dark:data-[state=active]:text-white`,
+    reading: `${STATISTICS_TAB_BASE_CLASS} data-[state=inactive]:bg-amber-50 data-[state=inactive]:text-amber-700 hover:data-[state=inactive]:bg-amber-100 data-[state=active]:bg-amber-600 data-[state=active]:text-white dark:data-[state=inactive]:bg-amber-950/50 dark:data-[state=inactive]:text-amber-200 dark:hover:data-[state=inactive]:bg-amber-900/70 dark:data-[state=active]:bg-amber-500 dark:data-[state=active]:text-white`,
+    audio: `${STATISTICS_TAB_BASE_CLASS} data-[state=inactive]:bg-emerald-50 data-[state=inactive]:text-emerald-700 hover:data-[state=inactive]:bg-emerald-100 data-[state=active]:bg-emerald-600 data-[state=active]:text-white dark:data-[state=inactive]:bg-emerald-950/50 dark:data-[state=inactive]:text-emerald-200 dark:hover:data-[state=inactive]:bg-emerald-900/70 dark:data-[state=active]:bg-emerald-500 dark:data-[state=active]:text-white`,
+    promo: `${STATISTICS_TAB_BASE_CLASS} data-[state=inactive]:bg-pink-50 data-[state=inactive]:text-pink-700 hover:data-[state=inactive]:bg-pink-100 data-[state=active]:bg-pink-600 data-[state=active]:text-white dark:data-[state=inactive]:bg-pink-950/50 dark:data-[state=inactive]:text-pink-200 dark:hover:data-[state=inactive]:bg-pink-900/70 dark:data-[state=active]:bg-pink-500 dark:data-[state=active]:text-white`,
+    users: `${STATISTICS_TAB_BASE_CLASS} data-[state=inactive]:bg-purple-50 data-[state=inactive]:text-purple-700 hover:data-[state=inactive]:bg-purple-100 data-[state=active]:bg-purple-600 data-[state=active]:text-white dark:data-[state=inactive]:bg-purple-950/50 dark:data-[state=inactive]:text-purple-200 dark:hover:data-[state=inactive]:bg-purple-900/70 dark:data-[state=active]:bg-purple-500 dark:data-[state=active]:text-white`,
+    errors: `${STATISTICS_TAB_BASE_CLASS} data-[state=inactive]:bg-red-50 data-[state=inactive]:text-red-700 hover:data-[state=inactive]:bg-red-100 data-[state=active]:bg-red-600 data-[state=active]:text-white dark:data-[state=inactive]:bg-red-950/50 dark:data-[state=inactive]:text-red-200 dark:hover:data-[state=inactive]:bg-red-900/70 dark:data-[state=active]:bg-red-500 dark:data-[state=active]:text-white`,
+};
+
+const isStatisticsTab = (value: string | null): value is StatisticsTab => (
+    STATISTICS_TAB_VALUES.includes(value as StatisticsTab)
+);
+
 export default function UserStatisticsPage() {
     const router = useRouter();
     const { state } = useAuth();
     const [timeRange, setTimeRange] = useState('all');
     const [topListSize, setTopListSize] = useState('10');
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState<StatisticsTab>('overview');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -33,6 +52,11 @@ export default function UserStatisticsPage() {
         const saved = localStorage.getItem('user-statistics-lang');
         if (saved === 'en' || saved === 'it') {
             setLanguage(saved);
+        }
+
+        const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+        if (isStatisticsTab(savedTab)) {
+            setActiveTab(savedTab);
         }
     }, []);
     
@@ -69,6 +93,7 @@ export default function UserStatisticsPage() {
             errorsCount: 'errors',
             successfullyLoaded: 'Successfully loaded',
             failedToRetry: 'Failed to retry',
+            refreshStatistics: 'Refresh statistics',
             
             // Stats cards
             totalDownloads: 'Total Downloads',
@@ -98,14 +123,14 @@ export default function UserStatisticsPage() {
             mostReadBooks: 'Most Read Books',
             downloadsLabel: 'downloads',
             sessionsLabel: 'sessions',
-            audioListens: 'Audio Listens',
+            audioListens: 'Unique Audio Listens',
             uniqueListeners: 'unique listeners',
-            audioOnly: 'audio-only plays',
+            audioOnly: 'audio-only listens',
             audioTrends: 'Audio Trends',
-            audioTrendsDesc: 'Daily audiobook plays and unique listeners',
+            audioTrendsDesc: 'Daily unique audiobook listens and listeners',
             mostListenedBooks: 'Most Listened Books',
             topListeners: 'Top Listeners',
-            listensLabel: 'listens',
+            listensLabel: 'unique listens',
             promoPlays: 'Promo Plays',
             registeredUsers: 'registered users',
             anonymousVisitors: 'anonymous visitors',
@@ -181,6 +206,7 @@ export default function UserStatisticsPage() {
             errorsCount: 'errori',
             successfullyLoaded: 'Caricato con successo',
             failedToRetry: 'Impossibile riprovare',
+            refreshStatistics: 'Aggiorna statistiche',
             
             // Stats cards
             totalDownloads: 'Download Totali',
@@ -210,14 +236,14 @@ export default function UserStatisticsPage() {
             mostReadBooks: 'Libri più Letti',
             downloadsLabel: 'download',
             sessionsLabel: 'sessioni',
-            audioListens: 'Ascolti Audio',
+            audioListens: 'Ascolti Audio Unici',
             uniqueListeners: 'ascoltatori unici',
-            audioOnly: 'ascolti solo audio',
+            audioOnly: 'ascolti unici solo audio',
             audioTrends: 'Tendenze Audio',
-            audioTrendsDesc: 'Ascolti giornalieri degli audiolibri e ascoltatori unici',
+            audioTrendsDesc: 'Ascolti unici giornalieri degli audiolibri e ascoltatori',
             mostListenedBooks: 'Libri più Ascoltati',
             topListeners: 'Top Ascoltatori',
-            listensLabel: 'ascolti',
+            listensLabel: 'ascolti unici',
             promoPlays: 'Ascolti Promo',
             registeredUsers: 'utenti registrati',
             anonymousVisitors: 'visitatori anonimi',
@@ -266,6 +292,13 @@ export default function UserStatisticsPage() {
     const handleLanguageChange = useCallback((newLang: 'en' | 'it') => {
         setLanguage(newLang);
         localStorage.setItem('user-statistics-lang', newLang);
+    }, []);
+
+    const handleTabChange = useCallback((value: string) => {
+        if (!isStatisticsTab(value)) return;
+
+        setActiveTab(value);
+        localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, value);
     }, []);
 
     const t = useCallback((key: string): string => {
@@ -437,7 +470,18 @@ export default function UserStatisticsPage() {
                     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
                 </div>
                 <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4">
-                    {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={fetchStatistics}
+                        disabled={loading}
+                        title={t('refreshStatistics')}
+                        aria-label={t('refreshStatistics')}
+                    >
+                        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                        <span className="sr-only">{t('refreshStatistics')}</span>
+                    </Button>
                     <Select value={language} onValueChange={handleLanguageChange}>
                         <SelectTrigger className="w-[80px] sm:w-[100px]">
                             <SelectValue />
@@ -548,15 +592,15 @@ export default function UserStatisticsPage() {
                 />
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList className="w-full overflow-x-auto flex flex-nowrap whitespace-nowrap scrollbar-hide">
-                    <TabsTrigger value="overview" className="flex-shrink-0">{t('overview')}</TabsTrigger>
-                    <TabsTrigger value="downloads" className="flex-shrink-0">{t('downloads')}</TabsTrigger>
-                    <TabsTrigger value="reading" className="flex-shrink-0 data-[state=inactive]:bg-amber-700/50 dark:data-[state=active]:bg-amber-600/50">{t('reading')}</TabsTrigger>
-                    <TabsTrigger value="audio" className="flex-shrink-0">{t('audio')}</TabsTrigger>
-                    <TabsTrigger value="promo" className="flex-shrink-0">{t('promo')}</TabsTrigger>
-                    <TabsTrigger value="users" className="flex-shrink-0">{t('users')}</TabsTrigger>
-                    <TabsTrigger value="errors" className="flex-shrink-0">{t('errorsTab')}</TabsTrigger>
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+                <TabsList className="w-full overflow-x-auto flex flex-nowrap whitespace-nowrap gap-1 scrollbar-hide">
+                    <TabsTrigger value="overview" className={STATISTICS_TAB_CLASSES.overview}>{t('overview')}</TabsTrigger>
+                    <TabsTrigger value="downloads" className={STATISTICS_TAB_CLASSES.downloads}>{t('downloads')}</TabsTrigger>
+                    <TabsTrigger value="reading" className={STATISTICS_TAB_CLASSES.reading}>{t('reading')}</TabsTrigger>
+                    <TabsTrigger value="audio" className={STATISTICS_TAB_CLASSES.audio}>{t('audio')}</TabsTrigger>
+                    <TabsTrigger value="promo" className={STATISTICS_TAB_CLASSES.promo}>{t('promo')}</TabsTrigger>
+                    <TabsTrigger value="users" className={STATISTICS_TAB_CLASSES.users}>{t('users')}</TabsTrigger>
+                    <TabsTrigger value="errors" className={STATISTICS_TAB_CLASSES.errors}>{t('errorsTab')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-4">

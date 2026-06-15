@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAudioBookById, getBookById, getNeonClient } from '@/lib/db';
+import { extractRows, getAudioBookById, getBookById, getNeonClient } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth-utils';
 import { canAccessAudio, isReadingAvailable } from '@/lib/book-visibility';
 import { ApiError, handleApiError, HttpStatus } from '@/lib/api-error-handler';
@@ -36,12 +36,16 @@ export async function POST(request: NextRequest) {
             mediaId,
             audioLength: audiobook.audio_length ?? book.audioLength ?? null,
             isAudioOnly: !isReadingAvailable(book),
+            userName: user?.fullName ?? null,
+            userEmail: user?.email ?? null,
         };
 
         const client = getNeonClient();
-        await client.query(
+        const insertRows = extractRows(await client.query<{ id: string }>(
             `INSERT INTO system_logs (level, source, message, details, user_id, ip_address, request_path)
-             VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)`,
+             VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)
+             ON CONFLICT DO NOTHING
+             RETURNING id`,
             [
                 'info',
                 'audio-book',
@@ -51,9 +55,9 @@ export async function POST(request: NextRequest) {
                 requestContext.ipAddress ?? null,
                 requestContext.requestPath ?? null,
             ]
-        );
+        ));
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, stored: insertRows.length > 0 });
     } catch (error) {
         return handleApiError(error, 'Failed to track audio play');
     }

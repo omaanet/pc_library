@@ -193,6 +193,12 @@ export function useAudioPlayer({ autoPlay, currentTrack, initialTime = 0, onTrac
         const handleEnded = () => {
             onTrackEndRef.current();
         };
+        const handlePlaying = () => {
+            setIsPlaying(true);
+        };
+        const handlePause = () => {
+            setIsPlaying(false);
+        };
 
         // Events
         audio.addEventListener('loadedmetadata', setAudioData);
@@ -202,6 +208,8 @@ export function useAudioPlayer({ autoPlay, currentTrack, initialTime = 0, onTrac
         audio.addEventListener('seeked', setAudioData);
         audio.addEventListener('timeupdate', setAudioTime);
         audio.addEventListener('ended', handleEnded);
+        audio.addEventListener('playing', handlePlaying);
+        audio.addEventListener('pause', handlePause);
 
         if (audio.readyState >= 1) {
             setAudioData();
@@ -221,6 +229,8 @@ export function useAudioPlayer({ autoPlay, currentTrack, initialTime = 0, onTrac
             audio.removeEventListener('seeked', setAudioData);
             audio.removeEventListener('timeupdate', setAudioTime);
             audio.removeEventListener('ended', handleEnded);
+            audio.removeEventListener('playing', handlePlaying);
+            audio.removeEventListener('pause', handlePause);
         };
     }, [currentTrack, initialTime]);
 
