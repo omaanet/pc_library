@@ -2,10 +2,8 @@
 
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import HTML5Player from '@/components/audio/HTML5Player';
-import type { Track } from '@/components/audio/types';
+import { PromoAudioPlayer } from '@/components/promo/PromoAudioPlayer';
 import { getCoverImageUrl } from '@/lib/image-utils';
-import { SITE_CONFIG } from '@/config/site-config';
 import { displayFontClass } from '@/config/fonts';
 import type { Book, PromoPage } from '@/types';
 
@@ -81,17 +79,6 @@ export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProp
         [book.coverImage, book.id]
     );
 
-    const tracks: Track[] = useMemo(() => {
-        if (!promoPage.mediaId) return [];
-        return [
-            {
-                title: book.title,
-                url: `${SITE_CONFIG.PROMO_AUDIO_CDN}/${promoPage.mediaId}`,
-                kind: 'main',
-            },
-        ];
-    }, [promoPage.mediaId, book.title]);
-
     const description = book.extract || book.summary || null;
     const publishedLabel = formatPublishingDate(book.publishingDate);
 
@@ -164,13 +151,11 @@ export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProp
                             </p>
                             {/* Deep-green frosted glass panel keeps the light-text player legible */}
                             <div className="promo-audio-glow relative rounded-[30px] border border-white/15 bg-gradient-to-b from-[#3a4a2f]/95 to-[#222c1a]/95 p-6 shadow-[0_40px_90px_-30px_rgba(34,44,26,0.8)] backdrop-blur-xl ring-1 ring-white/10 sm:p-8">
-                                {tracks.length > 0 ? (
-                                    <HTML5Player tracks={tracks} />
-                                ) : (
-                                    <p className="py-8 text-center text-sm text-[#c9d3b0]">
-                                        Anteprima audio non disponibile.
-                                    </p>
-                                )}
+                                <PromoAudioPlayer
+                                    promoPage={promoPage}
+                                    book={book}
+                                    unavailableClassName="py-8 text-center text-sm text-[#c9d3b0]"
+                                />
                             </div>
                         </div>
                     </Reveal>

@@ -347,6 +347,29 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         await saveAudioBookmark(state.currentTime);
     }, [deleteBookmark, isAudioBookmarkActive, saveAudioBookmark]);
 
+    const trackingBookId = book?.id ?? null;
+    const trackingMediaId = activeAudiobook?.media_id ?? null;
+
+    const handleFirstPlay = useCallback(() => {
+        if (!trackingBookId || !trackingMediaId || !playerKey) return;
+
+        const storageKey = `audio-play:${playerKey}`;
+        if (sessionStorage.getItem(storageKey)) return;
+        sessionStorage.setItem(storageKey, 'true');
+
+        void fetch('/api/statistics/audio-play', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                bookId: trackingBookId,
+                mediaId: trackingMediaId,
+            }),
+        }).catch((error) => {
+            console.error('Failed to track audio play:', error);
+        });
+    }, [playerKey, trackingBookId, trackingMediaId]);
+
     if (!book || !isAudioAvailable(book)) return null;
 
     if (loading || authState.isLoading || !bookmarksInitialized) {
@@ -367,6 +390,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
                 initialTrackIndex={activeResumeTarget.initialTrackIndex}
                 initialTime={activeResumeTarget.initialTime}
                 onProgress={handleAudioProgress}
+                onFirstPlay={handleFirstPlay}
                 onBookmark={authState.user?.id && isActive ? handleManualAudioBookmark : undefined}
                 isBookmarkActive={isAudioBookmarkActive}
                 isBookmarkSaving={isSavingAudioBookmark}

@@ -25,7 +25,7 @@ export function TopListCard({
     className 
 }: TopListCardProps) {
     const displayData = data.slice(0, maxItems);
-    const maxValue = Math.max(...displayData.map(d => d.value));
+    const maxValue = displayData.length > 0 ? Math.max(...displayData.map(d => d.value)) : 0;
 
     return (
         <Card className={className}>
@@ -34,8 +34,11 @@ export function TopListCard({
                 {description && <CardDescription>{description}</CardDescription>}
             </CardHeader>
             <CardContent>
-                <div className="space-y-4">
-                    {displayData.map((item, index) => (
+                {displayData.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nessun dato disponibile.</p>
+                ) : (
+                    <div className="space-y-4">
+                        {displayData.map((item, index) => (
                         <div key={index} className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                                 <Badge variant="secondary" className="w-6 h-6 rounded-full p-0 flex items-center justify-center text-xs font-medium">
@@ -66,8 +69,9 @@ export function TopListCard({
                                 </span>
                             </div>
                         </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

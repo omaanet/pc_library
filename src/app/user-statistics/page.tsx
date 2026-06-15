@@ -4,23 +4,13 @@ import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookForm } from '@/components/admin/books/book-form';
-import { BookTable } from '@/components/admin/books/book-table';
-import { AudioTrackForm } from '@/components/admin/books/audio-track-form';
-import { UsersTable } from '@/components/admin/users-table';
-import { useBooks } from '@/hooks/admin/use-books';
-import { Book } from '@/types';
-import { z } from 'zod';
-import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/auth-context';
 import { StatsCard, ActivityChart, TopListCard, BarChartComponent } from '@/components/statistics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Download, BookOpen, Users, AlertTriangle, TrendingUp, Activity, RefreshCw, Loader2, ArrowLeft } from 'lucide-react';
-import { fetchStatisticsWithErrors, retryEndpoint, type StatisticsResults, type StatisticsError } from '@/lib/statistics-error-helper';
+import { Download, BookOpen, Users, AlertTriangle, RefreshCw, Loader2, ArrowLeft, Volume2, Megaphone } from 'lucide-react';
+import { fetchStatisticsWithErrors, retryEndpoint, type StatisticsError } from '@/lib/statistics-error-helper';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
@@ -94,6 +84,8 @@ export default function UserStatisticsPage() {
             overview: 'Overview',
             downloads: 'Downloads',
             reading: 'Reading',
+            audio: 'Audio',
+            promo: 'Promo',
             users: 'Users',
             errorsTab: 'Errors',
             
@@ -106,6 +98,23 @@ export default function UserStatisticsPage() {
             mostReadBooks: 'Most Read Books',
             downloadsLabel: 'downloads',
             sessionsLabel: 'sessions',
+            audioListens: 'Audio Listens',
+            uniqueListeners: 'unique listeners',
+            audioOnly: 'audio-only plays',
+            audioTrends: 'Audio Trends',
+            audioTrendsDesc: 'Daily audiobook plays and unique listeners',
+            mostListenedBooks: 'Most Listened Books',
+            topListeners: 'Top Listeners',
+            listensLabel: 'listens',
+            promoPlays: 'Promo Plays',
+            registeredUsers: 'registered users',
+            anonymousVisitors: 'anonymous visitors',
+            promoTrends: 'Promo Audio Trends',
+            promoTrendsDesc: 'Daily promo plays by registered and anonymous visitors',
+            topPromoPages: 'Top Promo Pages',
+            topPromoBooks: 'Top Promo Books',
+            topRegisteredPromoUsers: 'Top Registered Promo Users',
+            promoPages: 'promo pages',
             
             // Downloads section
             downloadStatistics: 'Download Statistics',
@@ -187,6 +196,8 @@ export default function UserStatisticsPage() {
             overview: 'Panoramica',
             downloads: 'Download',
             reading: 'Lettura',
+            audio: 'Audio',
+            promo: 'Promo',
             users: 'Utenti',
             errorsTab: 'Errori',
             
@@ -199,6 +210,23 @@ export default function UserStatisticsPage() {
             mostReadBooks: 'Libri più Letti',
             downloadsLabel: 'download',
             sessionsLabel: 'sessioni',
+            audioListens: 'Ascolti Audio',
+            uniqueListeners: 'ascoltatori unici',
+            audioOnly: 'ascolti solo audio',
+            audioTrends: 'Tendenze Audio',
+            audioTrendsDesc: 'Ascolti giornalieri degli audiolibri e ascoltatori unici',
+            mostListenedBooks: 'Libri più Ascoltati',
+            topListeners: 'Top Ascoltatori',
+            listensLabel: 'ascolti',
+            promoPlays: 'Ascolti Promo',
+            registeredUsers: 'utenti registrati',
+            anonymousVisitors: 'visitatori anonimi',
+            promoTrends: 'Tendenze Audio Promo',
+            promoTrendsDesc: 'Ascolti promo giornalieri per registrati e anonimi',
+            topPromoPages: 'Pagine Promo Top',
+            topPromoBooks: 'Libri Promo Top',
+            topRegisteredPromoUsers: 'Utenti Registrati Promo Top',
+            promoPages: 'pagine promo',
             
             // Downloads section
             downloadStatistics: 'Statistiche Download',
@@ -254,6 +282,8 @@ export default function UserStatisticsPage() {
         readingSessions: any;
         popularBooks: any;
         userActivity: any;
+        audioListens: any;
+        promoAudio: any;
         errors: any;
     } | null>(null);
     const [failedEndpoints, setFailedEndpoints] = useState<StatisticsError[]>([]);
@@ -278,6 +308,8 @@ export default function UserStatisticsPage() {
                 readingSessions: results.readingSessions,
                 popularBooks: results.popularBooks,
                 userActivity: results.userActivity,
+                audioListens: results.audioListens,
+                promoAudio: results.promoAudio,
                 errors: results.errors
             });
             setFailedEndpoints(results.failedEndpoints);
@@ -300,6 +332,8 @@ export default function UserStatisticsPage() {
                 readingSessions: prev?.readingSessions,
                 popularBooks: prev?.popularBooks,
                 userActivity: prev?.userActivity,
+                audioListens: prev?.audioListens,
+                promoAudio: prev?.promoAudio,
                 errors: prev?.errors,
                 [endpointName]: result.data
             }));
@@ -326,7 +360,7 @@ export default function UserStatisticsPage() {
         if (state.isAuthenticated && state.user?.isAdmin) {
             fetchStatistics();
         }
-    }, [timeRange, topListSize, state.isAuthenticated, state.user?.isAdmin]); // Removed fetchStatistics from dependencies to break the loop
+    }, [fetchStatistics, state.isAuthenticated, state.user?.isAdmin]);
 
     // Show loading state while checking authentication or mounting
     if (state.isLoading || !isMounted) {
@@ -475,7 +509,7 @@ export default function UserStatisticsPage() {
             )}
 
             {/* Overview Cards */}
-            <div className="grid gap-2 sm:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-4 sm:mb-6">
+            <div className="grid gap-2 sm:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-4 sm:mb-6">
                 <StatsCard
                     title={t('totalDownloads')}
                     value={statistics?.downloads?.totalStats?.total_downloads?.toLocaleString('it-IT') || '0'}
@@ -495,6 +529,18 @@ export default function UserStatisticsPage() {
                     icon={<Users className="h-4 w-4 text-purple-500" />}
                 />
                 <StatsCard
+                    title={t('audioListens')}
+                    value={statistics?.audioListens?.totalStats?.total_listens?.toLocaleString('it-IT') || '0'}
+                    description={`${statistics?.audioListens?.totalStats?.unique_users || 0} ${t('uniqueListeners')}`}
+                    icon={<Volume2 className="h-4 w-4 text-emerald-500" />}
+                />
+                <StatsCard
+                    title={t('promoPlays')}
+                    value={statistics?.promoAudio?.totalStats?.total_plays?.toLocaleString('it-IT') || '0'}
+                    description={`${statistics?.promoAudio?.totalStats?.unique_anonymous_visitors || 0} ${t('anonymousVisitors')}`}
+                    icon={<Megaphone className="h-4 w-4 text-pink-500" />}
+                />
+                <StatsCard
                     title={t('systemErrors')}
                     value={statistics?.errors?.overallStats?.total_errors?.toLocaleString('it-IT') || '0'}
                     description={`${statistics?.errors?.overallStats?.errors || 0} ${t('errorsCount')}, ${statistics?.errors?.overallStats?.warnings || 0} ${t('warningsLabel')}`}
@@ -507,6 +553,8 @@ export default function UserStatisticsPage() {
                     <TabsTrigger value="overview" className="flex-shrink-0">{t('overview')}</TabsTrigger>
                     <TabsTrigger value="downloads" className="flex-shrink-0">{t('downloads')}</TabsTrigger>
                     <TabsTrigger value="reading" className="flex-shrink-0 data-[state=inactive]:bg-amber-700/50 dark:data-[state=active]:bg-amber-600/50">{t('reading')}</TabsTrigger>
+                    <TabsTrigger value="audio" className="flex-shrink-0">{t('audio')}</TabsTrigger>
+                    <TabsTrigger value="promo" className="flex-shrink-0">{t('promo')}</TabsTrigger>
                     <TabsTrigger value="users" className="flex-shrink-0">{t('users')}</TabsTrigger>
                     <TabsTrigger value="errors" className="flex-shrink-0">{t('errorsTab')}</TabsTrigger>
                 </TabsList>
@@ -616,6 +664,135 @@ export default function UserStatisticsPage() {
                             maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
                         />
                     </div>
+                </TabsContent>
+
+                <TabsContent value="audio" className="space-y-4">
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                        <ActivityChart
+                            data={statistics?.audioListens?.listensOverTime || []}
+                            lines={[
+                                { dataKey: 'listens_count', name: t('listensLabel'), color: '#10b981' },
+                                { dataKey: 'unique_users', name: t('uniqueListeners'), color: '#06b6d4' }
+                            ]}
+                            title={t('audioTrends')}
+                            description={t('audioTrendsDesc')}
+                        />
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>{t('audioListens')}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span>{t('audioListens')}:</span>
+                                    <span className="font-semibold">{statistics?.audioListens?.totalStats?.total_listens?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>{t('uniqueListeners')}:</span>
+                                    <span className="font-semibold">{statistics?.audioListens?.totalStats?.unique_users?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>{t('uniqueBooks')}:</span>
+                                    <span className="font-semibold">{statistics?.audioListens?.totalStats?.unique_books?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>{t('audioOnly')}:</span>
+                                    <span className="font-semibold">{statistics?.audioListens?.totalStats?.audio_only_listens?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                        <TopListCard
+                            title={t('mostListenedBooks')}
+                            data={(statistics?.audioListens?.mostListenedBooks || []).map((book: any) => ({
+                                name: book.book_title,
+                                value: book.listen_count,
+                                subtitle: `${book.unique_listeners} ${t('uniqueListeners')}`
+                            }))}
+                            valueLabel={t('listensLabel')}
+                            maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
+                        />
+                        <TopListCard
+                            title={t('topListeners')}
+                            data={(statistics?.audioListens?.topListeners || []).map((user: any) => ({
+                                name: user.full_name,
+                                value: user.listen_count,
+                                subtitle: user.email
+                            }))}
+                            valueLabel={t('listensLabel')}
+                            maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
+                        />
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="promo" className="space-y-4">
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                        <ActivityChart
+                            data={statistics?.promoAudio?.eventsOverTime || []}
+                            lines={[
+                                { dataKey: 'plays_count', name: t('promoPlays'), color: '#ec4899' },
+                                { dataKey: 'registered_users', name: t('registeredUsers'), color: '#8b5cf6' },
+                                { dataKey: 'anonymous_visitors', name: t('anonymousVisitors'), color: '#f59e0b' }
+                            ]}
+                            title={t('promoTrends')}
+                            description={t('promoTrendsDesc')}
+                        />
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>{t('promoPlays')}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span>{t('promoPlays')}:</span>
+                                    <span className="font-semibold">{statistics?.promoAudio?.totalStats?.total_plays?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>{t('registeredUsers')}:</span>
+                                    <span className="font-semibold">{statistics?.promoAudio?.totalStats?.unique_registered_users?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>{t('anonymousVisitors')}:</span>
+                                    <span className="font-semibold">{statistics?.promoAudio?.totalStats?.unique_anonymous_visitors?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>{t('promoPages')}:</span>
+                                    <span className="font-semibold">{statistics?.promoAudio?.totalStats?.unique_promo_pages?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                        <TopListCard
+                            title={t('topPromoPages')}
+                            data={(statistics?.promoAudio?.topPromoPages || []).map((promo: any) => ({
+                                name: promo.slug,
+                                value: promo.play_count,
+                                subtitle: promo.book_title
+                            }))}
+                            valueLabel={t('promoPlays')}
+                            maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
+                        />
+                        <TopListCard
+                            title={t('topPromoBooks')}
+                            data={(statistics?.promoAudio?.topPromoBooks || []).map((book: any) => ({
+                                name: book.book_title,
+                                value: book.play_count,
+                                subtitle: `${book.promo_pages} ${t('promoPages')}`
+                            }))}
+                            valueLabel={t('promoPlays')}
+                            maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
+                        />
+                    </div>
+                    <TopListCard
+                        title={t('topRegisteredPromoUsers')}
+                        data={(statistics?.promoAudio?.topRegisteredUsers || []).map((user: any) => ({
+                            name: user.user_name,
+                            value: user.play_count,
+                            subtitle: `${user.promo_pages} ${t('promoPages')}`
+                        }))}
+                        valueLabel={t('promoPlays')}
+                        maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
+                    />
                 </TabsContent>
 
                 <TabsContent value="users" className="space-y-4">

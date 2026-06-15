@@ -2,10 +2,8 @@
 
 import Image from 'next/image';
 import { useMemo } from 'react';
-import HTML5Player from '@/components/audio/HTML5Player';
-import type { Track } from '@/components/audio/types';
+import { PromoAudioPlayer } from '@/components/promo/PromoAudioPlayer';
 import { getCoverImageUrl } from '@/lib/image-utils';
-import { SITE_CONFIG } from '@/config/site-config';
 import { displayFontClass } from '@/config/fonts';
 import type { Book, PromoPage } from '@/types';
 
@@ -33,17 +31,6 @@ export function PromoPageClassicGreenView({ promoPage, book }: PromoPageClassicG
         () => getCoverImageUrl(book.coverImage, 'detail', { bookId: book.id }),
         [book.coverImage, book.id]
     );
-
-    const tracks: Track[] = useMemo(() => {
-        if (!promoPage.mediaId) return [];
-        return [
-            {
-                title: book.title,
-                url: `${SITE_CONFIG.PROMO_AUDIO_CDN}/${promoPage.mediaId}`,
-                kind: 'main',
-            },
-        ];
-    }, [promoPage.mediaId, book.title]);
 
     const description = book.extract || book.summary || null;
     const publishedLabel = formatPublishingDate(book.publishingDate);
@@ -121,13 +108,11 @@ export function PromoPageClassicGreenView({ promoPage, book }: PromoPageClassicG
                                     <p className="mb-4 text-center text-xs uppercase tracking-[0.25em] text-[#efc866]">
                                         Ascolta l&apos;anteprima
                                     </p>
-                                    {tracks.length > 0 ? (
-                                        <HTML5Player tracks={tracks} />
-                                    ) : (
-                                        <p className="py-6 text-center text-sm text-[#9bb3aa]">
-                                            Anteprima audio non disponibile.
-                                        </p>
-                                    )}
+                                    <PromoAudioPlayer
+                                        promoPage={promoPage}
+                                        book={book}
+                                        unavailableClassName="py-6 text-center text-sm text-[#9bb3aa]"
+                                    />
                                 </div>
                             </div>
                         </div>

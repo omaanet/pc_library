@@ -152,9 +152,16 @@ export class Logger {
      */
     static extractRequestContext(req: any): Pick<LogEntry, 'ipAddress' | 'requestPath'> {
         try {
+            const headers = req.headers;
+            const headerValue = (name: string) => {
+                if (!headers) return undefined;
+                if (typeof headers.get === 'function') return headers.get(name) ?? undefined;
+                return headers[name];
+            };
+
             return {
-                ipAddress: req.headers['x-forwarded-for'] || req.connection?.remoteAddress,
-                requestPath: req.url || req.path
+                ipAddress: headerValue('x-forwarded-for') || headerValue('x-real-ip') || req.connection?.remoteAddress,
+                requestPath: req.nextUrl?.pathname || req.url || req.path
             };
         } catch (e) {
             return {};

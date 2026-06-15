@@ -5,7 +5,7 @@
 
 import type { HTML5PlayerProps } from './types';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useVolumeControl } from './hooks/useVolumeControl';
 import { useTrackNavigation } from './hooks/useTrackNavigation';
@@ -31,12 +31,14 @@ const HTML5Player = ({
     initialTrackIndex = 0,
     initialTime = 0,
     onProgress,
+    onFirstPlay,
     onBookmark,
     isBookmarkActive,
     isBookmarkSaving = false,
     showBookmarkControl = false,
     isBookmarkDisabled = false
 }: HTML5PlayerProps) => {
+    const firstPlayNotifiedRef = useRef(false);
     // Track navigation
     const { currentTrack, handleNext, handlePrev, handleEnd } = useTrackNavigation({ tracks, initialTrackIndex });
 
@@ -93,6 +95,14 @@ const HTML5Player = ({
             onProgress?.(currentState);
         }
     }, [currentState, onProgress]);
+
+    useEffect(() => {
+        if (!currentState || firstPlayNotifiedRef.current) return;
+        if (currentState.track.kind !== 'main' || !currentState.isPlaying || currentState.resumeStatus === 'pending') return;
+
+        firstPlayNotifiedRef.current = true;
+        onFirstPlay?.(currentState);
+    }, [currentState, onFirstPlay]);
 
     if (!tracks || tracks.length === 0 || !currentState) {
         return <div>No tracks available</div>;

@@ -21,6 +21,8 @@ export interface StatisticsResults {
     readingSessions?: any;
     popularBooks?: any;
     userActivity?: any;
+    audioListens?: any;
+    promoAudio?: any;
     errors?: any;
     failedEndpoints: StatisticsError[];
 }
@@ -40,6 +42,8 @@ export async function fetchStatisticsWithErrors(
         { name: 'readingSessions', url: `/api/statistics/reading-sessions?days=${timeRange}&limit=${limit}` },
         { name: 'popularBooks', url: `/api/statistics/popular-books?days=${timeRange}&limit=${limit}` },
         { name: 'userActivity', url: `/api/statistics/user-activity?days=${timeRange}&limit=${limit}` },
+        { name: 'audioListens', url: `/api/statistics/audio-listens?days=${timeRange}&limit=${limit}` },
+        { name: 'promoAudio', url: `/api/statistics/promo-audio?days=${timeRange}&limit=${limit}` },
         { name: 'errors', url: `/api/statistics/errors?days=${timeRange}&limit=${limit}` }
     ];
 
@@ -102,6 +106,8 @@ export async function retryEndpoint(
         readingSessions: `/api/statistics/reading-sessions?days=${timeRange}&limit=${limit}`,
         popularBooks: `/api/statistics/popular-books?days=${timeRange}&limit=${limit}`,
         userActivity: `/api/statistics/user-activity?days=${timeRange}&limit=${limit}`,
+        audioListens: `/api/statistics/audio-listens?days=${timeRange}&limit=${limit}`,
+        promoAudio: `/api/statistics/promo-audio?days=${timeRange}&limit=${limit}`,
         errors: `/api/statistics/errors?days=${timeRange}&limit=${limit}`
     };
 
