@@ -92,8 +92,12 @@ export const SITE_CONFIG = {
 
     /**
      * SQL condition to exclude internal and local IP addresses from statistics
-     * to prevent data pollution from development and maintenance activities.
+     * to prevent data pollution from maintenance activity in production.
      * Handles NULL ip_address values by treating them as non-excluded.
      */
-    AVOID_LOCAL_ADDRESS_POLLUTION: "(COALESCE(ip_address, '') <> '128.116.163.86' AND COALESCE(ip_address, '') <> '::1')",
+    AVOID_LOCAL_ADDRESS_POLLUTION: process.env.NODE_ENV === 'production'
+        ? "(COALESCE(ip_address, '') <> '::1')"
+        : "(1 = 1)",
+
+    STATISTICS_MAINTENANCE_IP: '128.116.163.86',
 } as const;

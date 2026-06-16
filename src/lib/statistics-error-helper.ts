@@ -34,17 +34,19 @@ export interface StatisticsResults {
 export async function fetchStatisticsWithErrors(
     timeRange: string,
     topListSize: string,
+    includeMaintenanceIp: boolean,
     onToast?: (message: string, type: 'error' | 'success') => void
 ): Promise<StatisticsResults> {
     const limit = topListSize === 'all' ? 999999 : parseInt(topListSize);
+    const maintenanceIpParam = `includeMaintenanceIp=${includeMaintenanceIp}`;
     const endpoints = [
-        { name: 'downloads', url: `/api/statistics/downloads?days=${timeRange}&limit=${limit}` },
-        { name: 'readingSessions', url: `/api/statistics/reading-sessions?days=${timeRange}&limit=${limit}` },
-        { name: 'popularBooks', url: `/api/statistics/popular-books?days=${timeRange}&limit=${limit}` },
-        { name: 'userActivity', url: `/api/statistics/user-activity?days=${timeRange}&limit=${limit}` },
-        { name: 'audioListens', url: `/api/statistics/audio-listens?days=${timeRange}&limit=${limit}` },
+        { name: 'downloads', url: `/api/statistics/downloads?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` },
+        { name: 'readingSessions', url: `/api/statistics/reading-sessions?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` },
+        { name: 'popularBooks', url: `/api/statistics/popular-books?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` },
+        { name: 'userActivity', url: `/api/statistics/user-activity?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` },
+        { name: 'audioListens', url: `/api/statistics/audio-listens?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` },
         { name: 'promoAudio', url: `/api/statistics/promo-audio?days=${timeRange}&limit=${limit}` },
-        { name: 'errors', url: `/api/statistics/errors?days=${timeRange}&limit=${limit}` }
+        { name: 'errors', url: `/api/statistics/errors?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` }
     ];
 
     const results = await Promise.allSettled(
@@ -98,17 +100,19 @@ export async function fetchStatisticsWithErrors(
 export async function retryEndpoint(
     endpointName: string,
     timeRange: string,
-    topListSize: string
+    topListSize: string,
+    includeMaintenanceIp: boolean
 ): Promise<StatisticsFetchResult<any>> {
     const limit = topListSize === 'all' ? 999999 : parseInt(topListSize);
+    const maintenanceIpParam = `includeMaintenanceIp=${includeMaintenanceIp}`;
     const endpointMap: Record<string, string> = {
-        downloads: `/api/statistics/downloads?days=${timeRange}&limit=${limit}`,
-        readingSessions: `/api/statistics/reading-sessions?days=${timeRange}&limit=${limit}`,
-        popularBooks: `/api/statistics/popular-books?days=${timeRange}&limit=${limit}`,
-        userActivity: `/api/statistics/user-activity?days=${timeRange}&limit=${limit}`,
-        audioListens: `/api/statistics/audio-listens?days=${timeRange}&limit=${limit}`,
+        downloads: `/api/statistics/downloads?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`,
+        readingSessions: `/api/statistics/reading-sessions?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`,
+        popularBooks: `/api/statistics/popular-books?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`,
+        userActivity: `/api/statistics/user-activity?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`,
+        audioListens: `/api/statistics/audio-listens?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`,
         promoAudio: `/api/statistics/promo-audio?days=${timeRange}&limit=${limit}`,
-        errors: `/api/statistics/errors?days=${timeRange}&limit=${limit}`
+        errors: `/api/statistics/errors?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`
     };
 
     const url = endpointMap[endpointName];

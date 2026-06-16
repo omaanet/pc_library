@@ -3,6 +3,7 @@ import { getNeonClient, extractRows } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
+import { getMaintenanceIpFilter } from '@/lib/statistics-maintenance-ip';
 
 function getStatsParams(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -19,6 +20,8 @@ export async function GET(request: Request) {
     try {
         await requireAdmin();
         const { limit, daysFilter, slDaysFilter } = getStatsParams(request);
+        const maintenanceIpFilter = getMaintenanceIpFilter(request);
+        const slMaintenanceIpFilter = getMaintenanceIpFilter(request, 'sl.ip_address');
         const client = getNeonClient();
 
         const listensOverTimeRows = extractRows(await client.query(`
@@ -32,6 +35,7 @@ export async function GET(request: Request) {
                 AND message = '[audio-play]'
                 AND level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
+                AND ${maintenanceIpFilter}
                 ${daysFilter}
             GROUP BY DATE(created_at)
             ORDER BY date DESC
@@ -49,6 +53,7 @@ export async function GET(request: Request) {
                 AND message = '[audio-play]'
                 AND level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
+                AND ${maintenanceIpFilter}
                 ${daysFilter}
             GROUP BY details->>'bookTitle', details->>'bookId'
             ORDER BY listen_count DESC
@@ -66,6 +71,7 @@ export async function GET(request: Request) {
                 AND sl.message = '[audio-play]'
                 AND sl.level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION.replace(/ip_address/g, 'sl.ip_address')}
+                AND ${slMaintenanceIpFilter}
                 ${slDaysFilter}
             GROUP BY u.id, u.full_name, u.email
             ORDER BY listen_count DESC
@@ -82,6 +88,7 @@ export async function GET(request: Request) {
                 AND message = '[audio-play]'
                 AND level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
+                AND ${maintenanceIpFilter}
                 ${daysFilter}
         `));
 

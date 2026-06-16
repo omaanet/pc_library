@@ -3,6 +3,7 @@ import { getNeonClient, extractRows } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
+import { getMaintenanceIpFilter } from '@/lib/statistics-maintenance-ip';
 
 export async function GET(request: Request) {
     try {
@@ -15,6 +16,7 @@ export async function GET(request: Request) {
 
         // Handle 'all' days parameter
         const daysFilter = daysParam === 'all' ? '' : `AND created_at >= NOW() - INTERVAL '${daysParam} days'`;
+        const maintenanceIpFilter = getMaintenanceIpFilter(request);
 
         const client = getNeonClient();
 
@@ -30,6 +32,7 @@ export async function GET(request: Request) {
             WHERE source = 'download-book' 
                 AND level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
+                AND ${maintenanceIpFilter}
                 ${daysFilter}
             GROUP BY details->>'bookTitle', details->>'bookId'
             ORDER BY download_count DESC
@@ -50,6 +53,7 @@ export async function GET(request: Request) {
             WHERE message = '[read-book]' 
                 AND level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
+                AND ${maintenanceIpFilter}
                 ${daysFilter}
             GROUP BY details->>'bookTitle', details->>'bookId'
             ORDER BY read_sessions DESC
@@ -78,6 +82,7 @@ export async function GET(request: Request) {
                 WHERE source = 'download-book' 
                     AND level = 'info'
                     AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
+                    AND ${maintenanceIpFilter}
                     ${daysFilter}
                 GROUP BY details->>'bookTitle', details->>'bookId'
             ) d
@@ -91,6 +96,7 @@ export async function GET(request: Request) {
                 WHERE message = '[read-book]' 
                     AND level = 'info'
                     AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
+                    AND ${maintenanceIpFilter}
                     ${daysFilter}
                 GROUP BY details->>'bookTitle', details->>'bookId'
             ) r ON d.book_id = r.book_id
@@ -110,6 +116,7 @@ export async function GET(request: Request) {
             WHERE (source = 'download-book' OR message = '[read-book]')
                 AND level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
+                AND ${maintenanceIpFilter}
                 ${daysFilter}
             GROUP BY DATE(created_at)
             ORDER BY date DESC

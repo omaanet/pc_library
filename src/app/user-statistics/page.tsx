@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/auth-context';
 import { StatsCard, ActivityChart, TopListCard, BarChartComponent } from '@/components/statistics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Download, BookOpen, Users, AlertTriangle, RefreshCw, ArrowLeft, Volume2, Megaphone } from 'lucide-react';
 import { fetchStatisticsWithErrors, retryEndpoint, type StatisticsError } from '@/lib/statistics-error-helper';
 import { useToast } from '@/components/ui/use-toast';
@@ -17,6 +19,7 @@ import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
 import { AuthModal } from '@/components/auth/auth-modal';
 
 const ACTIVE_TAB_STORAGE_KEY = 'user-statistics-active-tab';
+const INCLUDE_MAINTENANCE_IP_STORAGE_KEY = 'user-statistics-include-maintenance-ip';
 const STATISTICS_TAB_VALUES = ['overview', 'downloads', 'reading', 'audio', 'promo', 'users', 'errors'] as const;
 type StatisticsTab = typeof STATISTICS_TAB_VALUES[number];
 const STATISTICS_TAB_BASE_CLASS = 'flex-shrink-0 data-[state=inactive]:border data-[state=inactive]:border-gray-600 data-[state=active]:border-transparent';
@@ -41,6 +44,7 @@ export default function UserStatisticsPage() {
     const [timeRange, setTimeRange] = useState('all');
     const [topListSize, setTopListSize] = useState('10');
     const [activeTab, setActiveTab] = useState<StatisticsTab>('overview');
+    const [includeMaintenanceIp, setIncludeMaintenanceIp] = useState(true);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -57,6 +61,11 @@ export default function UserStatisticsPage() {
         const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
         if (isStatisticsTab(savedTab)) {
             setActiveTab(savedTab);
+        }
+
+        const savedIncludeMaintenanceIp = localStorage.getItem(INCLUDE_MAINTENANCE_IP_STORAGE_KEY);
+        if (savedIncludeMaintenanceIp === 'false') {
+            setIncludeMaintenanceIp(false);
         }
     }, []);
     
@@ -94,6 +103,7 @@ export default function UserStatisticsPage() {
             successfullyLoaded: 'Successfully loaded',
             failedToRetry: 'Failed to retry',
             refreshStatistics: 'Refresh statistics',
+            includeMaintenanceIp: 'Include maintenance IP',
             
             // Stats cards
             totalDownloads: 'Total Downloads',
@@ -207,6 +217,7 @@ export default function UserStatisticsPage() {
             successfullyLoaded: 'Caricato con successo',
             failedToRetry: 'Impossibile riprovare',
             refreshStatistics: 'Aggiorna statistiche',
+            includeMaintenanceIp: 'Includi IP manutenzione',
             
             // Stats cards
             totalDownloads: 'Download Totali',
@@ -301,6 +312,11 @@ export default function UserStatisticsPage() {
         localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, value);
     }, []);
 
+    const handleIncludeMaintenanceIpChange = useCallback((checked: boolean) => {
+        setIncludeMaintenanceIp(checked);
+        localStorage.setItem(INCLUDE_MAINTENANCE_IP_STORAGE_KEY, String(checked));
+    }, []);
+
     const t = useCallback((key: string): string => {
         const value = (translations as any)[language][key];
         return Array.isArray(value) ? value[0] : (value || key);
@@ -328,7 +344,7 @@ export default function UserStatisticsPage() {
         setError(null);
         
         try {
-            const results = await fetchStatisticsWithErrors(timeRange, topListSize, (message, type) => {
+            const results = await fetchStatisticsWithErrors(timeRange, topListSize, includeMaintenanceIp, (message, type) => {
             toast({
                 title: type === 'error' ? 'Error' : 'Success',
                 description: message,
@@ -352,11 +368,11 @@ export default function UserStatisticsPage() {
         } finally {
             setLoading(false);
         }
-    }, [timeRange, topListSize, toast, t]);
+    }, [timeRange, topListSize, includeMaintenanceIp, toast, t]);
 
     // Retry a specific endpoint
     const handleRetryEndpoint = async (endpointName: string) => {
-        const result = await retryEndpoint(endpointName, timeRange, topListSize);
+        const result = await retryEndpoint(endpointName, timeRange, topListSize, includeMaintenanceIp);
         
         if (result.success) {
             // Update the statistics with the successful retry
@@ -514,6 +530,16 @@ export default function UserStatisticsPage() {
                             <SelectItem value="all">{t('all')}</SelectItem>
                         </SelectContent>
                     </Select>
+                    <div className="flex h-9 items-center gap-2 rounded-md border px-2 text-sm">
+                        <Switch
+                            id="includeMaintenanceIp"
+                            checked={includeMaintenanceIp}
+                            onCheckedChange={handleIncludeMaintenanceIpChange}
+                        />
+                        <Label htmlFor="includeMaintenanceIp" className="cursor-pointer whitespace-nowrap">
+                            {t('includeMaintenanceIp')}
+                        </Label>
+                    </div>
                     {/* <Button asChild variant="outline" size="sm" className="hidden sm:flex flex-shrink-0">
                         <Link href="/" className="select-none">
                             {t('backToHome')}
