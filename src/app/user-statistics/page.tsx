@@ -142,12 +142,20 @@ export default function UserStatisticsPage() {
             topListeners: 'Top Listeners',
             listensLabel: 'unique listens',
             promoPlays: 'Promo Plays',
+            promoNavigations: 'First Promo Visits',
+            convertedVisitors: 'converted visitors',
+            conversionRate: 'conversion rate',
+            navigationLabel: 'first visits',
             registeredUsers: 'registered users',
             anonymousVisitors: 'anonymous visitors',
+            promoNavigationTrends: 'Promo Visit Trends',
+            promoNavigationTrendsDesc: 'Daily first-time visitor cohorts and eventual first-listen conversions',
             promoTrends: 'Promo Audio Trends',
             promoTrendsDesc: 'Daily promo plays by registered and anonymous visitors',
             topPromoPages: 'Top Promo Pages',
             topPromoBooks: 'Top Promo Books',
+            topNavigationPromoPages: 'Top Promo Pages by First Visits',
+            topNavigationPromoBooks: 'Top Promo Books by First Visits',
             topRegisteredPromoUsers: 'Top Registered Promo Users',
             promoPages: 'promo pages',
             
@@ -256,12 +264,20 @@ export default function UserStatisticsPage() {
             topListeners: 'Top Ascoltatori',
             listensLabel: 'ascolti unici',
             promoPlays: 'Ascolti Promo',
+            promoNavigations: 'Prime Visite Promo',
+            convertedVisitors: 'visitatori convertiti',
+            conversionRate: 'tasso di conversione',
+            navigationLabel: 'prime visite',
             registeredUsers: 'utenti registrati',
             anonymousVisitors: 'visitatori anonimi',
+            promoNavigationTrends: 'Tendenze Visite Promo',
+            promoNavigationTrendsDesc: 'Coorti giornaliere di nuovi visitatori e successive conversioni al primo ascolto',
             promoTrends: 'Tendenze Audio Promo',
             promoTrendsDesc: 'Ascolti promo giornalieri per registrati e anonimi',
             topPromoPages: 'Pagine Promo Top',
             topPromoBooks: 'Libri Promo Top',
+            topNavigationPromoPages: 'Pagine Promo Top per Prime Visite',
+            topNavigationPromoBooks: 'Libri Promo Top per Prime Visite',
             topRegisteredPromoUsers: 'Utenti Registrati Promo Top',
             promoPages: 'pagine promo',
             
@@ -798,6 +814,46 @@ export default function UserStatisticsPage() {
                 <TabsContent value="promo" className="space-y-4">
                     <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                         <ActivityChart
+                            data={statistics?.promoAudio?.navigationOverTime || []}
+                            lines={[
+                                { dataKey: 'navigations_count', name: t('promoNavigations'), color: '#0ea5e9' },
+                                { dataKey: 'converted_visitors', name: t('convertedVisitors'), color: '#10b981' },
+                                { dataKey: 'registered_visitors', name: t('registeredUsers'), color: '#8b5cf6' },
+                                { dataKey: 'anonymous_visitors', name: t('anonymousVisitors'), color: '#f59e0b' }
+                            ]}
+                            title={t('promoNavigationTrends')}
+                            description={t('promoNavigationTrendsDesc')}
+                        />
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>{t('promoNavigations')}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span>{t('promoNavigations')}:</span>
+                                    <span className="font-semibold">{statistics?.promoAudio?.navigationStats?.total_navigations?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>{t('registeredUsers')}:</span>
+                                    <span className="font-semibold">{statistics?.promoAudio?.navigationStats?.registered_navigations?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>{t('anonymousVisitors')}:</span>
+                                    <span className="font-semibold">{statistics?.promoAudio?.navigationStats?.anonymous_navigations?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>{t('convertedVisitors')}:</span>
+                                    <span className="font-semibold">{statistics?.promoAudio?.navigationStats?.converted_visitors?.toLocaleString('it-IT') || '0'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>{t('conversionRate')}:</span>
+                                    <span className="font-semibold">{statistics?.promoAudio?.navigationStats?.conversion_rate || 0}%</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                        <ActivityChart
                             data={statistics?.promoAudio?.eventsOverTime || []}
                             lines={[
                                 { dataKey: 'plays_count', name: t('promoPlays'), color: '#ec4899' },
@@ -830,6 +886,28 @@ export default function UserStatisticsPage() {
                                 </div>
                             </CardContent>
                         </Card>
+                    </div>
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                        <TopListCard
+                            title={t('topNavigationPromoPages')}
+                            data={(statistics?.promoAudio?.topNavigationPages || []).map((promo: any) => ({
+                                name: promo.slug,
+                                value: promo.navigation_count,
+                                subtitle: `${promo.book_title} · ${promo.conversion_rate || 0}% ${t('conversionRate')}`
+                            }))}
+                            valueLabel={t('navigationLabel')}
+                            maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
+                        />
+                        <TopListCard
+                            title={t('topNavigationPromoBooks')}
+                            data={(statistics?.promoAudio?.topNavigationBooks || []).map((book: any) => ({
+                                name: book.book_title,
+                                value: book.navigation_count,
+                                subtitle: `${book.converted_visitors} ${t('convertedVisitors')} · ${book.conversion_rate || 0}%`
+                            }))}
+                            valueLabel={t('navigationLabel')}
+                            maxItems={topListSize === 'all' ? 999999 : parseInt(topListSize)}
+                        />
                     </div>
                     <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                         <TopListCard

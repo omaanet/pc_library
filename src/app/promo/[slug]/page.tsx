@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { after } from 'next/server';
+import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getPromoPageBySlug, getBookById } from '@/lib/db';
 import { siteOrigin, siteTitle } from '@/config/metadata';
@@ -6,6 +8,11 @@ import { getSocialCoverImageUrl } from '@/lib/image-utils';
 import { PromoPageView } from '@/components/promo/PromoPageView';
 import { PromoPageModernView } from '@/components/promo/PromoPageModernView';
 import { PromoPageClassicGreenView } from '@/components/promo/PromoPageClassicGreenView';
+import {
+    capturePromoRequestContext,
+    isTrackablePromoNavigation,
+    recordPromoNavigation,
+} from '@/lib/promo-statistics';
 
 const SOCIAL_IMAGE_WIDTH = 1200;
 const SOCIAL_IMAGE_HEIGHT = 630;
@@ -97,6 +104,28 @@ export default async function PromoPage({ params }: { params: Promise<{ slug: st
     }
 
     const { promoPage, book } = resolved;
+
+    const [requestHeaders, cookieStore] = await Promise.all([headers(), cookies()]);
+    if (isTrackablePromoNavigation(requestHeaders)) {
+        const requestContext = capturePromoRequestContext(
+            requestHeaders,
+            cookieStore.get('session')?.value
+        );
+
+        after(async () => {
+            try {
+                await recordPromoNavigation({
+                    promoPageId: promoPage.id,
+                    slug: promoPage.slug,
+                    bookId: book.id,
+                    bookTitle: book.title,
+                    request: requestContext,
+                });
+            } catch (error) {
+                console.error('Failed to track promo navigation:', error);
+            }
+        });
+    }
 
     if (promoPage.template === 'modern') {
         return <PromoPageModernView promoPage={promoPage} book={book} />;

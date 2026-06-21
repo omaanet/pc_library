@@ -1,23 +1,8 @@
-import { createHmac } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getBookById, getNeonClient, getPromoPageBySlug } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth-utils';
 import { ApiError, handleApiError, HttpStatus } from '@/lib/api-error-handler';
-
-function getClientIp(request: NextRequest): string | null {
-    const forwardedFor = request.headers.get('x-forwarded-for');
-    const firstForwardedIp = forwardedFor?.split(',')[0]?.trim();
-    return firstForwardedIp || request.headers.get('x-real-ip') || null;
-}
-
-function hashIp(ipAddress: string): string {
-    const secret = process.env.STATS_HASH_SECRET;
-    if (!secret) {
-        throw new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, 'STATS_HASH_SECRET is required for anonymous promo statistics');
-    }
-
-    return createHmac('sha256', secret).update(ipAddress).digest('hex');
-}
+import { getClientIp, hashPromoVisitorIp } from '@/lib/promo-statistics';
 
 export async function POST(request: NextRequest) {
     try {
@@ -50,7 +35,11 @@ export async function POST(request: NextRequest) {
         }
 
         const user = await getSessionUser(request);
-        const ipHash = user ? null : hashIp(getClientIp(request) || 'unknown');
+        const clientIp = getClientIp(request.headers);
+        if (!user && !clientIp) {
+            return NextResponse.json({ success: true, tracked: false });
+        }
+        const ipHash = user ? null : hashPromoVisitorIp(clientIp!);
         const client = getNeonClient();
 
         await client.query(
