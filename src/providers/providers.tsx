@@ -7,8 +7,9 @@ import { LibraryProvider } from '@/context/library-context';
 import { AuthProvider } from '@/context/auth-context';
 import { QueryProvider } from './query-provider';
 import { BookBadgePaletteProvider } from './book-badge-palette-provider';
+import type { User } from '@/types';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, initialUser }: { children: React.ReactNode; initialUser: User | null }) {
     return (
         <QueryProvider>
             <ThemeProvider
@@ -18,7 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 disableTransitionOnChange
             >
                 <BookBadgePaletteProvider>
-                    <AuthProvider>
+                    <AuthProvider initialUser={initialUser}>
                         <LibraryProvider>
                             {children}
                         </LibraryProvider>

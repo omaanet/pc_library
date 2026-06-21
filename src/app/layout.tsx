@@ -4,6 +4,7 @@ import { Providers } from '@/providers/providers';
 import { Toaster } from '@/components/ui/toaster';
 import { baseFont, displayFont } from '@/config/fonts';
 import { metadata } from '@/config/metadata';
+import { getCurrentSessionUser } from '@/lib/auth-utils';
 import '@/styles/globals.css';
 
 export { metadata };
@@ -17,11 +18,13 @@ export const viewport: Viewport = {
     ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const initialUser = await getCurrentSessionUser();
+
     return (
         <html lang="it" suppressHydrationWarning data-scroll-behavior="smooth">
             <head>
@@ -47,7 +50,7 @@ export default function RootLayout({
             </head>
             <body className={`${baseFont.className} ${displayFont.variable}`}>
                 {/* <div className="grain-overlay" aria-hidden="true" /> */}
-                <Providers>
+                <Providers initialUser={initialUser}>
                     <div className="relative min-h-screen flex flex-col">
                         {children}
                     </div>

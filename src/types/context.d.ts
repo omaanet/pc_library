@@ -87,6 +87,7 @@ export interface RegisterResponse {
 export interface AuthContextType {
     state: AuthState;
     dispatch: React.Dispatch<AuthAction>;
+    refreshSession: () => Promise<User | null>;
     login: (credentials: LoginCredentials) => Promise<void>;
     register: (credentials: RegisterCredentials) => Promise<RegisterResponse>;
     logout: () => Promise<void>;

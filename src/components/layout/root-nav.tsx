@@ -31,7 +31,7 @@ export function RootNav({
     onAuthClick: () => void;
     isAuthenticated?: boolean;
 }) {
-    const { logout, state } = useAuth();
+    const { logout, refreshSession, state } = useAuth();
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -102,7 +102,9 @@ export function RootNav({
 
                     {/* User Menu or Auth Button */}
                     {isAuthenticated ? (
-                        <DropdownMenu>
+                        <DropdownMenu onOpenChange={(open) => {
+                            if (open) void refreshSession();
+                        }}>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="flex items-center gap-2 pl-2 pr-3 text-xs sm:text-sm">
                                     <UserCircle className="h-5 w-5" />
@@ -149,9 +151,12 @@ export function RootNav({
                                                     <Link href="/admin/promo-pages" className="flex items-center gap-2 font-semibold text-yellow-500 hover:text-red-600"><AdminRoleIcon level={ADMIN_ROLES.POWER_ADMIN} className="h-4 w-4" />Pagine Promo</Link>
                                                 </DropdownMenuItem>
                                                 {isSuperAdminLevel(state.user?.userLevel) && (
-                                                    <DropdownMenuItem asChild>
-                                                        <Link href="/admin/users" className="flex items-center gap-2 font-semibold text-yellow-500 hover:text-red-600"><AdminRoleIcon level={ADMIN_ROLES.SUPER_ADMIN} className="h-4 w-4" />Gestisci Utenti</Link>
-                                                    </DropdownMenuItem>
+                                                    <>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href="/admin/users" className="flex items-center gap-2 font-semibold text-yellow-500 hover:text-red-600"><AdminRoleIcon level={ADMIN_ROLES.SUPER_ADMIN} className="h-4 w-4" />Gestisci Utenti</Link>
+                                                        </DropdownMenuItem>
+                                                    </>
                                                 )}
                                                 <DropdownMenuSeparator />
                                             </>

@@ -12,13 +12,16 @@ import type {
     RegisterResponse,
 } from '@/types/context';
 import type { UserPreferences } from '@/types/future-features';
+import type { User } from '@/types';
 
-const initialState: AuthState = {
-    user: null,
-    isLoading: true, // Start with loading true to prevent flash of unauthenticated state
-    error: null,
-    isAuthenticated: false,
-};
+function createInitialState(initialUser: User | null): AuthState {
+    return {
+        user: initialUser,
+        isLoading: false,
+        error: null,
+        isAuthenticated: !!initialUser,
+    };
+}
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
     switch (action.type) {
@@ -73,42 +76,59 @@ async function makeAuthenticatedRequest(url: string, options: RequestInit = {}):
     });
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [state, dispatch] = useReducer(authReducer, initialState);
+export function AuthProvider({ children, initialUser }: { children: React.ReactNode; initialUser: User | null }) {
+    const [state, dispatch] = useReducer(authReducer, initialUser, createInitialState);
+    const refreshPromiseRef = React.useRef<Promise<User | null> | null>(null);
+    const currentUserRef = React.useRef<User | null>(initialUser);
+    currentUserRef.current = state.user;
 
-    // Initialize auth state from stored session
-    React.useEffect(() => {
-        const controller = new AbortController();
+    const refreshSession = useCallback((): Promise<User | null> => {
+        if (refreshPromiseRef.current) return refreshPromiseRef.current;
 
-        const initializeAuth = async () => {
-            dispatch({ type: 'SET_LOADING', payload: true });
+        const request = (async () => {
             try {
-                const response = await fetch('/api/auth/session', { signal: controller.signal });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.user) {
-                        dispatch({ type: 'SET_USER', payload: data.user });
-                        dispatch({ type: 'SET_AUTHENTICATED', payload: true });
-                    }
+                const response = await fetch('/api/auth/session', {
+                    cache: 'no-store',
+                    credentials: 'include',
+                });
+                if (!response.ok) {
+                    throw new Error(`Session refresh failed with status ${response.status}`);
                 }
-            } catch (errorCaught) {
-                // Ignore abort errors (component unmounted)
-                if (errorCaught instanceof Error && errorCaught.name === 'AbortError') {
-                    return;
-                }
-                console.error('Failed to initialize auth:', errorCaught);
+
+                const data = await response.json() as { user: User | null };
+                dispatch({ type: 'SET_USER', payload: data.user });
+                return data.user;
+            } catch (error) {
+                console.error('Failed to refresh auth session:', error);
+                return currentUserRef.current;
             } finally {
-                dispatch({ type: 'SET_LOADING', payload: false });
+                refreshPromiseRef.current = null;
+            }
+        })();
+
+        refreshPromiseRef.current = request;
+        return request;
+    }, []);
+
+    React.useEffect(() => {
+        if (!state.isAuthenticated) return;
+
+        const handleFocus = () => {
+            void refreshSession();
+        };
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                void refreshSession();
             }
         };
 
-        initializeAuth();
-
-        // Cleanup function
+        window.addEventListener('focus', handleFocus);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => {
-            controller.abort();
+            window.removeEventListener('focus', handleFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, []);
+    }, [refreshSession, state.isAuthenticated]);
 
     const login = useCallback(async (credentials: LoginCredentials) => {
         dispatch({ type: 'SET_LOADING', payload: true });
@@ -157,16 +177,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             const data = await response.json() as RegisterResponse;
             
-            // User is immediately authenticated in passwordless flow
-            // Refresh auth state to get the user data
-            const userResponse = await fetch('/api/auth/session');
-            if (userResponse.ok) {
-                const userData = await userResponse.json();
-                if (userData.user) {
-                    dispatch({ type: 'SET_USER', payload: userData.user });
-                    dispatch({ type: 'SET_AUTHENTICATED', payload: true });
-                }
-            }
+            // User is immediately authenticated in the passwordless flow.
+            await refreshSession();
             
             return data;
         } catch (error) {
@@ -175,7 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } finally {
             dispatch({ type: 'SET_LOADING', payload: false });
         }
-    }, []);
+    }, [refreshSession]);
 
     const logout = useCallback(async () => {
         dispatch({ type: 'SET_LOADING', payload: true });
@@ -228,6 +240,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const value: AuthContextType = {
         state,
         dispatch,
+        refreshSession,
         login,
         register,
         logout,
