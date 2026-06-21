@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import { useAuth } from '@/context/auth-context';
-import { useTheme } from 'next-themes';
 import {
     useBookBadgePalette,
     useReaderPreferences,
     useSetBookBadgePalette,
+    useSetThemePreference,
     useSetViewMode,
-    useSetZoomLevel
+    useSetZoomLevel,
+    useThemePreference,
 } from '@/stores/preferences-store';
 import {
     BOOK_BADGE_PALETTES,
@@ -46,9 +47,9 @@ import { CopyrightFooter } from '@/components/shared/copyright-footer';
 export default function SettingsPage() {
     const { state: { user, isAuthenticated } } = useAuth();
     const router = useRouter();
-    const { setTheme, theme } = useTheme();
 
     // Reader preferences store actions
+    const setThemePreference = useSetThemePreference();
     const setViewMode = useSetViewMode();
     const setZoomLevel = useSetZoomLevel();
     const setBookBadgePalette = useSetBookBadgePalette();
@@ -56,12 +57,14 @@ export default function SettingsPage() {
     // Reader preferences store values
     const readerPrefs = useReaderPreferences();
     const bookBadgePalette = useBookBadgePalette();
+    const theme = useThemePreference();
 
     const [isSaving, setIsSaving] = React.useState(false);
 
     // Handle theme change
     const handleThemeChange = (newTheme: string) => {
-        setTheme(newTheme);
+        if (newTheme !== 'light' && newTheme !== 'dark' && newTheme !== 'system') return;
+        setThemePreference(newTheme);
         toast({
             title: 'Tema aggiornato',
             description: 'Il tema è stato salvato correttamente.',

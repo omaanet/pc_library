@@ -11,7 +11,7 @@ import type {
     RegisterCredentials,
     RegisterResponse,
 } from '@/types/context';
-import type { UserPreferences } from '@/types/future-features';
+import type { UserPreferences } from '@/types/preferences';
 import type { User } from '@/types';
 
 function createInitialState(initialUser: User | null): AuthState {
@@ -209,7 +209,9 @@ export function AuthProvider({ children, initialUser }: { children: React.ReactN
     }, []);
 
     const updatePreferences = useCallback(async (preferences: Partial<UserPreferences>) => {
-        if (!state.user) throw new Error('User not authenticated');
+        const user = currentUserRef.current;
+        if (!user) throw new Error('User not authenticated');
+        const requestedUserId = user.id;
 
         dispatch({ type: 'SET_LOADING', payload: true });
         try {
@@ -223,19 +225,22 @@ export function AuthProvider({ children, initialUser }: { children: React.ReactN
                 throw new Error('Failed to update preferences');
             }
 
-            const updatedUser = {
-                ...state.user,
-                preferences: { ...state.user.preferences, ...preferences },
-            };
-            dispatch({ type: 'SET_USER', payload: updatedUser });
-            dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+            const data = await response.json() as { preferences: UserPreferences };
+            const currentUser = currentUserRef.current;
+            if (currentUser?.id === requestedUserId) {
+                dispatch({
+                    type: 'SET_USER',
+                    payload: { ...currentUser, preferences: data.preferences },
+                });
+                dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+            }
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: error as Error });
             throw error;
         } finally {
             dispatch({ type: 'SET_LOADING', payload: false });
         }
-    }, [state.user]);
+    }, []);
 
     const value: AuthContextType = {
         state,

@@ -2,7 +2,10 @@
 
 import * as React from 'react';
 import { Moon, Sun, Check } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import {
+    useSetThemePreference,
+    useThemePreference,
+} from '@/stores/preferences-store';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -13,7 +16,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function ThemeSwitcher() {
-    const { setTheme, theme } = useTheme();
+    const theme = useThemePreference();
+    const setTheme = useSetThemePreference();
 
     // Helper to check if a theme is the user's explicit selection
     const isActive = (t: string) => theme === t;

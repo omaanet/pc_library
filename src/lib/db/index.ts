@@ -51,3 +51,8 @@ export type {
     BookmarkKind,
     BookmarksByKind
 } from './queries/bookmarks';
+
+export {
+    getUserPreferences,
+    upsertUserPreferences,
+} from './queries/user-preferences';

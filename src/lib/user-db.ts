@@ -1,6 +1,6 @@
 // src/lib/user-db.ts
 // Consolidated authentication functions for passwordless flow
-import { getNeonClient, getFirstRow } from './db';
+import { getNeonClient, getFirstRow, getUserPreferences } from './db';
 import { User } from '@/types';
 import type { DatabaseUser, DATABASE_ERROR_CODES } from '@/types/database';
 import { isUniqueViolationError } from '@/types/database';
@@ -93,8 +93,7 @@ export async function getUserById(id: number): Promise<User | null> {
     const user = getFirstRow(res);
     if (!user) return null;
 
-    // For a real app, you would fetch user preferences and stats from related tables
-    // For now, provide default values
+    const preferences = await getUserPreferences(id);
     
     return {
         ...user,
@@ -102,25 +101,7 @@ export async function getUserById(id: number): Promise<User | null> {
         userLevel: normalizeAdminRole(user.is_admin),
         isAdmin: Boolean(user.is_admin > 0), // Map from DB field to app field
         name: user.full_name?.split(' ')?.[0] || user.full_name || 'Utente', // First name, or full name, or fallback
-        preferences: {
-            theme: 'system' as const,
-            language: 'it',
-            fontSize: 16,
-            viewMode: 'grid' as const,
-            notifications: {
-                email: false,
-                push: false,
-                SMS: false,
-            },
-            accessibility: {
-                largeText: false,
-                reduceAnimations: false,
-                highContrast: false,
-                reducedMotion: false,
-            },
-            emailNotifications: {},
-            reading: {},
-        },
+        preferences,
         stats: {
             totalBooksRead: 0,
             totalReadingTime: 0,

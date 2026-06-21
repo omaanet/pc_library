@@ -11,6 +11,16 @@ export interface DatabaseUser {
     updated_at: string;
 }
 
+export interface DatabaseUserPreferences {
+    user_id: number;
+    theme: 'light' | 'dark' | 'system';
+    book_badge_palette: import('./preferences').BookBadgePalette;
+    reader_view_mode: 'single' | 'double';
+    reader_zoom: number | string;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface DatabaseBook {
     id: number;
     title: string;
@@ -86,6 +96,8 @@ export const DATABASE_ERROR_CODES = {
     FOREIGN_KEY_VIOLATION: '23503',
     NOT_NULL_VIOLATION: '23502',
     CHECK_VIOLATION: '23514',
+    UNDEFINED_TABLE: '42P01',
+    UNDEFINED_COLUMN: '42703',
 } as const;
 
 // Type guards
@@ -95,4 +107,12 @@ export function isUniqueViolationError(error: any): error is { code: typeof DATA
 
 export function isForeignKeyViolationError(error: any): error is { code: typeof DATABASE_ERROR_CODES.FOREIGN_KEY_VIOLATION } {
     return error?.code === DATABASE_ERROR_CODES.FOREIGN_KEY_VIOLATION;
+}
+
+export function isMissingTableOrColumnError(
+    error: unknown
+): error is { code: typeof DATABASE_ERROR_CODES.UNDEFINED_TABLE | typeof DATABASE_ERROR_CODES.UNDEFINED_COLUMN } {
+    const code = (error as { code?: unknown } | null)?.code;
+    return code === DATABASE_ERROR_CODES.UNDEFINED_TABLE
+        || code === DATABASE_ERROR_CODES.UNDEFINED_COLUMN;
 }

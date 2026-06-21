@@ -1,6 +1,7 @@
 // src/types/context.d.ts
 
-import { Book, User, UserPreferences } from './index';
+import type { Book, User } from './index';
+import type { UserPreferences } from './preferences';
 
 export type ViewMode = 'grid' | 'list';
 export type SortBy = 'hasAudio' | 'title' | 'publishingDate' | 'audioLength' | 'displayOrder';

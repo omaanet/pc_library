@@ -7,6 +7,9 @@
 
 import type { PromoTemplate } from '@/lib/promo-page-input';
 import type { AdminRole } from '@/config/admin-roles';
+import type { UserPreferences } from './preferences';
+
+export type { UserPreferences } from './preferences';
 
 export interface Book {
     id: string;
@@ -106,4 +109,4 @@ export interface BookResponse {
 
 // Import future feature types for type references
 // Note: These are not re-exported to keep them out of the bundle
-import type { UserPreferences, UserStats, AudioBookInfo } from './future-features';
+import type { UserStats, AudioBookInfo } from './future-features';
