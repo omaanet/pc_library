@@ -319,6 +319,7 @@ The production server runs on port 3006 by default.
 Ensure all environment variables are set in your production environment, particularly:
 - `NEXT_PUBLIC_APP_URL` - Your production domain
 - `DATABASE_URL` - Production database connection
+- `STATS_HASH_SECRET` - Stable server-only secret used to HMAC anonymous promo visitor IPs. Generate at least 32 random bytes, keep it out of version control, and do not rotate it unless fragmenting historical visitor identities is acceptable.
 - Email configuration for production SMTP server
 
 ## 🔍 Development Guidelines

@@ -57,6 +57,7 @@ scripts/check-env.js
 # CLAUDE.md
 
 .env*
+!.env.example
 
 AUDIT.md
 CLAUDE.md
@@ -67,3 +68,4 @@ CLAUDE.md
 # knip reports
 reports/
 .devin
+.vercel

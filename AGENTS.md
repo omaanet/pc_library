@@ -254,11 +254,13 @@ Variables referenced by the current codebase include:
 - `MAIL_USER`
 - `MAIL_PASSWORD`
 - `MAIL_FROM`
+- `STATS_HASH_SECRET`
 
 Notes:
 
 - `DATABASE_URL` is required for the DB client and DB scripts
 - `NEXT_PUBLIC_APP_URL` is still referenced by `src/lib/mailer.ts`
+- `STATS_HASH_SECRET` is required for anonymous promo navigation and audio statistics. It must be a stable server-only secret with at least 32 random bytes; changing it fragments anonymous visitor identities.
 - `scripts/check-env.js` logs `DATABASE_URL` and `MAIL_USER`; it does not validate a schema
 
 ## Common Gotchas
