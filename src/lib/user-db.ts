@@ -4,6 +4,7 @@ import { getNeonClient, getFirstRow } from './db';
 import { User } from '@/types';
 import type { DatabaseUser, DATABASE_ERROR_CODES } from '@/types/database';
 import { isUniqueViolationError } from '@/types/database';
+import { normalizeAdminRole } from '@/config/admin-roles';
 
 /**
  * Check if a user with the given email exists
@@ -98,7 +99,7 @@ export async function getUserById(id: number): Promise<User | null> {
     return {
         ...user,
         fullName: user.full_name, // Map from DB field to app field
-        userLevel: user.is_admin, // Use is_admin column directly as userLevel
+        userLevel: normalizeAdminRole(user.is_admin),
         isAdmin: Boolean(user.is_admin > 0), // Map from DB field to app field
         name: user.full_name?.split(' ')?.[0] || user.full_name || 'Utente', // First name, or full name, or fallback
         preferences: {
@@ -133,4 +134,3 @@ export async function getUserById(id: number): Promise<User | null> {
         updatedAt: user.updated_at ? new Date(user.updated_at) : undefined,
     };
 }
-

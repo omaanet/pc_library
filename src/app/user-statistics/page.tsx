@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
 import { AuthModal } from '@/components/auth/auth-modal';
+import { isPowerAdminLevel } from '@/config/admin-roles';
 
 const ACTIVE_TAB_STORAGE_KEY = 'user-statistics-active-tab';
 const INCLUDE_MAINTENANCE_IP_STORAGE_KEY = 'user-statistics-include-maintenance-ip';
@@ -422,10 +423,10 @@ export default function UserStatisticsPage() {
     };
 
     useEffect(() => {
-        if (state.isAuthenticated && state.user?.isAdmin) {
+        if (state.isAuthenticated && isPowerAdminLevel(state.user?.userLevel)) {
             fetchStatistics();
         }
-    }, [fetchStatistics, state.isAuthenticated, state.user?.isAdmin]);
+    }, [fetchStatistics, state.isAuthenticated, state.user?.userLevel]);
 
     // Show loading state while checking authentication or mounting
     if (state.isLoading || !isMounted) {
@@ -439,7 +440,7 @@ export default function UserStatisticsPage() {
     }
 
     // Don't render content if not authorized (only after loading is complete)
-    if (!state.isAuthenticated || !state.user?.isAdmin) {
+    if (!state.isAuthenticated || !isPowerAdminLevel(state.user?.userLevel)) {
         return (
             <>
                 <AdminAccessDenied 

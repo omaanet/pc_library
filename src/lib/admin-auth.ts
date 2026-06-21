@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { getUserById } from '@/lib/user-db';
 import { User } from '@/types';
 import { ApiError, HttpStatus } from '@/lib/api-error-handler';
+import { isPowerAdminLevel, isSuperAdminLevel } from '@/config/admin-roles';
 
 /**
  * Require admin authentication for API routes
@@ -80,8 +81,19 @@ export async function requireAdmin(): Promise<User> {
 export async function requirePowerAdmin(): Promise<User> {
     const user = await requireAdmin();
 
-    if ((user.userLevel ?? 0) <= 1) {
+    if (!isPowerAdminLevel(user.userLevel)) {
         throw new ApiError(HttpStatus.FORBIDDEN, 'Power admin access required');
+    }
+
+    return user;
+}
+
+/** Require the highest administrative level for user and role management. */
+export async function requireSuperAdmin(): Promise<User> {
+    const user = await requireAdmin();
+
+    if (!isSuperAdminLevel(user.userLevel)) {
+        throw new ApiError(HttpStatus.FORBIDDEN, 'Super admin access required');
     }
 
     return user;

@@ -17,6 +17,7 @@ import { usePromoPages } from '@/hooks/admin/use-promo-pages';
 import { PromoPagesTable } from '@/components/admin/promo-pages/promo-pages-table';
 import { PromoPageForm } from '@/components/admin/promo-pages/promo-page-form';
 import type { PromoPageListItem } from '@/types';
+import { isPowerAdminLevel } from '@/config/admin-roles';
 
 export default function AdminPromoPagesPage() {
     const router = useRouter();
@@ -37,7 +38,7 @@ export default function AdminPromoPagesPage() {
     const isAllowed =
         state.isAuthenticated &&
         state.user?.isAdmin === true &&
-        (state.user?.userLevel ?? 0) > 1;
+        isPowerAdminLevel(state.user?.userLevel);
 
     // Load promo pages only once the user is confirmed as power admin.
     useEffect(() => {

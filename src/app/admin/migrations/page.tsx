@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, Archive, ArrowLeft, CheckCircle2, Database, FileWarning, Loader2, Play, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
+import { isPowerAdminLevel } from '@/config/admin-roles';
 import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -102,7 +103,7 @@ export default function AdminMigrationsPage() {
     const isAllowed =
         state.isAuthenticated &&
         state.user?.isAdmin === true &&
-        (state.user?.userLevel ?? 0) > 1;
+        isPowerAdminLevel(state.user?.userLevel);
 
     const fetchMigrationState = React.useCallback(async () => {
         setIsLoading(true);

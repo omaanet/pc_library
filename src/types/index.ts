@@ -6,6 +6,7 @@
  */
 
 import type { PromoTemplate } from '@/lib/promo-page-input';
+import type { AdminRole } from '@/config/admin-roles';
 
 export interface Book {
     id: string;
@@ -81,7 +82,7 @@ export interface User {
     fullName: string; // maps to full_name in DB
     isActivated: boolean; // maps to is_activated in DB
     isAdmin?: boolean;
-    userLevel?: number;
+    userLevel?: AdminRole;
     name: string; // Derived from fullName
     // The following fields are optional as they might not be present in all contexts
     verification_token?: string;

@@ -42,20 +42,34 @@ export async function POST(request: NextRequest) {
         const ipHash = user ? null : hashPromoVisitorIp(clientIp!);
         const client = getNeonClient();
 
+        const identityConflict = user
+            ? `(promo_page_id, user_id) WHERE user_id IS NOT NULL`
+            : `(promo_page_id, ip_hash) WHERE user_id IS NULL AND ip_hash IS NOT NULL`;
+
         await client.query(
-            `INSERT INTO promo_audio_events (
-                promo_page_id,
-                slug,
-                book_id,
-                book_title,
-                media_id,
-                user_id,
-                user_name,
-                ip_hash,
-                user_agent,
-                referrer
+            `WITH event AS (
+                INSERT INTO promo_audio_events (
+                    promo_page_id,
+                    slug,
+                    book_id,
+                    book_title,
+                    media_id,
+                    user_id,
+                    user_name,
+                    ip_hash,
+                    user_agent,
+                    referrer
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                ON CONFLICT ${identityConflict}
+                DO UPDATE SET count = promo_audio_events.count + 1
+                RETURNING id
              )
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+             INSERT INTO promo_audio_daily_counts (event_id, event_date, count)
+             SELECT id, CURRENT_DATE, 1
+             FROM event
+             ON CONFLICT (event_id, event_date)
+             DO UPDATE SET count = promo_audio_daily_counts.count + 1`,
             [
                 promoPage.id,
                 promoPage.slug,

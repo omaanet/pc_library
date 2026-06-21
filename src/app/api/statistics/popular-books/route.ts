@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getNeonClient, extractRows } from '@/lib/db';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requirePowerAdmin } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
 import { getMaintenanceIpFilter } from '@/lib/statistics-maintenance-ip';
@@ -8,7 +8,7 @@ import { getMaintenanceIpFilter } from '@/lib/statistics-maintenance-ip';
 export async function GET(request: Request) {
     try {
         // Require admin authorization
-        await requireAdmin();
+        await requirePowerAdmin();
 
         const { searchParams } = new URL(request.url);
         const daysParam = searchParams.get('days') || '30';

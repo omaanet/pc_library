@@ -83,21 +83,33 @@ export async function recordPromoNavigation(input: PromoNavigationInput): Promis
     const visitor = await resolvePromoVisitor(input.request);
     if (!visitor) return false;
 
+    const identityConflict = visitor.userId !== null
+        ? `(promo_page_id, user_id) WHERE user_id IS NOT NULL`
+        : `(promo_page_id, ip_hash) WHERE user_id IS NULL AND ip_hash IS NOT NULL`;
     const result = await getNeonClient().query(
-        `INSERT INTO promo_navigation_events (
-            promo_page_id,
-            slug,
-            book_id,
-            book_title,
-            user_id,
-            user_name,
-            ip_hash,
-            user_agent,
-            referrer
+        `WITH event AS (
+            INSERT INTO promo_navigation_events (
+                promo_page_id,
+                slug,
+                book_id,
+                book_title,
+                user_id,
+                user_name,
+                ip_hash,
+                user_agent,
+                referrer
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT ${identityConflict}
+            DO UPDATE SET count = promo_navigation_events.count + 1
+            RETURNING id
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         ON CONFLICT DO NOTHING
-         RETURNING id`,
+         INSERT INTO promo_navigation_daily_counts (event_id, event_date, count)
+         SELECT id, CURRENT_DATE, 1
+         FROM event
+         ON CONFLICT (event_id, event_date)
+         DO UPDATE SET count = promo_navigation_daily_counts.count + 1
+         RETURNING event_id`,
         [
             input.promoPageId,
             input.slug,

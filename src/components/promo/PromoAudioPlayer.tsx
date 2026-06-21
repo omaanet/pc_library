@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import HTML5Player from '@/components/audio/HTML5Player';
 import type { Track } from '@/components/audio/types';
 import { SITE_CONFIG } from '@/config/site-config';
@@ -13,6 +13,7 @@ interface PromoAudioPlayerProps {
 }
 
 export function PromoAudioPlayer({ promoPage, book, unavailableClassName }: PromoAudioPlayerProps) {
+    const hasTrackedPlay = useRef(false);
     const tracks: Track[] = useMemo(() => {
         if (!promoPage.mediaId) return [];
         return [
@@ -25,11 +26,8 @@ export function PromoAudioPlayer({ promoPage, book, unavailableClassName }: Prom
     }, [promoPage.mediaId, book.title]);
 
     const handleFirstPlay = useCallback(() => {
-        if (!promoPage.mediaId) return;
-
-        const storageKey = `promo-audio-play:${promoPage.slug}:${promoPage.mediaId}`;
-        if (sessionStorage.getItem(storageKey)) return;
-        sessionStorage.setItem(storageKey, 'true');
+        if (!promoPage.mediaId || hasTrackedPlay.current) return;
+        hasTrackedPlay.current = true;
 
         void fetch('/api/statistics/promo-audio-play', {
             method: 'POST',

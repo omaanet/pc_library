@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BookForm } from '@/components/admin/books/book-form';
 import { BookTable } from '@/components/admin/books/book-table';
 import { AudioTrackForm } from '@/components/admin/books/audio-track-form';
-import { UsersTable } from '@/components/admin/users-table';
 import { useBooks } from '@/hooks/admin/use-books';
 import { Book } from '@/types';
 import { z } from 'zod';
@@ -46,7 +45,7 @@ const bookFormSchema = z.object({
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
-type TopLevelTab = 'manage' | 'add' | 'users' | 'test';
+type TopLevelTab = 'manage' | 'add' | 'test';
 type AdminView = TopLevelTab | 'edit' | 'audio-tracks';
 type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'isNew' | 'book_id' | 'displayOrder' | 'isReadingVisible' | 'isAudioVisible';
 type SortDirection = 'asc' | 'desc';
@@ -59,7 +58,7 @@ interface ManageViewState {
     sortDirection: SortDirection;
 }
 
-const TOP_LEVEL_TABS = new Set<TopLevelTab>(['manage', 'add', 'users', 'test']);
+const TOP_LEVEL_TABS = new Set<TopLevelTab>(['manage', 'add', 'test']);
 
 function getTopLevelTab(value: string | null): TopLevelTab {
     return value && TOP_LEVEL_TABS.has(value as TopLevelTab)
@@ -122,10 +121,10 @@ function AddBookPageContent() {
         setActiveView(requestedTopLevelTab);
     }, [rawTab, requestedTopLevelTab, router, searchParamsString]);
 
-    // Admin authorization check - requires both admin status and userLevel > 1
+    // All administrative levels can manage books.
     useEffect(() => {
         if (!state.isLoading) {
-            if (!state.isAuthenticated || !state.user?.isAdmin || (state.user?.userLevel ?? 0) <= 1) {
+            if (!state.isAuthenticated || !state.user?.isAdmin) {
                 router.push('/');
             }
         }
@@ -329,7 +328,7 @@ function AddBookPageContent() {
 
     const isNestedBookView = activeView === 'edit' || activeView === 'audio-tracks';
     const canManageAudioTracks = Boolean(editingBook?.id && editingBook.hasAudio);
-    const isBackButtonDisabled = activeView === 'users' || activeView === 'test';
+    const isBackButtonDisabled = activeView === 'test';
 
     const handleBackButton = () => {
         if (activeView === 'manage') {
@@ -407,14 +406,8 @@ function AddBookPageContent() {
                     {/* Group 2: Admin Tabs - visually separated */}
                     <div className="ml-2 inline-flex items-center rounded-md bg-amber-100 dark:bg-amber-900/30 p-1">
                         <TabsTrigger
-                            value="users"
-                            className="select-none data-[state=active]:bg-amber-200 dark:data-[state=active]:bg-amber-800/50"
-                        >
-                            Registered Users
-                        </TabsTrigger>
-                        <TabsTrigger
                             value="test"
-                            className="ml-5 select-none data-[state=active]:bg-amber-200 dark:data-[state=active]:bg-amber-800/50"
+                            className="select-none data-[state=active]:bg-amber-200 dark:data-[state=active]:bg-amber-800/50"
                         >
                             Test
                         </TabsTrigger>
@@ -446,20 +439,6 @@ function AddBookPageContent() {
                                 sortDirection={sortDirection}
                                 setSortDirection={setSortDirection}
                             />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="users" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="select-none">Registered Users</CardTitle>
-                            <CardDescription className="select-none">
-                                View and manage all registered users.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <UsersTable />
                         </CardContent>
                     </Card>
                 </TabsContent>

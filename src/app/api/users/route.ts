@@ -1,147 +1,111 @@
 import { NextResponse } from 'next/server';
-import { getNeonClient, getFirstRow } from '@/lib/db';
+import { ADMIN_ROLES, isAdminRole, type AdminRole } from '@/config/admin-roles';
+import { getNeonClient, extractRows, getFirstRow } from '@/lib/db';
+import { requireSuperAdmin } from '@/lib/admin-auth';
+import { ApiError, handleApiError, HttpStatus } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
-import { requireAdmin } from '@/lib/admin-auth';
-import { handleApiError } from '@/lib/api-error-handler';
 
-export interface UsersQueryParams {
-    page?: number;
-    perPage?: number;
-    search?: string;
-    sortBy?: 'email' | 'fullName' | 'isActivated' | 'isAdmin' | 'createdAt';
-    sortOrder?: 'asc' | 'desc';
-    isActivated?: boolean;
-    isAdmin?: boolean;
+type SortField = 'email' | 'fullName' | 'isActivated' | 'userLevel' | 'createdAt';
+
+const SORT_COLUMNS: Record<SortField, string> = {
+    email: 'email',
+    fullName: 'full_name',
+    isActivated: 'is_activated',
+    userLevel: 'is_admin',
+    createdAt: 'created_at',
+};
+
+function parsePositiveInteger(value: string | null, fallback: number): number {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 export async function GET(request: Request) {
-    // console.log('[Users API] Request received');
     try {
-        // Require admin authorization
-        await requireAdmin();
+        await requireSuperAdmin();
 
         const { searchParams } = new URL(request.url);
-        const page = parseInt(searchParams.get('page') || String(SITE_CONFIG.PAGINATION.DEFAULT_PAGE));
-        let perPage = parseInt(searchParams.get('perPage') || String(SITE_CONFIG.PAGINATION.DEFAULT_PER_PAGE));
+        const page = parsePositiveInteger(searchParams.get('page'), SITE_CONFIG.PAGINATION.DEFAULT_PAGE);
+        const requestedPerPage = parsePositiveInteger(
+            searchParams.get('perPage'),
+            SITE_CONFIG.PAGINATION.DEFAULT_PER_PAGE
+        );
+        const perPage = Math.min(
+            SITE_CONFIG.PAGINATION.MAX_PER_PAGE,
+            Math.max(SITE_CONFIG.PAGINATION.MIN_PER_PAGE, requestedPerPage)
+        );
+        const search = searchParams.get('search')?.trim() ?? '';
+        const requestedSort = searchParams.get('sortBy') as SortField | null;
+        const sortBy = requestedSort && requestedSort in SORT_COLUMNS ? requestedSort : 'userLevel';
+        const requestedSortOrder = searchParams.get('sortOrder')?.toLowerCase();
+        const sortOrder = requestedSortOrder === 'asc'
+            ? 'ASC'
+            : requestedSortOrder === 'desc'
+                ? 'DESC'
+                : 'DESC';
+        const requestedRole = searchParams.get('userLevel');
 
-        // Validate perPage is within allowed range
-        if (perPage < SITE_CONFIG.PAGINATION.MIN_PER_PAGE) {
-            perPage = SITE_CONFIG.PAGINATION.MIN_PER_PAGE;
-        } else if (perPage > SITE_CONFIG.PAGINATION.MAX_PER_PAGE) {
-            perPage = SITE_CONFIG.PAGINATION.MAX_PER_PAGE;
-        }
-        const search = searchParams.get('search') || '';
-        const sortBy = searchParams.get('sortBy') as UsersQueryParams['sortBy'] || 'createdAt';
-        const sortOrder = searchParams.get('sortOrder') as 'asc' | 'desc' || 'desc';
-        const isActivated = searchParams.get('isActivated');
-        const isAdmin = searchParams.get('isAdmin');
-
-        // console.log('[Users API] Query params:', {
-        //     page,
-        //     perPage,
-        //     search,
-        //     sortBy,
-        //     sortOrder,
-        //     isActivated,
-        //     isAdmin
-        // });
-
-        const client = getNeonClient();
-        // console.log('[Users API] Database client initialized');
-
-        // Build WHERE conditions
-        const whereConditions: string[] = [];
-        const params: (string | boolean | number)[] = [];
-        let paramIndex = 1;
-
-        if (search) {
-            whereConditions.push(`(LOWER(email) LIKE LOWER($${paramIndex}) OR LOWER(full_name) LIKE LOWER($${paramIndex}))`);
-            params.push(`%${search}%`);
-            paramIndex++;
-        }
-
-        if (isActivated !== null) {
-            const isActivatedBool = isActivated === 'true';
-            whereConditions.push(`is_activated = $${paramIndex}::boolean`);
-            params.push(isActivatedBool);
-            paramIndex++;
-        }
-
-        if (isAdmin !== null) {
-            // Handle both string 'true'/'false' and boolean values
-            const isAdminBool = isAdmin === 'true';
-            whereConditions.push(`is_admin = $${paramIndex}::integer`);
-            params.push(isAdminBool ? 1 : 0);
-            paramIndex++;
-        }
-
-        const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
-        // Get total count
-        const countQuery = `SELECT COUNT(*) as total FROM users ${whereClause}`;
-        // console.log('[Users API] Count query:', countQuery, 'Params:', params);
-
-        const countResult = await client.query(countQuery, params);
-        // console.log('[Users API] Count result:', countResult);
-
-        const total = parseInt(countResult[0]?.total || '0');
-        // console.log('[Users API] Total users:', total);
-
-        // Get paginated users
-        const offset = (page - 1) * perPage;
-
-        // Map sortBy to actual column names
-        const sortColumnMap: Record<string, string> = {
-            email: 'email',
-            fullName: 'full_name',
-            isActivated: 'is_activated',
-            isAdmin: 'is_admin',
-            createdAt: 'created_at'
-        };
-
-        const orderBy = sortColumnMap[sortBy] || 'created_at';
-
-        // Validate sortOrder to prevent SQL injection
-        const validSortOrders = ['asc', 'desc'];
-        const safeSortOrder = validSortOrders.includes(sortOrder.toLowerCase())
-            ? sortOrder.toUpperCase()
-            : 'DESC';
-
-        const query = `
-      SELECT
-        id,
-        email,
-        full_name as "fullName",
-        is_activated as "isActivated",
-        is_admin as "userLevel",
-        CASE WHEN is_admin > 0 THEN true ELSE false END as "isAdmin",
-        created_at as "createdAt",
-        updated_at as "updatedAt"
-      FROM users
-      ${whereClause}
-      ORDER BY ${orderBy} ${safeSortOrder} 
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `;
-
-        // console.log('[Users API] Users query:', query, 'Params:', [...params, perPage, offset]);
-        const result = await client.query(query, [...params, perPage, offset]);
-        // console.log('[Users API] Query result rows:', result?.length || 0);
-
-        const response = {
-            users: result,
-            pagination: {
-                page,
-                perPage,
-                total,
-                totalPages: Math.ceil(total / perPage)
+        let userLevel: AdminRole | null = null;
+        if (requestedRole !== null && requestedRole !== 'all') {
+            const parsedRole = Number(requestedRole);
+            if (!isAdminRole(parsedRole)) {
+                throw new ApiError(HttpStatus.BAD_REQUEST, 'Invalid user level');
             }
-        };
+            userLevel = parsedRole;
+        }
 
-        // console.log('[Users API] Sending response with', result?.length || 0, 'users');
-        return NextResponse.json(response);
+        const conditions: string[] = [];
+        const params: Array<string | number> = [];
+        if (search) {
+            params.push(`%${search}%`);
+            conditions.push(`(email ILIKE $${params.length} OR full_name ILIKE $${params.length})`);
+        }
+        if (userLevel !== null) {
+            params.push(userLevel);
+            conditions.push(userLevel === ADMIN_ROLES.SUPER_ADMIN
+                ? `is_admin >= $${params.length}`
+                : `is_admin = $${params.length}`
+            );
+        }
 
+        const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+        const client = getNeonClient();
+        const countRow = getFirstRow<{ total: string }>(
+            await client.query(`SELECT COUNT(*) AS total FROM users ${whereClause}`, params)
+        );
+        const total = Number(countRow?.total ?? 0);
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        const safePage = Math.min(page, totalPages);
+        const offset = (safePage - 1) * perPage;
+
+        const users = extractRows(await client.query(
+            `SELECT
+                id,
+                email,
+                full_name AS "fullName",
+                is_activated AS "isActivated",
+                CASE
+                    WHEN is_admin >= ${ADMIN_ROLES.SUPER_ADMIN} THEN ${ADMIN_ROLES.SUPER_ADMIN}
+                    WHEN is_admin = ${ADMIN_ROLES.POWER_ADMIN} THEN ${ADMIN_ROLES.POWER_ADMIN}
+                    WHEN is_admin = ${ADMIN_ROLES.ADMIN} THEN ${ADMIN_ROLES.ADMIN}
+                    ELSE ${ADMIN_ROLES.REGISTERED}
+                END AS "userLevel",
+                CASE WHEN is_admin > ${ADMIN_ROLES.REGISTERED} THEN true ELSE false END AS "isAdmin",
+                created_at AS "createdAt",
+                updated_at AS "updatedAt"
+             FROM users
+             ${whereClause}
+             ORDER BY ${SORT_COLUMNS[sortBy]} ${sortOrder}, id ASC
+             LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+            [...params, perPage, offset]
+        ));
+
+        return NextResponse.json({
+            users,
+            pagination: { page: safePage, perPage, total, totalPages },
+        });
     } catch (error) {
         console.error('[Users API] Error:', error);
-        return handleApiError(error, 'Failed to fetch users', 500);
+        return handleApiError(error, 'Impossibile caricare gli utenti', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
