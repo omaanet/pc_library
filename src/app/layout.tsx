@@ -1,5 +1,6 @@
 // src/app/layout.tsx
 import type { Viewport } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import { Providers } from '@/providers/providers';
 import { Toaster } from '@/components/ui/toaster';
 import { baseFont, displayFont } from '@/config/fonts';
@@ -56,6 +57,7 @@ export default async function RootLayout({
                     </div>
                     <Toaster />
                 </Providers>
+                <Analytics />
             </body>
         </html>
     );
