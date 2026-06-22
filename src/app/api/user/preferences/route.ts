@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ApiError, handleApiError, HttpStatus } from '@/lib/api-error-handler';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
-import { getCurrentSessionUser } from '@/lib/auth-utils';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { getUserPreferences, upsertUserPreferences } from '@/lib/db';
 
 const preferencesPatchSchema = z.object({
@@ -15,7 +15,7 @@ const preferencesPatchSchema = z.object({
 
 export async function GET() {
     try {
-        const user = await requireUser();
+        const user = await requireManagedPageAccess('settings');
         const preferences = await getUserPreferences(user.id);
 
         return preferencesResponse(preferences);
@@ -27,7 +27,7 @@ export async function GET() {
 
 export const PATCH = withCSRFProtection(async function(request: Request) {
     try {
-        const user = await requireUser();
+        const user = await requireManagedPageAccess('settings');
         const parsed = preferencesPatchSchema.safeParse(await request.json());
         if (!parsed.success) {
             throw new ApiError(HttpStatus.BAD_REQUEST, 'Preferenze non valide', {
@@ -42,14 +42,6 @@ export const PATCH = withCSRFProtection(async function(request: Request) {
         return handleApiError(error, 'Failed to update user preferences', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 });
-
-async function requireUser() {
-    const user = await getCurrentSessionUser();
-    if (!user) {
-        throw new ApiError(HttpStatus.UNAUTHORIZED, 'Autenticazione richiesta');
-    }
-    return user;
-}
 
 function preferencesResponse(preferences: Awaited<ReturnType<typeof getUserPreferences>>) {
     return NextResponse.json(

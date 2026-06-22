@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getNeonClient, extractRows } from '@/lib/db';
-import { requirePowerAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
 import { getMaintenanceIpFilter } from '@/lib/statistics-maintenance-ip';
@@ -18,7 +18,7 @@ function getStatsParams(request: Request) {
 
 export async function GET(request: Request) {
     try {
-        await requirePowerAdmin();
+        await requireManagedPageAccess('statistics');
         const { limit, daysFilter, slDaysFilter } = getStatsParams(request);
         const maintenanceIpFilter = getMaintenanceIpFilter(request);
         const slMaintenanceIpFilter = getMaintenanceIpFilter(request, 'sl.ip_address');

@@ -16,13 +16,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from '@/context/auth-context';
 import { AdminRoleIcon } from '@/components/admin/admin-role-icon';
-import { ADMIN_ROLES, isPowerAdminLevel, isSuperAdminLevel } from '@/config/admin-roles';
+import type { ManagedPageConfig } from '@/config/managed-pages';
+import { getAdminRoleMenuClass } from '@/lib/admin-role-menu';
 import {
+    CircleHelp,
     Mail,
     UserCircle,
     LogOut,
-    CircleHelp,
+    Settings as SettingsIcon,
 } from 'lucide-react';
+
+function ManagedPageMenuIcon({ page }: { page: ManagedPageConfig }) {
+    if (page.menuIcon === 'settings') return <SettingsIcon className="h-4 w-4" aria-hidden="true" />;
+    if (page.menuIcon === 'circle-help') return <CircleHelp className="h-4 w-4" aria-hidden="true" />;
+    return <AdminRoleIcon level={page.accessLevel} className="h-4 w-4" />;
+}
 
 export function RootNav({
     onAuthClick,
@@ -34,6 +42,24 @@ export function RootNav({
     const { logout, refreshSession, state } = useAuth();
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+    const [managedPages, setManagedPages] = React.useState<ManagedPageConfig[]>([]);
+
+    React.useEffect(() => {
+        if (!isAuthenticated) {
+            setManagedPages([]);
+            return;
+        }
+        let active = true;
+        fetch('/api/navigation-pages', { cache: 'no-store' })
+            .then((response) => response.ok ? response.json() : Promise.reject(new Error('Menu unavailable')))
+            .then((data: { pages?: ManagedPageConfig[] }) => {
+                if (active) setManagedPages(data.pages ?? []);
+            })
+            .catch(() => {
+                if (active) setManagedPages([]);
+            });
+        return () => { active = false; };
+    }, [isAuthenticated, state.user?.userLevel]);
 
     return (
         <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-center px-4 header-fading-border">
@@ -71,21 +97,6 @@ export function RootNav({
 
                 {/* Actions */}
                 <div className="flex min-w-0 items-center gap-1.5 sm:gap-4">
-                    {isAuthenticated && (
-                        <Link
-                            href="/guida"
-                            className={cn(
-                                "flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium transition-colors",
-                                "hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                pathname === "/guida" && "bg-accent text-accent-foreground"
-                            )}
-                            aria-current={pathname === "/guida" ? "page" : undefined}
-                        >
-                            <CircleHelp className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-                            <span>Guida</span>
-                        </Link>
-                    )}
-
                     <div className="inline-flex items-center text-xs sm:text-sm text-muted-foreground">
                         <a
                             href={`mailto:${SITE_CONFIG.CONTACT_EMAIL}`}
@@ -121,48 +132,21 @@ export function RootNav({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                    <Link href="/settings">Impostazioni</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-
-                                {state.user?.isAdmin && (
-                                    <>
-                                        <DropdownMenuItem asChild>
-                                            <Link href="/add-book?tab=manage" className="flex items-center gap-2">
-                                                <AdminRoleIcon level={ADMIN_ROLES.ADMIN} className="h-4 w-4" />
-                                                Gestisci Racconti
+                                {managedPages.map((page, index) => (
+                                    <React.Fragment key={page.key}>
+                                        {index > 0 && managedPages[index - 1].accessLevel !== page.accessLevel && <DropdownMenuSeparator />}
+                                        <DropdownMenuItem asChild className={getAdminRoleMenuClass(page.accessLevel)}>
+                                            <Link
+                                                href={page.href}
+                                                className={cn('flex items-center gap-2', pathname === page.href.split('?')[0] && 'bg-accent')}
+                                            >
+                                                <ManagedPageMenuIcon page={page} />
+                                                {page.label}
                                             </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-
-                                        {isPowerAdminLevel(state.user?.userLevel) && (
-                                            <>
-                                                <DropdownMenuItem asChild>
-                                                    <Link href="/user-statistics" className="flex items-center gap-2 font-semibold text-yellow-500 hover:text-red-600"><AdminRoleIcon level={ADMIN_ROLES.POWER_ADMIN} className="h-4 w-4" />Statistiche</Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem asChild>
-                                                    <Link href="/animations-manager" className="flex items-center gap-2 font-semibold text-yellow-500 hover:text-red-600"><AdminRoleIcon level={ADMIN_ROLES.POWER_ADMIN} className="h-4 w-4" />Animazioni</Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem asChild>
-                                                    <Link href="/admin/migrations" className="flex items-center gap-2 font-semibold text-yellow-500 hover:text-red-600"><AdminRoleIcon level={ADMIN_ROLES.POWER_ADMIN} className="h-4 w-4" />Migrazioni DB</Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem asChild>
-                                                    <Link href="/admin/promo-pages" className="flex items-center gap-2 font-semibold text-yellow-500 hover:text-red-600"><AdminRoleIcon level={ADMIN_ROLES.POWER_ADMIN} className="h-4 w-4" />Pagine Promo</Link>
-                                                </DropdownMenuItem>
-                                                {isSuperAdminLevel(state.user?.userLevel) && (
-                                                    <>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem asChild>
-                                                            <Link href="/admin/users" className="flex items-center gap-2 font-semibold text-yellow-500 hover:text-red-600"><AdminRoleIcon level={ADMIN_ROLES.SUPER_ADMIN} className="h-4 w-4" />Gestisci Utenti</Link>
-                                                        </DropdownMenuItem>
-                                                    </>
-                                                )}
-                                                <DropdownMenuSeparator />
-                                            </>
-                                        )}
-                                    </>
-                                )}
+                                    </React.Fragment>
+                                ))}
+                                <DropdownMenuSeparator />
 
                                 <DropdownMenuItem
                                     onClick={() => logout()}
@@ -205,25 +189,11 @@ export function RootNav({
 
                         {isAuthenticated ? (
                             <>
-                                <Link href="/settings">
-                                    Impostazioni
-                                </Link>
-                                {state.user?.isAdmin && (
-                                    <Link href="/add-book" className="flex items-center gap-2 text-sm font-medium" onClick={() => setIsMobileMenuOpen(false)}>
-                                        <AdminRoleIcon level={ADMIN_ROLES.ADMIN} className="h-4 w-4" />Gestisci Racconti
+                                {managedPages.map((page) => (
+                                    <Link key={page.key} href={page.href} className={cn('flex items-center gap-2 text-sm font-medium', getAdminRoleMenuClass(page.accessLevel))} onClick={() => setIsMobileMenuOpen(false)}>
+                                        <ManagedPageMenuIcon page={page} />{page.label}
                                     </Link>
-                                )}
-                                {isPowerAdminLevel(state.user?.userLevel) && (
-                                    <>
-                                        <Link href="/user-statistics" className="flex items-center gap-2 text-sm font-semibold text-yellow-500" onClick={() => setIsMobileMenuOpen(false)}><AdminRoleIcon level={ADMIN_ROLES.POWER_ADMIN} className="h-4 w-4" />Statistiche</Link>
-                                        <Link href="/animations-manager" className="flex items-center gap-2 text-sm font-semibold text-yellow-500" onClick={() => setIsMobileMenuOpen(false)}><AdminRoleIcon level={ADMIN_ROLES.POWER_ADMIN} className="h-4 w-4" />Animazioni</Link>
-                                        <Link href="/admin/migrations" className="flex items-center gap-2 text-sm font-semibold text-yellow-500" onClick={() => setIsMobileMenuOpen(false)}><AdminRoleIcon level={ADMIN_ROLES.POWER_ADMIN} className="h-4 w-4" />Migrazioni DB</Link>
-                                        <Link href="/admin/promo-pages" className="flex items-center gap-2 text-sm font-semibold text-yellow-500" onClick={() => setIsMobileMenuOpen(false)}><AdminRoleIcon level={ADMIN_ROLES.POWER_ADMIN} className="h-4 w-4" />Pagine Promo</Link>
-                                    </>
-                                )}
-                                {isSuperAdminLevel(state.user?.userLevel) && (
-                                    <Link href="/admin/users" className="flex items-center gap-2 text-sm font-semibold text-yellow-500" onClick={() => setIsMobileMenuOpen(false)}><AdminRoleIcon level={ADMIN_ROLES.SUPER_ADMIN} className="h-4 w-4" />Gestisci Utenti</Link>
-                                )}
+                                ))}
                             </>
                         ) : (
                             <>

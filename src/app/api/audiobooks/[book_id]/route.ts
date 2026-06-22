@@ -4,7 +4,8 @@ import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 import { getBookById } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth-utils';
 import { canAccessAudio } from '@/lib/book-visibility';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
+import { getManagedPage } from '@/lib/db/queries/managed-pages';
 
 export async function GET(
     req: NextRequest,
@@ -14,7 +15,9 @@ export async function GET(
         const bookId = (await params).book_id;
         const book = await getBookById(bookId);
         const user = await getSessionUser(req);
-        if (!book || !canAccessAudio(book, !!user?.isAdmin)) {
+        const booksPage = user ? await getManagedPage('books') : null;
+        const canManageBooks = !!user && (user.userLevel ?? 0) >= (booksPage?.accessLevel ?? Number.POSITIVE_INFINITY);
+        if (!book || !canAccessAudio(book, canManageBooks)) {
             throw new ApiError(HttpStatus.NOT_FOUND, 'Audiobook not found');
         }
         const audiobook = await fetchAudioBook(bookId);
@@ -35,7 +38,7 @@ export async function POST(
     { params }: { params: Promise<{ book_id: string }> }
 ) {
     try {
-        await requireAdmin();
+        await requireManagedPageAccess('books');
         const bookId = (await params).book_id;
         const body = await req.json();
 

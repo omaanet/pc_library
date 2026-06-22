@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { NextResponse } from 'next/server';
 
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
 
 const COVERS_DIR = path.join(process.cwd(), 'public', 'covers');
@@ -46,7 +46,7 @@ async function listCoverImages(
 
 export async function GET() {
     try {
-        await requireAdmin();
+        await requireManagedPageAccess('books');
 
         const covers = await listCoverImages(COVERS_DIR);
         covers.sort((left, right) => coverPathCollator.compare(left, right));

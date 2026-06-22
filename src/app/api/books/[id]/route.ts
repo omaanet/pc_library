@@ -3,11 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getBookById, updateBook, deleteBook, getAudioBookById, deleteAudioBook } from '@/lib/db';
 import { saveOrUpdateAudioBook, fetchAudioBook } from '@/lib/services/audiobooks-service';
 import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { normalizeBookVisibility } from '@/lib/book-visibility';
 import { canAccessBook } from '@/lib/book-visibility';
 import { getSessionUser } from '@/lib/auth-utils';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
+import { getManagedPage } from '@/lib/db/queries/managed-pages';
 
 type NormalizedAudiobookPayload = {
     mediaId?: string | null;
@@ -113,7 +114,9 @@ export async function GET(
             throw new ApiError(HttpStatus.NOT_FOUND, 'Book not found');
         }
         const user = await getSessionUser(request);
-        if (!canAccessBook(book, !!user?.isAdmin)) {
+        const booksPage = user ? await getManagedPage('books') : null;
+        const canManageBooks = !!user && (user.userLevel ?? 0) >= (booksPage?.accessLevel ?? Number.POSITIVE_INFINITY);
+        if (!canAccessBook(book, canManageBooks)) {
             throw new ApiError(HttpStatus.NOT_FOUND, 'Book not found');
         }
 
@@ -153,7 +156,7 @@ export const PUT = withCSRFProtection(async function (
 ) {
     try {
         // Require admin authorization
-        await requireAdmin();
+        await requireManagedPageAccess('books');
 
         const id = (await params).id;
         const book = await request.json();
@@ -223,7 +226,7 @@ export const DELETE = withCSRFProtection(async function (
 ) {
     try {
         // Require admin authorization
-        await requireAdmin();
+        await requireManagedPageAccess('books');
 
         const id = (await params).id;
 

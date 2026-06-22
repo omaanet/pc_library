@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getNeonClient, extractRows } from '@/lib/db';
-import { requirePowerAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
 
 function getStatsParams(request: Request) {
@@ -17,7 +17,7 @@ function getStatsParams(request: Request) {
 
 export async function GET(request: Request) {
     try {
-        await requirePowerAdmin();
+        await requireManagedPageAccess('statistics');
         const { limit, dailyDaysFilter } = getStatsParams(request);
         const client = getNeonClient();
 

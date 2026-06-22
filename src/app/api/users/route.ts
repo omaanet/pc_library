@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ADMIN_ROLES, isAdminRole, type AdminRole } from '@/config/admin-roles';
 import { getNeonClient, extractRows, getFirstRow } from '@/lib/db';
-import { requireSuperAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { ApiError, handleApiError, HttpStatus } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
 
@@ -22,7 +22,7 @@ function parsePositiveInteger(value: string | null, fallback: number): number {
 
 export async function GET(request: Request) {
     try {
-        await requireSuperAdmin();
+        await requireManagedPageAccess('users');
 
         const { searchParams } = new URL(request.url);
         const page = parsePositiveInteger(searchParams.get('page'), SITE_CONFIG.PAGINATION.DEFAULT_PAGE);

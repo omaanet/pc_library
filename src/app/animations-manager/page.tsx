@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { isPowerAdminLevel } from '@/config/admin-roles';
 import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { AnimationManager } from '@/components/admin/animations/animation-manager';
@@ -21,10 +20,7 @@ export default function AnimationsManagerPage() {
         );
     }
 
-    const isAllowed =
-        state.isAuthenticated &&
-        state.user?.isAdmin === true &&
-        isPowerAdminLevel(state.user?.userLevel);
+    const isAllowed = state.isAuthenticated;
 
     if (!isAllowed) {
         return (

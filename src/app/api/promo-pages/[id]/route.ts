@@ -1,7 +1,7 @@
 // src/app/api/promo-pages/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { updatePromoPage, deletePromoPage, getBookById } from '@/lib/db';
-import { requirePowerAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
 import { ApiError, handleApiError, HttpStatus } from '@/lib/api-error-handler';
 import { parsePromoPageBody } from '@/lib/promo-page-input';
@@ -25,7 +25,7 @@ export const PUT = withCSRFProtection(async function (
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        await requirePowerAdmin();
+        await requireManagedPageAccess('promo-pages');
 
         const id = parseId((await params).id);
         const body = await request.json();
@@ -58,7 +58,7 @@ export const DELETE = withCSRFProtection(async function (
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        await requirePowerAdmin();
+        await requireManagedPageAccess('promo-pages');
 
         const id = parseId((await params).id);
         const deleted = await deletePromoPage(id);

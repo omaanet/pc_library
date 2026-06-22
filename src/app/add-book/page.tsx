@@ -124,7 +124,7 @@ function AddBookPageContent() {
     // All administrative levels can manage books.
     useEffect(() => {
         if (!state.isLoading) {
-            if (!state.isAuthenticated || !state.user?.isAdmin) {
+            if (!state.isAuthenticated) {
                 router.push('/');
             }
         }
@@ -352,7 +352,7 @@ function AddBookPageContent() {
     }
 
     // Don't render content if not authorized (only after loading is complete)
-    if (!state.isAuthenticated || !state.user?.isAdmin) {
+    if (!state.isAuthenticated) {
         return (
             <>
                 <AdminAccessDenied 

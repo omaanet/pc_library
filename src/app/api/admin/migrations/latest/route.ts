@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requirePowerAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { getLatestPendingMigration } from '@/lib/admin-migrations';
 import { handleApiError, HttpStatus } from '@/lib/api-error-handler';
 
@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 export async function GET() {
     try {
-        await requirePowerAdmin();
+        await requireManagedPageAccess('migrations');
 
         return NextResponse.json(await getLatestPendingMigration());
     } catch (error) {

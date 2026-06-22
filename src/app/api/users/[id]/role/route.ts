@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminRole, ADMIN_ROLES } from '@/config/admin-roles';
-import { requireSuperAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { ApiError, handleApiError, HttpStatus } from '@/lib/api-error-handler';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
 import { getFirstRow, getNeonClient } from '@/lib/db';
@@ -12,7 +12,7 @@ export const PATCH = withCSRFProtection(async function PATCH(
     { params }: RouteContext
 ) {
     try {
-        const actor = await requireSuperAdmin();
+        const actor = await requireManagedPageAccess('users');
         const { id } = await params;
         const targetId = Number(id);
         if (!Number.isInteger(targetId) || targetId <= 0) {

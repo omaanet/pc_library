@@ -5,7 +5,7 @@ import { saveOrUpdateAudioBook } from '@/lib/services/audiobooks-service';
 import { validateObject } from '@/lib/validation';
 import { handleApiError, ApiError, HttpStatus } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
 import { normalizeBookVisibility } from '@/lib/book-visibility';
 import { isBookSortPreset, resolveBookSortPreset } from '@/lib/book-sort';
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
             parseInt(isVisibleParam) : 1;
 
         if (isVisible === -1) {
-            await requireAdmin();
+            await requireManagedPageAccess('books');
         }
 
         // Parse sorting parameters
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
 export const POST = withCSRFProtection(async function(request: Request) {
     try {
         // Require admin authorization
-        await requireAdmin();
+        await requireManagedPageAccess('books');
 
         const bookData = await request.json();
         const visibility = normalizeBookVisibility(bookData, {

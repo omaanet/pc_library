@@ -1,7 +1,7 @@
 // src/app/api/promo-pages/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllPromoPages, createPromoPage, getBookById } from '@/lib/db';
-import { requirePowerAdmin } from '@/lib/admin-auth';
+import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
 import { ApiError, handleApiError, HttpStatus } from '@/lib/api-error-handler';
 import { parsePromoPageBody } from '@/lib/promo-page-input';
@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
  */
 export async function GET() {
     try {
-        await requirePowerAdmin();
+        await requireManagedPageAccess('promo-pages');
         const promoPages = await getAllPromoPages();
         return NextResponse.json({ promoPages });
     } catch (error) {
@@ -30,7 +30,7 @@ export async function GET() {
  */
 export const POST = withCSRFProtection(async function (request: NextRequest) {
     try {
-        await requirePowerAdmin();
+        await requireManagedPageAccess('promo-pages');
 
         const body = await request.json();
         const { bookId, mediaId, audioLength, isActive, template } = parsePromoPageBody(body, { requireBookId: true });

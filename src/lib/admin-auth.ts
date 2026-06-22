@@ -6,6 +6,8 @@ import { getUserById } from '@/lib/user-db';
 import { User } from '@/types';
 import { ApiError, HttpStatus } from '@/lib/api-error-handler';
 import { isPowerAdminLevel, isSuperAdminLevel } from '@/config/admin-roles';
+import { getManagedPage } from '@/lib/db/queries/managed-pages';
+import type { ManagedPageKey } from '@/config/managed-pages';
 
 /**
  * Require admin authentication for API routes
@@ -28,7 +30,7 @@ import { isPowerAdminLevel, isSuperAdminLevel } from '@/config/admin-roles';
  * }
  * ```
  */
-export async function requireAdmin(): Promise<User> {
+export async function requireAuthenticatedUser(): Promise<User> {
     // Get session cookie
     const sessionCookie = (await cookies()).get('session');
 
@@ -54,11 +56,6 @@ export async function requireAdmin(): Promise<User> {
             throw new ApiError(HttpStatus.UNAUTHORIZED, 'User not found');
         }
 
-        // Check admin role
-        if (!user.isAdmin) {
-            throw new ApiError(HttpStatus.FORBIDDEN, 'Admin access required');
-        }
-
         return user;
     } catch (error) {
         // Re-throw if it's our ApiError
@@ -70,6 +67,23 @@ export async function requireAdmin(): Promise<User> {
         console.error('Error validating admin session:', error);
         throw new ApiError(HttpStatus.UNAUTHORIZED, 'Invalid session');
     }
+}
+
+export async function requireAdmin(): Promise<User> {
+    const user = await requireAuthenticatedUser();
+    if (!user.isAdmin) {
+        throw new ApiError(HttpStatus.FORBIDDEN, 'Admin access required');
+    }
+    return user;
+}
+
+export async function requireManagedPageAccess(key: ManagedPageKey): Promise<User> {
+    const user = await requireAuthenticatedUser();
+    const page = await getManagedPage(key);
+    if ((user.userLevel ?? 0) < page.accessLevel) {
+        throw new ApiError(HttpStatus.FORBIDDEN, 'Page access required');
+    }
+    return user;
 }
 
 /**

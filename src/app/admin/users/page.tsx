@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Crown, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { isSuperAdminLevel } from '@/config/admin-roles';
 import { useAuth } from '@/context/auth-context';
 import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
 import { AuthModal } from '@/components/auth/auth-modal';
@@ -14,7 +13,7 @@ export default function AdminUsersPage() {
     const router = useRouter();
     const { state } = useAuth();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const isAllowed = state.isAuthenticated && isSuperAdminLevel(state.user?.userLevel);
+    const isAllowed = state.isAuthenticated;
 
     if (state.isLoading) {
         return (
