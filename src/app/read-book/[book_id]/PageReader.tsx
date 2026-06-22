@@ -130,10 +130,9 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
     const shouldReplaceFirstPageWithCopyright =
         book.replaceFirstPageWithCopyrightOverride ?? SITE_CONFIG.REPLACE_FIRST_PAGE_WITH_COPYRIGHT;
 
-    // Format page number with leading zeros based on total pages
+    // Format page numbers with at least two digits, expanding for larger books.
     const formatPageNumber = (num: number) => {
-        // Calculate the number of digits needed based on total pages
-        const digits = totalPages.toString().length;
+        const digits = Math.max(2, totalPages.toString().length);
         return num.toString().padStart(digits, "0");
     };
 
