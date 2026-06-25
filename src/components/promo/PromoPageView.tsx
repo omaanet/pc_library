@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useMemo } from 'react';
+import { ClientSanitizedHtml } from '@/components/promo/ClientSanitizedHtml';
 import { PromoAudioPlayer } from '@/components/promo/PromoAudioPlayer';
 import { getCoverImageUrl } from '@/lib/image-utils';
 import { displayFontClass } from '@/config/fonts';
@@ -98,9 +99,10 @@ export function PromoPageView({ promoPage, book }: PromoPageViewProps) {
 
                 {description && (
                     <div className="mx-auto mt-12 max-w-2xl text-center lg:mt-16">
-                        <p className="text-base leading-relaxed text-[#5c4a3d] sm:text-lg">
-                            {description}
-                        </p>
+                        <ClientSanitizedHtml
+                            html={description}
+                            className="text-base leading-relaxed text-[#5c4a3d] sm:text-lg [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-4 [&_blockquote]:border-[#b6743f]/40 [&_blockquote]:pl-4 [&_blockquote]:italic [&_li]:my-1 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:text-left [&_p]:mb-4 [&_p:last-child]:mb-0 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:text-left"
+                        />
                     </div>
                 )}
             </div>

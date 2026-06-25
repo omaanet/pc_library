@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useMemo } from 'react';
+import { ClientSanitizedHtml } from '@/components/promo/ClientSanitizedHtml';
 import { PromoAudioPlayer } from '@/components/promo/PromoAudioPlayer';
 import { getCoverImageUrl } from '@/lib/image-utils';
 import { displayFontClass } from '@/config/fonts';
@@ -121,12 +122,11 @@ export function PromoPageClassicGreenView({ promoPage, book }: PromoPageClassicG
 
                 {description && (
                     <div className="mx-auto mt-12 max-w-2xl text-center lg:mt-16">
-                        <p
-                            className="text-base leading-relaxed sm:text-lg"
+                        <ClientSanitizedHtml
+                            html={description}
+                            className="text-base leading-relaxed sm:text-lg [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-4 [&_blockquote]:border-[#efc866]/45 [&_blockquote]:pl-4 [&_blockquote]:italic [&_li]:my-1 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:text-left [&_p]:mb-4 [&_p:last-child]:mb-0 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:text-left"
                             style={{ color: 'rgba(255,248,232,0.85)' }}
-                        >
-                            {description}
-                        </p>
+                        />
                     </div>
                 )}
             </div>

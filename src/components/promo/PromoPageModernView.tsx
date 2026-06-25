@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ClientSanitizedHtml } from '@/components/promo/ClientSanitizedHtml';
 import { PromoAudioPlayer } from '@/components/promo/PromoAudioPlayer';
 import { getCoverImageUrl } from '@/lib/image-utils';
 import { displayFontClass } from '@/config/fonts';
@@ -169,9 +170,11 @@ export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProp
                                 <span aria-hidden className={`${displayFontClass} pointer-events-none absolute left-5 top-1 select-none text-5xl leading-none text-[#9caf6a]/50`}>
                                     &ldquo;
                                 </span>
-                                <blockquote className="relative text-base leading-relaxed text-[#4a4a35] sm:text-lg">
-                                    {description}
-                                </blockquote>
+                                <ClientSanitizedHtml
+                                    as="blockquote"
+                                    html={description}
+                                    className="relative text-base leading-relaxed text-[#4a4a35] sm:text-lg [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-4 [&_blockquote]:border-[#9caf6a]/50 [&_blockquote]:pl-4 [&_blockquote]:italic [&_li]:my-1 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:text-left [&_p]:mb-4 [&_p:last-child]:mb-0 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:text-left"
+                                />
                             </figure>
                         </Reveal>
                     </section>

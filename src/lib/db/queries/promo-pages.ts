@@ -20,6 +20,18 @@ const PROMO_PAGE_COLUMNS = `
     updated_at AS "updatedAt"
 `;
 
+const MAX_SLUG_INSERT_ATTEMPTS = 10;
+
+function isSlugUniqueViolation(error: unknown): boolean {
+    if (!error || typeof error !== 'object') return false;
+
+    const maybeDbError = error as { code?: unknown; constraint?: unknown; detail?: unknown; message?: unknown };
+    if (maybeDbError.code !== '23505') return false;
+
+    return [maybeDbError.constraint, maybeDbError.detail, maybeDbError.message]
+        .some((value) => typeof value === 'string' && value.includes('slug'));
+}
+
 /**
  * Get a promo page by its slug. Returns the record regardless of active state;
  * callers decide how to treat a disabled page (the public route 404s on it).
@@ -114,15 +126,25 @@ export async function createPromoPage(data: {
         throw new Error('Linked book not found');
     }
 
-    const slug = await generateUniqueSlug(bookRow.title);
+    for (let attempt = 0; attempt < MAX_SLUG_INSERT_ATTEMPTS; attempt += 1) {
+        const slug = await generateUniqueSlug(bookRow.title);
 
-    const res = await client.query(
-        `INSERT INTO promo_pages (book_id, slug, media_id, audio_length, is_active, template)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING ${PROMO_PAGE_COLUMNS}`,
-        [data.bookId, slug, data.mediaId, data.audioLength, data.isActive, data.template]
-    );
-    return getFirstRow<PromoPage>(res) ?? undefined;
+        try {
+            const res = await client.query(
+                `INSERT INTO promo_pages (book_id, slug, media_id, audio_length, is_active, template)
+                 VALUES ($1, $2, $3, $4, $5, $6)
+                 RETURNING ${PROMO_PAGE_COLUMNS}`,
+                [data.bookId, slug, data.mediaId, data.audioLength, data.isActive, data.template]
+            );
+            return getFirstRow<PromoPage>(res) ?? undefined;
+        } catch (error) {
+            if (!isSlugUniqueViolation(error) || attempt === MAX_SLUG_INSERT_ATTEMPTS - 1) {
+                throw error;
+            }
+        }
+    }
+
+    throw new Error('Failed to generate a unique promo page slug');
 }
 
 /**
@@ -148,8 +170,9 @@ export async function updatePromoPage(
     );
     if (!current) return undefined;
 
+    const isChangingBook = data.bookId !== current.bookId;
     let slug = current.slug;
-    if (data.bookId !== current.bookId) {
+    if (isChangingBook) {
         const bookRow = getFirstRow<{ title: string }>(
             await client.query('SELECT title FROM books WHERE id = $1', [data.bookId])
         );
@@ -159,20 +182,38 @@ export async function updatePromoPage(
         slug = await generateUniqueSlug(bookRow.title);
     }
 
-    const res = await client.query(
-        `UPDATE promo_pages
-         SET book_id = $1,
-             slug = $2,
-             media_id = $3,
-             audio_length = $4,
-             is_active = $5,
-             template = $6,
-             updated_at = NOW()
-         WHERE id = $7
-         RETURNING ${PROMO_PAGE_COLUMNS}`,
-        [data.bookId, slug, data.mediaId, data.audioLength, data.isActive, data.template, id]
-    );
-    return getFirstRow<PromoPage>(res) ?? undefined;
+    const maxAttempts = isChangingBook ? MAX_SLUG_INSERT_ATTEMPTS : 1;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        try {
+            const res = await client.query(
+                `UPDATE promo_pages
+                 SET book_id = $1,
+                     slug = $2,
+                     media_id = $3,
+                     audio_length = $4,
+                     is_active = $5,
+                     template = $6,
+                     updated_at = NOW()
+                 WHERE id = $7
+                 RETURNING ${PROMO_PAGE_COLUMNS}`,
+                [data.bookId, slug, data.mediaId, data.audioLength, data.isActive, data.template, id]
+            );
+            return getFirstRow<PromoPage>(res) ?? undefined;
+        } catch (error) {
+            if (!isSlugUniqueViolation(error) || attempt === maxAttempts - 1) {
+                throw error;
+            }
+            const bookRow = getFirstRow<{ title: string }>(
+                await client.query('SELECT title FROM books WHERE id = $1', [data.bookId])
+            );
+            if (!bookRow) {
+                throw new Error('Linked book not found');
+            }
+            slug = await generateUniqueSlug(bookRow.title);
+        }
+    }
+
+    throw new Error('Failed to generate a unique promo page slug');
 }
 
 /**

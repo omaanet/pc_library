@@ -144,7 +144,7 @@ export function PromoPageForm({ promoPage, onSubmit, onCancel }: PromoPageFormPr
                             <FormDescription>
                                 {isEdit
                                     ? 'Puoi cambiare il racconto collegato. Cambiandolo, lo slug (URL pubblico) viene rigenerato dal nuovo titolo.'
-                                    : 'Lo slug viene generato automaticamente dal titolo del racconto.'}
+                                    : 'Puoi creare più pagine promo per lo stesso racconto. Lo slug viene generato automaticamente dal titolo e reso univoco.'}
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
