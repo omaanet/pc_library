@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { ClientSanitizedHtml } from '@/components/promo/ClientSanitizedHtml';
 import { PromoAudioTypeLabel } from '@/components/promo/PromoAudioTypeLabel';
 import { PromoAudioPlayer } from '@/components/promo/PromoAudioPlayer';
+import { PromoHomeLink } from '@/components/promo/PromoHomeLink';
 import { getCoverImageUrl } from '@/lib/image-utils';
 import { displayFontClass } from '@/config/fonts';
 import type { Book, PromoPage } from '@/types';
@@ -32,6 +33,8 @@ export function PromoPageView({ promoPage, book }: PromoPageViewProps) {
 
     return (
         <main className="relative min-h-screen w-full overflow-hidden bg-[#faf5ec] text-[#3a2e27]">
+            <PromoHomeLink className="bg-white/45 text-[#5c3d28] shadow-sm ring-1 ring-[#b6743f]/15 backdrop-blur-md hover:bg-white/70 focus-visible:ring-[#b6743f]" />
+
             {/* Soft warm ambient glow */}
             <div
                 aria-hidden

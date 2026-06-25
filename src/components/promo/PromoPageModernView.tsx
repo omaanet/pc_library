@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ClientSanitizedHtml } from '@/components/promo/ClientSanitizedHtml';
 import { PromoAudioTypeLabel } from '@/components/promo/PromoAudioTypeLabel';
 import { PromoAudioPlayer } from '@/components/promo/PromoAudioPlayer';
+import { PromoHomeLink } from '@/components/promo/PromoHomeLink';
 import { getCoverImageUrl } from '@/lib/image-utils';
 import { displayFontClass } from '@/config/fonts';
 import type { Book, PromoPage } from '@/types';
@@ -87,6 +88,7 @@ export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProp
     return (
         <main className="promo-modern relative min-h-screen w-full overflow-hidden bg-[#f4f1e2] text-[#3a3a2a]">
             <style>{PROMO_MODERN_CSS}</style>
+            <PromoHomeLink className="bg-white/35 text-[#3f4d2e] shadow-sm ring-1 ring-white/55 backdrop-blur-md hover:bg-white/55 focus-visible:ring-[#9caf6a]" />
 
             {/* Floating warm/sage ambient glows */}
             <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">

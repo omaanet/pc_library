@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { ClientSanitizedHtml } from '@/components/promo/ClientSanitizedHtml';
 import { PromoAudioTypeLabel } from '@/components/promo/PromoAudioTypeLabel';
 import { PromoAudioPlayer } from '@/components/promo/PromoAudioPlayer';
+import { PromoHomeLink } from '@/components/promo/PromoHomeLink';
 import { getCoverImageUrl } from '@/lib/image-utils';
 import { displayFontClass } from '@/config/fonts';
 import type { Book, PromoPage } from '@/types';
@@ -42,6 +43,9 @@ export function PromoPageClassicGreenView({ promoPage, book }: PromoPageClassicG
             className="relative min-h-screen w-full overflow-hidden text-[#fff8e8]"
             style={{ background: 'linear-gradient(145deg, #081916, #12342e 58%, #10231f)' }}
         >
+            {/* <PromoHomeLink className="bg-[#081916]/35 text-[#fff8e8] shadow-sm ring-1 ring-[#efc866]/25 backdrop-blur-md hover:bg-[#081916]/55 focus-visible:ring-[#efc866]" /> */}
+            <PromoHomeLink className="text-[#fff8e8] backdrop-blur-md hover:bg-[#081916]/55" />
+
             {/* Leaf / gold / coral ambient glows over the deep-green base */}
             <div
                 aria-hidden
