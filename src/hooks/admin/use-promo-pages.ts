@@ -12,6 +12,8 @@ export interface PromoPageInput {
     audioLength: number | null;
     isActive: boolean;
     template: PromoTemplate;
+    publishingDateOverride: string | null;
+    audioType: string;
 }
 
 async function getCSRFToken(): Promise<string> {

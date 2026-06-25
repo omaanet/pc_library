@@ -83,6 +83,8 @@ export default function AdminPromoPagesPage() {
             audioLength: promoPage.audioLength,
             isActive: !promoPage.isActive,
             template: promoPage.template,
+            publishingDateOverride: promoPage.publishingDateOverride,
+            audioType: promoPage.audioType,
         });
     };
 
@@ -138,6 +140,8 @@ export default function AdminPromoPagesPage() {
                                         audioLength: values.audioLength,
                                         isActive: values.isActive,
                                         template: values.template,
+                                        publishingDateOverride: values.publishingDateOverride,
+                                        audioType: values.audioType,
                                     })
                                     : await createPromoPage(values);
                                 if (result) setDialogOpen(false);

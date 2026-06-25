@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useMemo } from 'react';
 import { ClientSanitizedHtml } from '@/components/promo/ClientSanitizedHtml';
+import { PromoAudioTypeLabel } from '@/components/promo/PromoAudioTypeLabel';
 import { PromoAudioPlayer } from '@/components/promo/PromoAudioPlayer';
 import { getCoverImageUrl } from '@/lib/image-utils';
 import { displayFontClass } from '@/config/fonts';
@@ -13,7 +14,7 @@ interface PromoPageViewProps {
     book: Book;
 }
 
-function formatPublishingDate(value: string | undefined): string | null {
+function formatPublishingDate(value: string | null | undefined): string | null {
     if (!value) return null;
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return null;
@@ -27,7 +28,7 @@ export function PromoPageView({ promoPage, book }: PromoPageViewProps) {
     );
 
     const description = book.extract || book.summary || null;
-    const publishedLabel = formatPublishingDate(book.publishingDate);
+    const publishedLabel = formatPublishingDate(promoPage.publishingDateOverride ?? book.publishingDate);
 
     return (
         <main className="relative min-h-screen w-full overflow-hidden bg-[#faf5ec] text-[#3a2e27]">
@@ -43,9 +44,11 @@ export function PromoPageView({ promoPage, book }: PromoPageViewProps) {
 
             <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-16 sm:px-10 lg:py-24">
                 <div className="mb-10 text-center lg:mb-14">
-                    <p className={`${displayFontClass} text-2xl text-[#b6743f] sm:text-3xl`}>
-                        Anteprima audio
-                    </p>
+                    <PromoAudioTypeLabel
+                        audioType={promoPage.audioType}
+                        variant="title"
+                        className={`${displayFontClass} text-2xl text-[#b6743f] sm:text-3xl`}
+                    />
                     <h1 className="mt-2 font-serif text-4xl font-semibold leading-tight tracking-tight text-[#33271f] sm:text-5xl lg:text-6xl">
                         {book.title}
                     </h1>
@@ -83,9 +86,11 @@ export function PromoPageView({ promoPage, book }: PromoPageViewProps) {
                         <div className="w-full max-w-md">
                             <div className="rounded-[26px] bg-gradient-to-b from-[#2c2620] to-[#1d1813] p-3 shadow-[0_30px_60px_-25px_rgba(40,26,16,0.7)] ring-1 ring-black/20 sm:p-4">
                                 <div className="rounded-[16px] bg-[#16120e] p-5 ring-1 ring-white/5 sm:p-6">
-                                    <p className="mb-4 text-center text-xs uppercase tracking-[0.25em] text-[#c79a6f]">
-                                        Ascolta l&apos;anteprima
-                                    </p>
+                                    <PromoAudioTypeLabel
+                                        audioType={promoPage.audioType}
+                                        variant="listen"
+                                        className="mb-4 text-center text-xs uppercase tracking-[0.25em] text-[#c79a6f]"
+                                    />
                                     <PromoAudioPlayer
                                         promoPage={promoPage}
                                         book={book}

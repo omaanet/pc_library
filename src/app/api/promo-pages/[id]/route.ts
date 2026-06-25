@@ -29,7 +29,15 @@ export const PUT = withCSRFProtection(async function (
 
         const id = parseId((await params).id);
         const body = await request.json();
-        const { bookId, mediaId, audioLength, isActive, template } = parsePromoPageBody(body, { requireBookId: true });
+        const {
+            bookId,
+            mediaId,
+            audioLength,
+            isActive,
+            template,
+            publishingDateOverride,
+            audioType,
+        } = parsePromoPageBody(body, { requireBookId: true });
 
         // Ensure the (possibly changed) linked book exists before updating.
         const book = await getBookById(bookId as string);
@@ -37,7 +45,15 @@ export const PUT = withCSRFProtection(async function (
             throw new ApiError(HttpStatus.BAD_REQUEST, 'Linked book not found');
         }
 
-        const updated = await updatePromoPage(id, { bookId: bookId as string, mediaId, audioLength, isActive, template });
+        const updated = await updatePromoPage(id, {
+            bookId: bookId as string,
+            mediaId,
+            audioLength,
+            isActive,
+            template,
+            publishingDateOverride,
+            audioType,
+        });
         if (!updated) {
             throw new ApiError(HttpStatus.NOT_FOUND, 'Promo page not found');
         }

@@ -16,6 +16,8 @@ const PROMO_PAGE_COLUMNS = `
     audio_length AS "audioLength",
     is_active AS "isActive",
     template,
+    publishing_date_override AS "publishingDateOverride",
+    audio_type AS "audioType",
     created_at AS "createdAt",
     updated_at AS "updatedAt"
 `;
@@ -71,6 +73,8 @@ export async function getAllPromoPages(): Promise<PromoPageListItem[]> {
             p.audio_length AS "audioLength",
             p.is_active AS "isActive",
             p.template,
+            p.publishing_date_override AS "publishingDateOverride",
+            p.audio_type AS "audioType",
             p.created_at AS "createdAt",
             p.updated_at AS "updatedAt",
             b.title AS "bookTitle"
@@ -115,6 +119,8 @@ export async function createPromoPage(data: {
     audioLength: number | null;
     isActive: boolean;
     template: PromoTemplate;
+    publishingDateOverride: string | null;
+    audioType: string;
 }): Promise<PromoPage | undefined> {
     const client = getNeonClient();
 
@@ -131,10 +137,28 @@ export async function createPromoPage(data: {
 
         try {
             const res = await client.query(
-                `INSERT INTO promo_pages (book_id, slug, media_id, audio_length, is_active, template)
-                 VALUES ($1, $2, $3, $4, $5, $6)
+                `INSERT INTO promo_pages (
+                    book_id,
+                    slug,
+                    media_id,
+                    audio_length,
+                    is_active,
+                    template,
+                    publishing_date_override,
+                    audio_type
+                )
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                  RETURNING ${PROMO_PAGE_COLUMNS}`,
-                [data.bookId, slug, data.mediaId, data.audioLength, data.isActive, data.template]
+                [
+                    data.bookId,
+                    slug,
+                    data.mediaId,
+                    data.audioLength,
+                    data.isActive,
+                    data.template,
+                    data.publishingDateOverride,
+                    data.audioType,
+                ]
             );
             return getFirstRow<PromoPage>(res) ?? undefined;
         } catch (error) {
@@ -160,6 +184,8 @@ export async function updatePromoPage(
         audioLength: number | null;
         isActive: boolean;
         template: PromoTemplate;
+        publishingDateOverride: string | null;
+        audioType: string;
     }
 ): Promise<PromoPage | undefined> {
     const client = getNeonClient();
@@ -193,10 +219,22 @@ export async function updatePromoPage(
                      audio_length = $4,
                      is_active = $5,
                      template = $6,
+                     publishing_date_override = $7,
+                     audio_type = $8,
                      updated_at = NOW()
-                 WHERE id = $7
+                 WHERE id = $9
                  RETURNING ${PROMO_PAGE_COLUMNS}`,
-                [data.bookId, slug, data.mediaId, data.audioLength, data.isActive, data.template, id]
+                [
+                    data.bookId,
+                    slug,
+                    data.mediaId,
+                    data.audioLength,
+                    data.isActive,
+                    data.template,
+                    data.publishingDateOverride,
+                    data.audioType,
+                    id,
+                ]
             );
             return getFirstRow<PromoPage>(res) ?? undefined;
         } catch (error) {

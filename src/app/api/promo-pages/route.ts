@@ -33,7 +33,15 @@ export const POST = withCSRFProtection(async function (request: NextRequest) {
         await requireManagedPageAccess('promo-pages');
 
         const body = await request.json();
-        const { bookId, mediaId, audioLength, isActive, template } = parsePromoPageBody(body, { requireBookId: true });
+        const {
+            bookId,
+            mediaId,
+            audioLength,
+            isActive,
+            template,
+            publishingDateOverride,
+            audioType,
+        } = parsePromoPageBody(body, { requireBookId: true });
 
         // Ensure the linked book exists before creating the promo page.
         const book = await getBookById(bookId as string);
@@ -47,6 +55,8 @@ export const POST = withCSRFProtection(async function (request: NextRequest) {
             audioLength,
             isActive,
             template,
+            publishingDateOverride,
+            audioType,
         });
 
         if (!created) {

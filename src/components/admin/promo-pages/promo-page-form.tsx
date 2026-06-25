@@ -1,13 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { CalendarIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Form,
     FormControl,
@@ -26,7 +35,8 @@ import {
 } from '@/components/ui/select';
 import type { PromoPage, PromoPageListItem } from '@/types';
 import type { PromoPageInput } from '@/hooks/admin/use-promo-pages';
-import { PROMO_TEMPLATES } from '@/lib/promo-page-input';
+import { DEFAULT_PROMO_AUDIO_TYPE, PROMO_TEMPLATES } from '@/lib/promo-page-input';
+import { cn } from '@/lib/utils';
 
 const promoPageFormSchema = z.object({
     bookId: z.string().min(1, 'Seleziona un racconto'),
@@ -34,6 +44,8 @@ const promoPageFormSchema = z.object({
     audioLength: z.number().nullable().optional(),
     isActive: z.boolean(),
     template: z.enum(PROMO_TEMPLATES),
+    publishingDateOverride: z.date().nullable().optional(),
+    audioType: z.string().optional(),
 });
 
 const TEMPLATE_LABELS: Record<(typeof PROMO_TEMPLATES)[number], string> = {
@@ -56,11 +68,44 @@ interface PromoPageFormProps {
     onCancel: () => void;
 }
 
+function parseDateOnly(value: string | null | undefined): Date | null {
+    if (!value) return null;
+
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+    if (!match) return null;
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(year, month - 1, day);
+
+    if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+    ) {
+        return null;
+    }
+
+    return date;
+}
+
+function formatDateOnly(value: Date | null | undefined): string | null {
+    if (!value) return null;
+
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 export function PromoPageForm({ promoPage, onSubmit, onCancel }: PromoPageFormProps) {
     const isEdit = Boolean(promoPage);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [books, setBooks] = useState<BookOption[]>([]);
     const [booksLoading, setBooksLoading] = useState(false);
+    const [isPublishingDateOpen, setIsPublishingDateOpen] = useState(false);
+    const [publishingMonth, setPublishingMonth] = useState<Date>(parseDateOnly(promoPage?.publishingDateOverride) ?? new Date());
 
     const form = useForm<PromoPageFormValues>({
         resolver: zodResolver(promoPageFormSchema),
@@ -70,8 +115,24 @@ export function PromoPageForm({ promoPage, onSubmit, onCancel }: PromoPageFormPr
             audioLength: promoPage?.audioLength ?? null,
             isActive: promoPage?.isActive ?? true,
             template: promoPage?.template ?? 'classic',
+            publishingDateOverride: parseDateOnly(promoPage?.publishingDateOverride),
+            audioType: promoPage?.audioType ?? DEFAULT_PROMO_AUDIO_TYPE,
         },
     });
+
+    useEffect(() => {
+        const publishingDateOverride = parseDateOnly(promoPage?.publishingDateOverride);
+        form.reset({
+            bookId: promoPage?.bookId ?? '',
+            mediaId: promoPage?.mediaId ?? null,
+            audioLength: promoPage?.audioLength ?? null,
+            isActive: promoPage?.isActive ?? true,
+            template: promoPage?.template ?? 'classic',
+            publishingDateOverride,
+            audioType: promoPage?.audioType ?? DEFAULT_PROMO_AUDIO_TYPE,
+        });
+        setPublishingMonth(publishingDateOverride ?? new Date());
+    }, [form, promoPage]);
 
     // Load the list of books for the select. Needed for both creating and
     // editing, since the linked book can be changed in either mode.
@@ -108,6 +169,8 @@ export function PromoPageForm({ promoPage, onSubmit, onCancel }: PromoPageFormPr
                 audioLength: values.audioLength ?? null,
                 isActive: values.isActive,
                 template: values.template,
+                publishingDateOverride: formatDateOnly(values.publishingDateOverride),
+                audioType: values.audioType?.trim() || DEFAULT_PROMO_AUDIO_TYPE,
             });
         } finally {
             setIsSubmitting(false);
@@ -218,6 +281,100 @@ export function PromoPageForm({ promoPage, onSubmit, onCancel }: PromoPageFormPr
                             </Select>
                             <FormDescription>
                                 Design della pagina pubblica: Classica (essenziale) o Moderna (immersiva).
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="publishingDateOverride"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>Publishing Date</FormLabel>
+                            <div className="flex gap-2">
+                                <Popover
+                                    open={isPublishingDateOpen}
+                                    onOpenChange={(open) => {
+                                        setIsPublishingDateOpen(open);
+                                        if (open) {
+                                            setPublishingMonth(field.value || new Date());
+                                        }
+                                    }}
+                                >
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className={cn(
+                                                    'flex-1 justify-start pl-3 text-left font-normal',
+                                                    !field.value && 'text-muted-foreground'
+                                                )}
+                                            >
+                                                {field.value ? format(field.value, 'PPP') : 'NULL'}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        className="w-auto max-w-[calc(100vw-2rem)] overflow-x-auto p-0"
+                                        align="start"
+                                        sideOffset={8}
+                                        collisionPadding={16}
+                                    >
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value ?? undefined}
+                                            month={publishingMonth}
+                                            onMonthChange={setPublishingMonth}
+                                            onSelect={(date) => {
+                                                if (!date) return;
+                                                field.onChange(date);
+                                                setPublishingMonth(date);
+                                                setIsPublishingDateOpen(false);
+                                            }}
+                                            captionLayout="dropdown"
+                                            reverseYears
+                                            weekStartsOn={1}
+                                            autoFocus
+                                            aria-label="Publishing Date"
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => field.onChange(null)}
+                                >
+                                    NULL
+                                </Button>
+                            </div>
+                            <FormDescription>
+                                Se valorizzata, sostituisce la data del racconto solo nella pagina promo.
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="audioType"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Audio Type</FormLabel>
+                            <FormControl>
+                                <Textarea
+                                    placeholder={DEFAULT_PROMO_AUDIO_TYPE}
+                                    className="min-h-[80px]"
+                                    {...field}
+                                    value={field.value ?? ''}
+                                />
+                            </FormControl>
+                            <FormDescription>
+                                Etichetta usata nel template. Può contenere HTML semplice.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>

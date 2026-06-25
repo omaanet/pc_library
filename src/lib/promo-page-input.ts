@@ -6,6 +6,7 @@ import { ApiError, HttpStatus } from '@/lib/api-error-handler';
 /** Available public templates for a promo page. `classic` is the default. */
 export const PROMO_TEMPLATES = ['classic', 'classic-green', 'modern'] as const;
 export type PromoTemplate = (typeof PROMO_TEMPLATES)[number];
+export const DEFAULT_PROMO_AUDIO_TYPE = 'Anteprima';
 
 function isPromoTemplate(value: unknown): value is PromoTemplate {
     return typeof value === 'string' && (PROMO_TEMPLATES as readonly string[]).includes(value);
@@ -17,6 +18,43 @@ export interface ParsedPromoPageInput {
     audioLength: number | null;
     isActive: boolean;
     template: PromoTemplate;
+    publishingDateOverride: string | null;
+    audioType: string;
+}
+
+function parseDateOnly(value: unknown): string | null {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+
+    if (typeof value !== 'string') {
+        throw new ApiError(HttpStatus.BAD_REQUEST, 'publishingDateOverride must be a date string or null');
+    }
+
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+        return null;
+    }
+
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+    if (!match) {
+        throw new ApiError(HttpStatus.BAD_REQUEST, 'publishingDateOverride must use YYYY-MM-DD format');
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    if (
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day
+    ) {
+        throw new ApiError(HttpStatus.BAD_REQUEST, 'publishingDateOverride must be a valid date');
+    }
+
+    return trimmed;
 }
 
 /**
@@ -69,5 +107,16 @@ export function parsePromoPageBody(
         template = data.template;
     }
 
-    return { bookId, mediaId, audioLength, isActive, template };
+    const publishingDateOverride = parseDateOnly(data.publishingDateOverride);
+
+    let audioType = DEFAULT_PROMO_AUDIO_TYPE;
+    if (data.audioType !== undefined && data.audioType !== null) {
+        if (typeof data.audioType !== 'string') {
+            throw new ApiError(HttpStatus.BAD_REQUEST, 'audioType must be a string');
+        }
+        const trimmed = data.audioType.trim();
+        audioType = trimmed.length > 0 ? trimmed : DEFAULT_PROMO_AUDIO_TYPE;
+    }
+
+    return { bookId, mediaId, audioLength, isActive, template, publishingDateOverride, audioType };
 }

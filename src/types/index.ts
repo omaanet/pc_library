@@ -70,6 +70,8 @@ export interface PromoPage {
     audioLength: number | null;
     isActive: boolean;
     template: PromoTemplate;
+    publishingDateOverride: string | null;
+    audioType: string;
     createdAt?: string;
     updatedAt?: string;
 }

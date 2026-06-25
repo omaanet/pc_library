@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ClientSanitizedHtml } from '@/components/promo/ClientSanitizedHtml';
+import { PromoAudioTypeLabel } from '@/components/promo/PromoAudioTypeLabel';
 import { PromoAudioPlayer } from '@/components/promo/PromoAudioPlayer';
 import { getCoverImageUrl } from '@/lib/image-utils';
 import { displayFontClass } from '@/config/fonts';
@@ -13,7 +14,7 @@ interface PromoPageModernViewProps {
     book: Book;
 }
 
-function formatPublishingDate(value: string | undefined): string | null {
+function formatPublishingDate(value: string | null | undefined): string | null {
     if (!value) return null;
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return null;
@@ -81,7 +82,7 @@ export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProp
     );
 
     const description = book.extract || book.summary || null;
-    const publishedLabel = formatPublishingDate(book.publishingDate);
+    const publishedLabel = formatPublishingDate(promoPage.publishingDateOverride ?? book.publishingDate);
 
     return (
         <main className="promo-modern relative min-h-screen w-full overflow-hidden bg-[#f4f1e2] text-[#3a3a2a]">
@@ -98,9 +99,11 @@ export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProp
                 {/* Hero — title sets the mood */}
                 <section className="flex min-h-[70vh] flex-col items-center justify-center py-20 text-center sm:py-28">
                     <Reveal>
-                        <p className={`${displayFontClass} text-3xl text-[#9a7b3f] sm:text-4xl`}>
-                            Anteprima audio
-                        </p>
+                        <PromoAudioTypeLabel
+                            audioType={promoPage.audioType}
+                            variant="title"
+                            className={`${displayFontClass} text-3xl text-[#9a7b3f] sm:text-4xl`}
+                        />
                     </Reveal>
                     <Reveal delay={120}>
                         <h1 className="mt-3 font-serif font-semibold leading-[1.08] tracking-tight text-[#2f3522] [text-wrap:balance]"
@@ -147,9 +150,11 @@ export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProp
                 <section className="w-full pb-24 sm:pb-32">
                     <Reveal className="flex justify-center">
                         <div className="w-full max-w-xl">
-                            <p className="mb-5 text-center text-xs uppercase tracking-[0.34em] text-[#7e7a55]">
-                                Ascolta l&apos;anteprima
-                            </p>
+                            <PromoAudioTypeLabel
+                                audioType={promoPage.audioType}
+                                variant="listen"
+                                className="mb-5 text-center text-xs uppercase tracking-[0.34em] text-[#7e7a55]"
+                            />
                             {/* Deep-green frosted glass panel keeps the light-text player legible */}
                             <div className="promo-audio-glow relative rounded-[30px] border border-white/15 bg-gradient-to-b from-[#3a4a2f]/95 to-[#222c1a]/95 p-6 shadow-[0_40px_90px_-30px_rgba(34,44,26,0.8)] backdrop-blur-xl ring-1 ring-white/10 sm:p-8">
                                 <PromoAudioPlayer

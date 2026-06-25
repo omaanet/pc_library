@@ -4,6 +4,8 @@ import { useCallback, useMemo, useRef } from 'react';
 import HTML5Player from '@/components/audio/HTML5Player';
 import type { Track } from '@/components/audio/types';
 import { SITE_CONFIG } from '@/config/site-config';
+import { ClientSanitizedHtml } from '@/components/promo/ClientSanitizedHtml';
+import { DEFAULT_PROMO_AUDIO_TYPE } from '@/lib/promo-page-input';
 import type { Book, PromoPage } from '@/types';
 
 interface PromoAudioPlayerProps {
@@ -46,9 +48,13 @@ export function PromoAudioPlayer({ promoPage, book, unavailableClassName }: Prom
 
     if (tracks.length === 0) {
         return (
-            <p className={unavailableClassName}>
-                Anteprima audio non disponibile.
-            </p>
+            <div className={unavailableClassName}>
+                <ClientSanitizedHtml
+                    html={promoPage.audioType?.trim() || DEFAULT_PROMO_AUDIO_TYPE}
+                    className="inline [&_p]:m-0 [&_p]:inline"
+                />{' '}
+                <span>audio non disponibile.</span>
+            </div>
         );
     }
 
