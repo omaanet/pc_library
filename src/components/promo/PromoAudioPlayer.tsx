@@ -12,9 +12,10 @@ interface PromoAudioPlayerProps {
     promoPage: PromoPage;
     book: Book;
     unavailableClassName: string;
+    disableTracking?: boolean;
 }
 
-export function PromoAudioPlayer({ promoPage, book, unavailableClassName }: PromoAudioPlayerProps) {
+export function PromoAudioPlayer({ promoPage, book, unavailableClassName, disableTracking = false }: PromoAudioPlayerProps) {
     const hasTrackedPlay = useRef(false);
     const tracks: Track[] = useMemo(() => {
         if (!promoPage.mediaId) return [];
@@ -28,7 +29,7 @@ export function PromoAudioPlayer({ promoPage, book, unavailableClassName }: Prom
     }, [promoPage.mediaId, book.title]);
 
     const handleFirstPlay = useCallback(() => {
-        if (!promoPage.mediaId || hasTrackedPlay.current) return;
+        if (disableTracking || !promoPage.mediaId || hasTrackedPlay.current) return;
         hasTrackedPlay.current = true;
 
         void fetch('/api/statistics/promo-audio-play', {
@@ -44,7 +45,7 @@ export function PromoAudioPlayer({ promoPage, book, unavailableClassName }: Prom
         }).catch((error) => {
             console.error('Failed to track promo audio play:', error);
         });
-    }, [book.id, promoPage.id, promoPage.mediaId, promoPage.slug]);
+    }, [book.id, disableTracking, promoPage.id, promoPage.mediaId, promoPage.slug]);
 
     if (tracks.length === 0) {
         return (

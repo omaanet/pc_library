@@ -8,6 +8,8 @@ import { getSocialCoverImageUrl } from '@/lib/image-utils';
 import { PromoPageView } from '@/components/promo/PromoPageView';
 import { PromoPageModernView } from '@/components/promo/PromoPageModernView';
 import { PromoPageClassicGreenView } from '@/components/promo/PromoPageClassicGreenView';
+import { PromoPageClassicBurgundyView } from '@/components/promo/PromoPageClassicBurgundyView';
+import { PromoPageClassicEcruView } from '@/components/promo/PromoPageClassicEcruView';
 import {
     capturePromoRequestContext,
     isTrackablePromoNavigation,
@@ -133,6 +135,14 @@ export default async function PromoPage({ params }: { params: Promise<{ slug: st
 
     if (promoPage.template === 'classic-green') {
         return <PromoPageClassicGreenView promoPage={promoPage} book={book} />;
+    }
+
+    if (promoPage.template === 'classic-burgundy') {
+        return <PromoPageClassicBurgundyView promoPage={promoPage} book={book} />;
+    }
+
+    if (promoPage.template === 'classic-ecru') {
+        return <PromoPageClassicEcruView promoPage={promoPage} book={book} />;
     }
 
     return <PromoPageView promoPage={promoPage} book={book} />;

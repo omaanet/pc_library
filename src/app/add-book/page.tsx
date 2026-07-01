@@ -70,6 +70,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/auth-context';
+import { useLibrary } from '@/context/library-context';
 import { ArrowLeft } from 'lucide-react';
 import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
 import { AuthModal } from '@/components/auth/auth-modal';
@@ -78,6 +79,7 @@ function AddBookPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { state } = useAuth();
+    const { dispatch: libraryDispatch } = useLibrary();
     const searchParamsString = searchParams.toString();
     const rawTab = searchParams.get('tab');
     const requestedTopLevelTab = getTopLevelTab(rawTab);
@@ -109,6 +111,10 @@ function AddBookPageContent() {
         updateBook,
         deleteBook
     } = useBooks();
+
+    const invalidateBooksCache = () => {
+        libraryDispatch({ type: 'INVALIDATE_BOOKS_CACHE' });
+    };
 
     useEffect(() => {
         if (rawTab !== requestedTopLevelTab) {
@@ -237,6 +243,8 @@ function AddBookPageContent() {
                 console.log('Book created successfully');
             }
 
+            invalidateBooksCache();
+
             // Refresh the book list
             await fetchBooks();
 
@@ -259,7 +267,7 @@ function AddBookPageContent() {
 
         try {
             // Fetch complete book data to ensure we have audiobook.mediaId
-            const response = await fetch(`/api/books/${book.id}`);
+            const response = await fetch(`/api/books/${book.id}`, { cache: 'no-store' });
             if (!response.ok) {
                 throw new Error(`Error fetching book details: ${response.status}`);
             }
@@ -307,6 +315,15 @@ function AddBookPageContent() {
         } else {
             navigateToTopLevelTab('manage');
         }
+    };
+
+    const handleDeleteBook = async (id: string) => {
+        const success = await deleteBook(id);
+        if (success) {
+            invalidateBooksCache();
+        }
+
+        return success;
     };
 
     // Handle tab change
@@ -427,7 +444,7 @@ function AddBookPageContent() {
                                 books={books}
                                 onEdit={handleEdit}
                                 onClone={handleClone}
-                                onDelete={deleteBook}
+                                onDelete={handleDeleteBook}
                                 onRefresh={fetchBooks}
                                 isLoading={loading}
                                 searchTerm={searchTerm}
@@ -505,6 +522,7 @@ function AddBookPageContent() {
                                 <AudioTrackForm
                                     bookId={editingBook.id}
                                     onCancel={handleCancel}
+                                    onSaved={invalidateBooksCache}
                                 />
                             </CardContent>
                         </Card>

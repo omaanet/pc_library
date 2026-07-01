@@ -45,7 +45,7 @@ export async function fetchStatisticsWithErrors(
         { name: 'popularBooks', url: `/api/statistics/popular-books?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` },
         { name: 'userActivity', url: `/api/statistics/user-activity?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` },
         { name: 'audioListens', url: `/api/statistics/audio-listens?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` },
-        { name: 'promoAudio', url: `/api/statistics/promo-audio?days=${timeRange}&limit=${limit}` },
+        { name: 'promoAudio', url: `/api/statistics/promo-audio?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` },
         { name: 'errors', url: `/api/statistics/errors?days=${timeRange}&limit=${limit}&${maintenanceIpParam}` }
     ];
 
@@ -111,7 +111,7 @@ export async function retryEndpoint(
         popularBooks: `/api/statistics/popular-books?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`,
         userActivity: `/api/statistics/user-activity?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`,
         audioListens: `/api/statistics/audio-listens?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`,
-        promoAudio: `/api/statistics/promo-audio?days=${timeRange}&limit=${limit}`,
+        promoAudio: `/api/statistics/promo-audio?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`,
         errors: `/api/statistics/errors?days=${timeRange}&limit=${limit}&${maintenanceIpParam}`
     };
 

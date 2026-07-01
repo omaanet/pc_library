@@ -1,5 +1,10 @@
 // src/proxy.ts
 import { type NextRequest, NextResponse } from 'next/server';
+import { APP_CONTENT_SECURITY_POLICY } from '@/lib/security/csp';
+import { getManagedPage } from '@/lib/db/queries/managed-pages';
+import { getBookById, getPromoPageById } from '@/lib/db';
+import { getNeonClient } from '@/lib/db/client';
+import { PROMO_TEMPLATES } from '@/lib/promo-page-input';
 
 const COVERS_PATH = '/api/covers';
 
@@ -27,6 +32,7 @@ export async function proxy(request: NextRequest) {
     const session = request.cookies.get('session');
     let isAuthenticated = false;
     let sessionExpired = false;
+    let authenticatedUserId: number | null = null;
 
     // Check if the user is authenticated (only parse the session once)
     if (session) {
@@ -103,7 +109,12 @@ export async function proxy(request: NextRequest) {
             if (expirationDate < new Date()) {
                 sessionExpired = true;
             } else {
+                const parsedUserId = Number(sessionData.userId);
+                if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
+                    return NextResponse.next();
+                }
                 isAuthenticated = true;
+                authenticatedUserId = parsedUserId;
             }
         } catch (error) {
             // Catch-all for any other parsing errors
@@ -123,6 +134,14 @@ export async function proxy(request: NextRequest) {
 
     // 2. Authentication check for protected routes
     if (isProtectedRoute(pathname)) {
+        if (isPromoPreviewRoute(pathname)) {
+            const canPreview = await canAccessPromoPreview(
+                request,
+                isAuthenticated && !sessionExpired ? authenticatedUserId : null
+            );
+            return canPreview ? NextResponse.next() : new NextResponse(null, { status: 404 });
+        }
+
         // If not authenticated or session expired, redirect to login
         if (!isAuthenticated || sessionExpired) {
             const url = new URL('/login', request.url);
@@ -184,21 +203,7 @@ export async function proxy(request: NextRequest) {
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
     response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
     
-    // Set Content Security Policy
-    const csp = [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-inline needed for Next.js development
-        "style-src 'self' 'unsafe-inline'", // unsafe-inline needed for Tailwind CSS
-        "img-src 'self' data: https://s3.eu-south-1.wasabisys.com",
-        "font-src 'self' data:",
-        "connect-src 'self' https://s3.eu-south-1.wasabisys.com",
-        "media-src 'self' https://s3.eu-south-1.wasabisys.com",
-        "object-src 'none'",
-        "base-uri 'self'",
-        "form-action 'self'"
-    ].join('; ');
-    
-    response.headers.set('Content-Security-Policy', csp);
+    response.headers.set('Content-Security-Policy', APP_CONTENT_SECURITY_POLICY);
     
     return response;
 }
@@ -215,6 +220,108 @@ function isAuthRoute(pathname: string): boolean {
     return AUTH_ROUTES.some(route =>
         pathname === route || pathname.startsWith(`${route}/`)
     );
+}
+
+function isPromoPreviewRoute(pathname: string): boolean {
+    return pathname === '/admin/promo-pages/preview' ||
+        pathname.startsWith('/admin/promo-pages/preview/');
+}
+
+function parsePromoPreviewId(pathname: string): number | null {
+    const match = /^\/admin\/promo-pages\/preview\/(\d+)$/.exec(pathname);
+    if (!match) return null;
+
+    const id = Number(match[1]);
+    return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function isValidPreviewDate(value: string): boolean {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return true;
+
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+    if (!match) return false;
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    return date.getUTCFullYear() === year &&
+        date.getUTCMonth() === month - 1 &&
+        date.getUTCDate() === day;
+}
+
+function validatePromoPreviewSearchParams(
+    searchParams: URLSearchParams,
+    savedBookId: string
+): string | null {
+    let bookId = savedBookId;
+
+    const draftBookId = searchParams.get('bookId');
+    if (draftBookId !== null) {
+        const trimmed = draftBookId.trim();
+        if (!trimmed) return null;
+        bookId = trimmed;
+    }
+
+    const audioLength = searchParams.get('audioLength');
+    if (audioLength !== null && audioLength.trim().length > 0) {
+        const parsed = Number(audioLength);
+        if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    }
+
+    const isActive = searchParams.get('isActive');
+    if (isActive !== null && isActive !== 'true' && isActive !== 'false') {
+        return null;
+    }
+
+    const template = searchParams.get('template');
+    if (template !== null && !(PROMO_TEMPLATES as readonly string[]).includes(template)) {
+        return null;
+    }
+
+    const publishingDateOverride = searchParams.get('publishingDateOverride');
+    if (publishingDateOverride !== null && !isValidPreviewDate(publishingDateOverride)) {
+        return null;
+    }
+
+    return bookId;
+}
+
+async function getUserLevel(userId: number): Promise<number | null> {
+    const result = await getNeonClient().query<{ userLevel: number }>(
+        'SELECT is_admin AS "userLevel" FROM users WHERE id = $1',
+        [userId]
+    );
+    if (!Array.isArray(result) || result.length === 0) return null;
+
+    return Number(result[0].userLevel);
+}
+
+async function canAccessPromoPreview(request: NextRequest, userId: number | null): Promise<boolean> {
+    if (!userId) return false;
+
+    try {
+        const id = parsePromoPreviewId(request.nextUrl.pathname);
+        if (!id) return false;
+
+        const [userLevel, promoPage, promoPageConfig] = await Promise.all([
+            getUserLevel(userId),
+            getPromoPageById(id),
+            getManagedPage('promo-pages'),
+        ]);
+        if (userLevel === null || userLevel < promoPageConfig.accessLevel || !promoPage) {
+            return false;
+        }
+
+        const bookId = validatePromoPreviewSearchParams(request.nextUrl.searchParams, promoPage.bookId);
+        if (!bookId) return false;
+
+        return Boolean(await getBookById(bookId));
+    } catch {
+        return false;
+    }
 }
 
 export const config = {

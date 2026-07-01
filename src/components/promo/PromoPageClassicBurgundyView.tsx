@@ -10,7 +10,7 @@ import { getCoverImageUrl } from '@/lib/image-utils';
 import { displayFontClass } from '@/config/fonts';
 import type { Book, PromoPage } from '@/types';
 
-interface PromoPageViewProps {
+interface PromoPageClassicBurgundyViewProps {
     promoPage: PromoPage;
     book: Book;
     disableTracking?: boolean;
@@ -23,7 +23,12 @@ function formatPublishingDate(value: string | null | undefined): string | null {
     return new Intl.DateTimeFormat('it-IT', { year: 'numeric', month: 'long' }).format(date);
 }
 
-export function PromoPageView({ promoPage, book, disableTracking = false }: PromoPageViewProps) {
+/**
+ * "Classica - Burgundy" template: the same single-screen hero layout as
+ * Classica - Green, recolored with a deep burgundy background and warm ambient
+ * glows.
+ */
+export function PromoPageClassicBurgundyView({ promoPage, book, disableTracking = false }: PromoPageClassicBurgundyViewProps) {
     const coverUrl = useMemo(
         () => getCoverImageUrl(book.coverImage, 'detail', { bookId: book.id }),
         [book.coverImage, book.id]
@@ -33,16 +38,19 @@ export function PromoPageView({ promoPage, book, disableTracking = false }: Prom
     const publishedLabel = formatPublishingDate(promoPage.publishingDateOverride ?? book.publishingDate);
 
     return (
-        <main className="relative min-h-screen w-full overflow-hidden bg-[#faf5ec] text-[#3a2e27]">
-            <PromoHomeLink className="bg-white/45 text-[#5c3d28] shadow-sm ring-1 ring-[#b6743f]/15 backdrop-blur-md hover:bg-white/70 focus-visible:ring-[#b6743f]" />
+        <main
+            className="relative min-h-screen w-full overflow-hidden text-[#fff8e8]"
+            style={{ background: 'linear-gradient(145deg, #210712, #5a172c 58%, #2a0b18)' }}
+        >
+            <PromoHomeLink className="text-[#fff8e8] backdrop-blur-md hover:bg-[#210712]/55" />
 
-            {/* Soft warm ambient glow */}
+            {/* Amber / rose / violet ambient glows over the burgundy base */}
             <div
                 aria-hidden
                 className="pointer-events-none absolute inset-0"
                 style={{
                     background:
-                        'radial-gradient(1200px 600px at 15% 0%, rgba(214,158,108,0.22), transparent 60%), radial-gradient(900px 500px at 100% 100%, rgba(176,120,84,0.18), transparent 55%)',
+                        'radial-gradient(circle at 10% 15%, rgba(255,196,105,0.34), transparent 26rem), radial-gradient(circle at 86% 8%, rgba(244,114,182,0.28), transparent 24rem), radial-gradient(circle at 72% 84%, rgba(168,85,247,0.20), transparent 28rem)',
                 }}
             />
 
@@ -51,27 +59,37 @@ export function PromoPageView({ promoPage, book, disableTracking = false }: Prom
                     <PromoAudioTypeLabel
                         audioType={promoPage.audioType}
                         variant="title"
-                        className={`${displayFontClass} text-2xl text-[#b6743f] sm:text-3xl`}
+                        className={`${displayFontClass} text-2xl text-[#efc866] sm:text-3xl`}
                     />
-                    <h1 className="mt-2 font-serif text-4xl font-semibold leading-tight tracking-tight text-[#33271f] sm:text-5xl lg:text-6xl">
+                    <h1 className="mt-2 font-serif text-4xl font-semibold leading-tight tracking-tight text-[#fff8e8] sm:text-5xl lg:text-6xl">
                         {book.title}
                     </h1>
                     {publishedLabel && (
-                        <p className="mt-3 text-sm uppercase tracking-[0.2em] text-[#9a8472]">
+                        <p className="mt-3 text-sm uppercase tracking-[0.2em] text-[#e4b6bf]">
                             {publishedLabel}
                         </p>
                     )}
                 </div>
 
                 <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-                    {/* Book cover */}
+                    {/* Book cover wrapped in a frosted paper glass frame */}
                     <div className="flex justify-center lg:justify-end">
                         <div className="relative w-[230px] sm:w-[280px] lg:w-[330px]">
                             <div
                                 aria-hidden
-                                className="absolute -inset-4 rounded-2xl bg-[#c98f5f]/25 blur-2xl"
+                                className="absolute -inset-5 rounded-3xl blur-2xl"
+                                style={{
+                                    background:
+                                        'radial-gradient(circle at 50% 50%, rgba(255,196,105,0.42), rgba(244,114,182,0.24) 60%, transparent 75%)',
+                                }}
                             />
-                            <div className="relative overflow-hidden rounded-lg px-3 shadow-[0_30px_60px_-20px_rgba(78,52,33,0.55)] ring-1 ring-black/5">
+                            <div
+                                className="relative rounded-[20px] px-4 py-2 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.55)] ring-1 ring-white/30 backdrop-blur-md"
+                                style={{
+                                    background:
+                                        'linear-gradient(135deg, rgba(255,255,255,0.82), rgba(255,248,232,0.96))',
+                                }}
+                            >
                                 <Image
                                     src={coverUrl}
                                     alt={`Copertina di ${book.title}`}
@@ -85,20 +103,23 @@ export function PromoPageView({ promoPage, book, disableTracking = false }: Prom
                         </div>
                     </div>
 
-                    {/* "Tablet" element hosting the audio player */}
+                    {/* Frosted-glass panel hosting the audio player */}
                     <div className="flex justify-center lg:justify-start">
                         <div className="w-full max-w-md">
-                            <div className="rounded-[26px] bg-gradient-to-b from-[#2c2620] to-[#1d1813] p-3 shadow-[0_30px_60px_-25px_rgba(40,26,16,0.7)] ring-1 ring-black/20 sm:p-4">
-                                <div className="rounded-[16px] bg-[#16120e] p-5 ring-1 ring-white/5 sm:p-6">
+                            <div className="rounded-[26px] border border-white/10 bg-white/[0.07] p-3 shadow-[0_30px_60px_-25px_rgba(0,0,0,0.6)] backdrop-blur-xl sm:p-4">
+                                <div
+                                    className="rounded-[16px] p-5 ring-1 ring-white/10 backdrop-blur-md sm:p-6"
+                                    style={{ background: 'rgba(33,7,18,0.62)' }}
+                                >
                                     <PromoAudioTypeLabel
                                         audioType={promoPage.audioType}
                                         variant="listen"
-                                        className="mb-4 text-center text-xs uppercase tracking-[0.25em] text-[#c79a6f]"
+                                        className="mb-4 text-center text-xs uppercase tracking-[0.25em] text-[#efc866]"
                                     />
                                     <PromoAudioPlayer
                                         promoPage={promoPage}
                                         book={book}
-                                        unavailableClassName="py-6 text-center text-sm text-[#9a8472]"
+                                        unavailableClassName="py-6 text-center text-sm text-[#e4b6bf]"
                                         disableTracking={disableTracking}
                                     />
                                 </div>
@@ -111,7 +132,8 @@ export function PromoPageView({ promoPage, book, disableTracking = false }: Prom
                     <div className="mx-auto mt-12 max-w-2xl text-center lg:mt-16">
                         <ClientSanitizedHtml
                             html={description}
-                            className="text-base leading-relaxed text-[#5c4a3d] sm:text-lg [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-4 [&_blockquote]:border-[#b6743f]/40 [&_blockquote]:pl-4 [&_blockquote]:italic [&_li]:my-1 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:text-left [&_p]:mb-4 [&_p:last-child]:mb-0 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:text-left"
+                            className="text-base leading-relaxed sm:text-lg [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-4 [&_blockquote]:border-[#efc866]/45 [&_blockquote]:pl-4 [&_blockquote]:italic [&_li]:my-1 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:text-left [&_p]:mb-4 [&_p:last-child]:mb-0 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:text-left"
+                            style={{ color: 'rgba(255,248,232,0.85)' }}
                         />
                     </div>
                 )}

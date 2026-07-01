@@ -66,6 +66,8 @@ function createInitialState(): LibraryState {
     // Filters will be loaded from localStorage in useEffect after hydration
     return {
         books: [],
+        booksCacheVersion: 0,
+        booksLoadedVersion: 0,
         isLoading: false,
         error: null,
         filters: {}, // Always start empty to avoid hydration mismatch
@@ -84,7 +86,20 @@ function createInitialState(): LibraryState {
 function libraryReducer(state: LibraryState, action: LibraryAction): LibraryState {
     switch (action.type) {
         case 'SET_BOOKS':
-            return { ...state, books: action.payload };
+            if (action.payload.loadedVersion < state.booksCacheVersion) {
+                return state;
+            }
+
+            return {
+                ...state,
+                books: action.payload.books,
+                booksLoadedVersion: action.payload.loadedVersion,
+            };
+        case 'INVALIDATE_BOOKS_CACHE':
+            return {
+                ...state,
+                booksCacheVersion: state.booksCacheVersion + 1,
+            };
         case 'SET_LOADING':
             return { ...state, isLoading: action.payload };
         case 'SET_ERROR':

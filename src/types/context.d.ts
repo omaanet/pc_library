@@ -22,6 +22,8 @@ export interface LibrarySort {
 
 export interface LibraryState {
     books: Book[];
+    booksCacheVersion: number;
+    booksLoadedVersion: number;
     isLoading: boolean;
     error: Error | null;
     filters: LibraryFilters;
@@ -37,7 +39,8 @@ export interface LibraryState {
 }
 
 export type LibraryAction =
-    | { type: 'SET_BOOKS'; payload: Book[] }
+    | { type: 'SET_BOOKS'; payload: { books: Book[]; loadedVersion: number } }
+    | { type: 'INVALIDATE_BOOKS_CACHE' }
     | { type: 'SET_LOADING'; payload: boolean }
     | { type: 'SET_ERROR'; payload: Error | null }
     | { type: 'SET_FILTERS'; payload: LibraryFilters }

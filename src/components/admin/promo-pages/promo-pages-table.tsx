@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { ExternalLink, Eye, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -26,8 +26,12 @@ import type { PromoPageListItem } from '@/types';
 const TEMPLATE_LABELS: Record<string, string> = {
     classic: 'Classica',
     'classic-green': 'Classica - Green',
+    'classic-burgundy': 'Classica - Burgundy',
+    'classic-ecru': 'Classica - Ecru',
     modern: 'Moderna',
 };
+
+const PREVIEW_ICON_CLASS = 'text-amber-600 dark:text-amber-400';
 
 interface PromoPagesTableProps {
     promoPages: PromoPageListItem[];
@@ -86,7 +90,7 @@ export function PromoPagesTable({
                             <TableHead className="w-[110px]">Template</TableHead>
                             <TableHead className="w-[110px]">Durata</TableHead>
                             <TableHead className="w-[110px]">Attiva</TableHead>
-                            <TableHead className="w-[120px] text-right">Azioni</TableHead>
+                            <TableHead className="w-[150px] text-right">Azioni</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -150,6 +154,21 @@ export function PromoPagesTable({
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex justify-end gap-1">
+                                            <Button
+                                                asChild
+                                                variant="ghost"
+                                                size="icon"
+                                                className="hover:text-amber-700 dark:hover:text-amber-300"
+                                                aria-label="Anteprima"
+                                            >
+                                                <a
+                                                    href={`/admin/promo-pages/preview/${promoPage.id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    <Eye className={`h-4 w-4 ${PREVIEW_ICON_CLASS}`} />
+                                                </a>
+                                            </Button>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"

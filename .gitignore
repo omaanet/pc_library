@@ -69,3 +69,4 @@ CLAUDE.md
 reports/
 .devin
 .vercel
+.playwright-cli

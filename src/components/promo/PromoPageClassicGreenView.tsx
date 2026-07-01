@@ -13,6 +13,7 @@ import type { Book, PromoPage } from '@/types';
 interface PromoPageClassicGreenViewProps {
     promoPage: PromoPage;
     book: Book;
+    disableTracking?: boolean;
 }
 
 function formatPublishingDate(value: string | null | undefined): string | null {
@@ -29,7 +30,7 @@ function formatPublishingDate(value: string | null | undefined): string | null {
  * leaf accents, a frosted paper frame around the cover, and a frosted dark-green
  * glass panel hosting the audio player so its light text stays legible).
  */
-export function PromoPageClassicGreenView({ promoPage, book }: PromoPageClassicGreenViewProps) {
+export function PromoPageClassicGreenView({ promoPage, book, disableTracking = false }: PromoPageClassicGreenViewProps) {
     const coverUrl = useMemo(
         () => getCoverImageUrl(book.coverImage, 'detail', { bookId: book.id }),
         [book.coverImage, book.id]
@@ -122,6 +123,7 @@ export function PromoPageClassicGreenView({ promoPage, book }: PromoPageClassicG
                                         promoPage={promoPage}
                                         book={book}
                                         unavailableClassName="py-6 text-center text-sm text-[#9bb3aa]"
+                                        disableTracking={disableTracking}
                                     />
                                 </div>
                             </div>

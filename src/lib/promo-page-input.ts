@@ -4,7 +4,7 @@
 import { ApiError, HttpStatus } from '@/lib/api-error-handler';
 
 /** Available public templates for a promo page. `classic` is the default. */
-export const PROMO_TEMPLATES = ['classic', 'classic-green', 'modern'] as const;
+export const PROMO_TEMPLATES = ['classic', 'classic-green', 'classic-burgundy', 'classic-ecru', 'modern'] as const;
 export type PromoTemplate = (typeof PROMO_TEMPLATES)[number];
 export const DEFAULT_PROMO_AUDIO_TYPE = 'Anteprima';
 

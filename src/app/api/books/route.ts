@@ -180,10 +180,13 @@ export async function GET(request: NextRequest) {
         const result = await getAllBooksOptimized(queryOptions);
 
         // Return formatted response
-        return NextResponse.json({
-            books: result.data,
-            pagination: result.pagination
-        });
+        return NextResponse.json(
+            {
+                books: result.data,
+                pagination: result.pagination
+            },
+            { headers: { 'Cache-Control': 'private, no-store' } }
+        );
     } catch (error) {
         console.error('API Error fetching books:', error);
         return handleApiError(error, 'Failed to fetch books', HttpStatus.INTERNAL_SERVER_ERROR);

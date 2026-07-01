@@ -3,7 +3,7 @@ import { getNeonClient, extractRows } from '@/lib/db';
 import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
-import { getMaintenanceIpFilter } from '@/lib/statistics-maintenance-ip';
+import { getMaintenanceIpFilter, getMaintenanceUserFilter } from '@/lib/statistics-maintenance-ip';
 
 export async function GET(request: Request) {
     try {
@@ -17,6 +17,7 @@ export async function GET(request: Request) {
         // Handle 'all' days parameter
         const daysFilter = daysParam === 'all' ? '' : `AND created_at >= NOW() - INTERVAL '${daysParam} days'`;
         const maintenanceIpFilter = getMaintenanceIpFilter(request);
+        const maintenanceUserFilter = getMaintenanceUserFilter(request);
 
         const client = getNeonClient();
 
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
             WHERE level IN ('error', 'warning')
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 AND ${maintenanceIpFilter}
+                AND ${maintenanceUserFilter}
                 ${daysFilter}
             GROUP BY DATE(created_at)
             ORDER BY date DESC
@@ -53,6 +55,7 @@ export async function GET(request: Request) {
             WHERE level IN ('error', 'warning')
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 AND ${maintenanceIpFilter}
+                AND ${maintenanceUserFilter}
                 ${daysFilter}
             GROUP BY source
             ORDER BY error_count DESC
@@ -74,6 +77,7 @@ export async function GET(request: Request) {
             WHERE level IN ('error', 'warning')
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 AND ${maintenanceIpFilter}
+                AND ${maintenanceUserFilter}
                 ${daysFilter}
             GROUP BY message, source
             ORDER BY occurrence_count DESC
@@ -96,6 +100,7 @@ export async function GET(request: Request) {
                 AND request_path IS NOT NULL
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 AND ${maintenanceIpFilter}
+                AND ${maintenanceUserFilter}
                 ${daysFilter}
             GROUP BY request_path
             ORDER BY error_count DESC
@@ -115,6 +120,7 @@ export async function GET(request: Request) {
             WHERE level IN ('error', 'warning')
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 AND ${maintenanceIpFilter}
+                AND ${maintenanceUserFilter}
                 ${daysFilter}
             GROUP BY EXTRACT(HOUR FROM created_at)
             ORDER BY hour_of_day
@@ -136,6 +142,7 @@ export async function GET(request: Request) {
             WHERE level IN ('error', 'warning')
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 AND ${maintenanceIpFilter}
+                AND ${maintenanceUserFilter}
                 ${daysFilter}
         `;
 

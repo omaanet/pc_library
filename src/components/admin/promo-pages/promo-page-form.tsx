@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Eye } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -51,8 +51,12 @@ const promoPageFormSchema = z.object({
 const TEMPLATE_LABELS: Record<(typeof PROMO_TEMPLATES)[number], string> = {
     classic: 'Classica',
     'classic-green': 'Classica - Green',
+    'classic-burgundy': 'Classica - Burgundy',
+    'classic-ecru': 'Classica - Ecru',
     modern: 'Moderna',
 };
+
+const PREVIEW_ICON_CLASS = 'text-amber-600 dark:text-amber-400';
 
 type PromoPageFormValues = z.infer<typeof promoPageFormSchema>;
 
@@ -99,6 +103,20 @@ function formatDateOnly(value: Date | null | undefined): string | null {
     return `${year}-${month}-${day}`;
 }
 
+function buildDraftPreviewHref(id: number, values: PromoPageFormValues): string {
+    const params = new URLSearchParams({
+        bookId: values.bookId,
+        mediaId: values.mediaId?.trim() ?? '',
+        audioLength: values.audioLength != null ? String(values.audioLength) : '',
+        isActive: String(values.isActive),
+        template: values.template,
+        publishingDateOverride: formatDateOnly(values.publishingDateOverride) ?? '',
+        audioType: values.audioType ?? '',
+    });
+
+    return `/admin/promo-pages/preview/${id}?${params.toString()}`;
+}
+
 export function PromoPageForm({ promoPage, onSubmit, onCancel }: PromoPageFormProps) {
     const isEdit = Boolean(promoPage);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,7 +157,9 @@ export function PromoPageForm({ promoPage, onSubmit, onCancel }: PromoPageFormPr
     useEffect(() => {
         let cancelled = false;
         setBooksLoading(true);
-        fetch('/api/books?perPage=-1&displayPreviews=-1&isVisible=-1&sortBy=title&sortOrder=asc')
+        fetch('/api/books?perPage=-1&displayPreviews=-1&isVisible=-1&sortBy=title&sortOrder=asc', {
+            cache: 'no-store',
+        })
             .then((res) => (res.ok ? res.json() : { books: [] }))
             .then((data) => {
                 if (cancelled) return;
@@ -177,9 +197,32 @@ export function PromoPageForm({ promoPage, onSubmit, onCancel }: PromoPageFormPr
         }
     };
 
+    const handlePreview = () => {
+        if (!promoPage) return;
+        window.open(
+            buildDraftPreviewHref(promoPage.id, form.getValues()),
+            '_blank',
+            'noopener,noreferrer'
+        );
+    };
+
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                {isEdit && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={handlePreview}
+                        disabled={isSubmitting}
+                        className="absolute right-10 top-4 z-10 h-4 w-4 p-0 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                        aria-label="Anteprima"
+                    >
+                        <Eye className={`h-4 w-4 ${PREVIEW_ICON_CLASS}`} />
+                    </Button>
+                )}
+
                 <FormField
                     control={form.control}
                     name="bookId"
@@ -400,6 +443,12 @@ export function PromoPageForm({ promoPage, onSubmit, onCancel }: PromoPageFormPr
                 />
 
                 <div className="flex justify-end space-x-4">
+                    {isEdit && (
+                        <Button type="button" variant="outline" onClick={handlePreview} disabled={isSubmitting}>
+                            <Eye className={`mr-2 h-4 w-4 ${PREVIEW_ICON_CLASS}`} />
+                            Anteprima
+                        </Button>
+                    )}
                     <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
                         Annulla
                     </Button>

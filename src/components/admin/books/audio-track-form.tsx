@@ -33,9 +33,10 @@ type AudioTrackFormValues = z.infer<typeof audioTrackFormSchema>;
 interface AudioTrackFormProps {
     bookId: string;
     onCancel: () => void;
+    onSaved?: () => void;
 }
 
-export function AudioTrackForm({ bookId, onCancel }: AudioTrackFormProps) {
+export function AudioTrackForm({ bookId, onCancel, onSaved }: AudioTrackFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { audiobook, loading, error, saveAudiobook } = useAudiobook({ bookId });
     const [fileName, setFileName] = useState<string>('');
@@ -69,13 +70,16 @@ export function AudioTrackForm({ bookId, onCancel }: AudioTrackFormProps) {
     const onSubmit = async (values: AudioTrackFormValues) => {
         setIsSubmitting(true);
         try {
-            await saveAudiobook({
+            const savedAudiobook = await saveAudiobook({
                 audio_filename: values.audio_filename,
                 media_id: values.media_id ?? null,
                 audio_length: values.audio_length ?? null,
                 publishing_date: values.publishing_date ?? null,
             });
-            form.reset(values);
+            if (savedAudiobook) {
+                onSaved?.();
+                form.reset(values);
+            }
         } catch (error) {
             console.error('Error saving audio track:', error);
         } finally {

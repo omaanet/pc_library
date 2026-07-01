@@ -7,7 +7,9 @@ export interface UseBookDataParams {
   displayPreviews: number;
   sortPreset: BookSortPreset;
   initialBooks?: Book[];
-  onBooksLoaded?: (books: Book[]) => void;
+  initialBooksLoadedVersion?: number;
+  booksCacheVersion?: number;
+  onBooksLoaded?: (books: Book[], loadedVersion: number) => void;
   onError?: (message: string) => void;
 }
 
@@ -47,11 +49,13 @@ export function useBookData({
   displayPreviews,
   sortPreset,
   initialBooks = [],
+  initialBooksLoadedVersion = 0,
+  booksCacheVersion = 0,
   onBooksLoaded,
   onError,
 }: UseBookDataParams): UseBookDataReturn {
-  const hasInitialBooks = initialBooks.length > 0;
-  const [books, setBooks] = useState<Book[]>(initialBooks);
+  const hasInitialBooks = initialBooks.length > 0 && initialBooksLoadedVersion >= booksCacheVersion;
+  const [books, setBooks] = useState<Book[]>(hasInitialBooks ? initialBooks : []);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(!hasInitialBooks);
   const [error, setError] = useState<Error | null>(null);
@@ -70,8 +74,10 @@ export function useBookData({
    */
   const fetchBooks = useCallback(
     async () => {
+      const requestId = ++activeRequestIdRef.current;
+      const loadedVersion = booksCacheVersion;
+
       try {
-        const requestId = ++activeRequestIdRef.current;
         setIsLoading(true);
 
         // Use the centralized API service
@@ -87,7 +93,7 @@ export function useBookData({
         }
 
         setBooks(data.books);
-        onBooksLoaded?.(data.books);
+        onBooksLoaded?.(data.books, loadedVersion);
 
         if (data.pagination) {
           setPagination({
@@ -102,17 +108,23 @@ export function useBookData({
 
         setError(null);
       } catch (err) {
+        if (requestId !== activeRequestIdRef.current) {
+          return;
+        }
+
         const errorObj = err instanceof Error ? err : new Error('Failed to fetch books');
         setError(errorObj);
         if (onError) {
           onError('Failed to load books. Please try again.');
         }
       } finally {
-        setIsLoading(false);
-        setIsInitialLoad(false);
+        if (requestId === activeRequestIdRef.current) {
+          setIsLoading(false);
+          setIsInitialLoad(false);
+        }
       }
     },
-    [displayPreviews, sortPreset, onBooksLoaded, onError]
+    [booksCacheVersion, displayPreviews, sortPreset, onBooksLoaded, onError]
   );
 
   /**
@@ -138,7 +150,7 @@ export function useBookData({
     }
 
     fetchBooks();
-  }, [displayPreviews, sortPreset, fetchBooks]);
+  }, [booksCacheVersion, displayPreviews, sortPreset, fetchBooks]);
 
   return {
     books,

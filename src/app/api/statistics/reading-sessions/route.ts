@@ -3,7 +3,7 @@ import { getNeonClient, extractRows } from '@/lib/db';
 import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
 import { SITE_CONFIG } from '@/config/site-config';
-import { getMaintenanceIpFilter } from '@/lib/statistics-maintenance-ip';
+import { getMaintenanceIpFilter, getMaintenanceUserFilter } from '@/lib/statistics-maintenance-ip';
 
 export async function GET(request: Request) {
     try {
@@ -18,6 +18,8 @@ export async function GET(request: Request) {
         const daysFilter = daysParam === 'all' ? '' : `AND created_at >= NOW() - INTERVAL '${daysParam} days'`;
         const maintenanceIpFilter = getMaintenanceIpFilter(request);
         const slMaintenanceIpFilter = getMaintenanceIpFilter(request, 'sl.ip_address');
+        const maintenanceUserFilter = getMaintenanceUserFilter(request);
+        const slMaintenanceUserFilter = getMaintenanceUserFilter(request, 'sl.user_id');
 
         const client = getNeonClient();
 
@@ -33,6 +35,7 @@ export async function GET(request: Request) {
                 AND level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 AND ${maintenanceIpFilter}
+                AND ${maintenanceUserFilter}
                 ${daysFilter}
             GROUP BY DATE(created_at)
             ORDER BY date DESC
@@ -53,6 +56,7 @@ export async function GET(request: Request) {
                 AND level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 AND ${maintenanceIpFilter}
+                AND ${maintenanceUserFilter}
                 ${daysFilter}
             GROUP BY details->>'bookTitle', details->>'bookId'
             ORDER BY read_sessions DESC
@@ -74,6 +78,7 @@ export async function GET(request: Request) {
                 AND sl.level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION.replace(/ip_address/g, 'sl.ip_address')}
                 AND ${slMaintenanceIpFilter}
+                AND ${slMaintenanceUserFilter}
                 ${daysFilter.replace('created_at', 'sl.created_at')}
             GROUP BY u.id, u.full_name, u.email
             ORDER BY reading_sessions DESC
@@ -93,6 +98,7 @@ export async function GET(request: Request) {
                 AND level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 AND ${maintenanceIpFilter}
+                AND ${maintenanceUserFilter}
                 ${daysFilter}
             GROUP BY EXTRACT(HOUR FROM created_at)
             ORDER BY hour_of_day
@@ -115,6 +121,7 @@ export async function GET(request: Request) {
                          AND level = 'info'
                          AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                          AND ${maintenanceIpFilter}
+                         AND ${maintenanceUserFilter}
                          ${daysFilter}
                      GROUP BY user_id
                  ) user_sessions
@@ -124,6 +131,7 @@ export async function GET(request: Request) {
                 AND level = 'info'
                 AND ${SITE_CONFIG.AVOID_LOCAL_ADDRESS_POLLUTION}
                 AND ${maintenanceIpFilter}
+                AND ${maintenanceUserFilter}
                 ${daysFilter}
         `;
 

@@ -44,7 +44,7 @@ export default function UserStatisticsPage() {
     const [timeRange, setTimeRange] = useState('all');
     const [topListSize, setTopListSize] = useState('10');
     const [activeTab, setActiveTab] = useState<StatisticsTab>('overview');
-    const [includeMaintenanceIp, setIncludeMaintenanceIp] = useState(true);
+    const [includeMaintenanceIp, setIncludeMaintenanceIp] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -64,9 +64,7 @@ export default function UserStatisticsPage() {
         }
 
         const savedIncludeMaintenanceIp = localStorage.getItem(INCLUDE_MAINTENANCE_IP_STORAGE_KEY);
-        if (savedIncludeMaintenanceIp === 'false') {
-            setIncludeMaintenanceIp(false);
-        }
+        setIncludeMaintenanceIp(savedIncludeMaintenanceIp === 'true');
     }, []);
     
     const translations = React.useMemo(() => ({

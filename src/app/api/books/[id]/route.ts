@@ -143,7 +143,7 @@ export async function GET(
             }
         }
 
-        return NextResponse.json(book);
+        return NextResponse.json(book, { headers: { 'Cache-Control': 'private, no-store' } });
     } catch (error) {
         console.error('API Error fetching book:', error);
         return handleApiError(error, 'Failed to fetch book', HttpStatus.INTERNAL_SERVER_ERROR);

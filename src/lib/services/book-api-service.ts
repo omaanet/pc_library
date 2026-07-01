@@ -74,7 +74,7 @@ export const bookApiService = {
    */
   async fetchBooks(params: FetchBooksParams): Promise<BookResponse> {
     const urlParams = this.buildParams(params);
-    const response = await fetch(`/api/books?${urlParams}`);
+    const response = await fetch(`/api/books?${urlParams}`, { cache: 'no-store' });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -120,7 +120,7 @@ export const bookApiService = {
       isVisible: isVisible.toString(),
     });
 
-    const response = await fetch(`/api/books?${urlParams}`);
+    const response = await fetch(`/api/books?${urlParams}`, { cache: 'no-store' });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch preview books: ${response.status}`);

@@ -13,6 +13,7 @@ import type { Book, PromoPage } from '@/types';
 interface PromoPageModernViewProps {
     promoPage: PromoPage;
     book: Book;
+    disableTracking?: boolean;
 }
 
 function formatPublishingDate(value: string | null | undefined): string | null {
@@ -76,7 +77,7 @@ function Reveal({
     );
 }
 
-export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProps) {
+export function PromoPageModernView({ promoPage, book, disableTracking = false }: PromoPageModernViewProps) {
     const coverUrl = useMemo(
         () => getCoverImageUrl(book.coverImage, 'detail', { bookId: book.id }),
         [book.coverImage, book.id]
@@ -97,35 +98,33 @@ export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProp
                 <div className="promo-blob promo-blob--olive absolute bottom-[-10%] left-[25%] h-[40vw] w-[40vw] max-h-[540px] max-w-[540px] rounded-full" />
             </div>
 
-            <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center px-6 sm:px-8">
-                {/* Hero — title sets the mood */}
-                <section className="flex min-h-[70vh] flex-col items-center justify-center py-20 text-center sm:py-28">
-                    <Reveal>
-                        <PromoAudioTypeLabel
-                            audioType={promoPage.audioType}
-                            variant="title"
-                            className={`${displayFontClass} text-3xl text-[#9a7b3f] sm:text-4xl`}
-                        />
-                    </Reveal>
-                    <Reveal delay={120}>
-                        <h1 className="mt-3 font-serif font-semibold leading-[1.08] tracking-tight text-[#2f3522] [text-wrap:balance]"
-                            style={{ fontSize: 'clamp(2.4rem, 7vw, 4.25rem)' }}>
-                            {book.title}
-                        </h1>
-                    </Reveal>
-                    {publishedLabel && (
-                        <Reveal delay={220}>
-                            <p className="mt-5 text-xs uppercase tracking-[0.32em] text-[#8a8463] sm:text-sm">
-                                {publishedLabel}
-                            </p>
+            <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center px-5 sm:px-8">
+                {/* First viewport: keep the promo essentials together. */}
+                <section className="promo-modern-hero flex min-h-svh w-full flex-col items-center justify-center gap-4 py-7 text-center sm:gap-5 sm:py-9">
+                    <div className="w-full">
+                        <Reveal>
+                            <PromoAudioTypeLabel
+                                audioType={promoPage.audioType}
+                                variant="title"
+                                className={`${displayFontClass} promo-modern-kicker text-[#9a7b3f]`}
+                            />
                         </Reveal>
-                    )}
-                </section>
+                        <Reveal delay={120}>
+                            <h1 className="promo-modern-title mt-2 font-serif font-semibold leading-[1.04] tracking-normal text-[#2f3522] [text-wrap:balance]">
+                                {book.title}
+                            </h1>
+                        </Reveal>
+                        {publishedLabel && (
+                            <Reveal delay={220}>
+                                <p className="promo-modern-date mt-3 uppercase tracking-[0.32em] text-[#8a8463]">
+                                    {publishedLabel}
+                                </p>
+                            </Reveal>
+                        )}
+                    </div>
 
-                {/* Cover — glass-framed */}
-                <section className="w-full pb-24 sm:pb-28">
                     <Reveal className="flex justify-center">
-                        <div className="promo-cover-hover relative w-[230px] sm:w-[280px]">
+                        <div className="promo-cover-hover promo-modern-cover relative">
                             <div
                                 aria-hidden
                                 className="absolute -inset-6 rounded-[36px] bg-[#9caf6a]/30 blur-3xl"
@@ -146,16 +145,13 @@ export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProp
                             </div>
                         </div>
                     </Reveal>
-                </section>
 
-                {/* Audio — the hero element of the page */}
-                <section className="w-full pb-24 sm:pb-32">
-                    <Reveal className="flex justify-center">
+                    <Reveal className="flex w-full justify-center">
                         <div className="w-full max-w-xl">
                             <PromoAudioTypeLabel
                                 audioType={promoPage.audioType}
                                 variant="listen"
-                                className="mb-5 text-center text-xs uppercase tracking-[0.34em] text-[#7e7a55]"
+                                className="promo-modern-listen-label mb-5 text-center text-xs uppercase tracking-[0.34em] text-[#7e7a55]"
                             />
                             {/* Deep-green frosted glass panel keeps the light-text player legible */}
                             <div className="promo-audio-glow relative rounded-[30px] border border-white/15 bg-gradient-to-b from-[#3a4a2f]/95 to-[#222c1a]/95 p-6 shadow-[0_40px_90px_-30px_rgba(34,44,26,0.8)] backdrop-blur-xl ring-1 ring-white/10 sm:p-8">
@@ -163,6 +159,7 @@ export function PromoPageModernView({ promoPage, book }: PromoPageModernViewProp
                                     promoPage={promoPage}
                                     book={book}
                                     unavailableClassName="py-8 text-center text-sm text-[#c9d3b0]"
+                                    disableTracking={disableTracking}
                                 />
                             </div>
                         </div>
@@ -214,6 +211,13 @@ const PROMO_MODERN_CSS = `
 .promo-modern .promo-blob--gold { background: radial-gradient(circle at 50% 50%, rgba(220,186,120,0.5), transparent 68%); animation: promoFloat 22s ease-in-out infinite 2s; }
 .promo-modern .promo-blob--olive { background: radial-gradient(circle at 50% 50%, rgba(124,140,82,0.4), transparent 70%); animation: promoFloat 26s ease-in-out infinite 1s; }
 
+.promo-modern .promo-modern-hero { min-height: 100svh; }
+.promo-modern .promo-modern-kicker { font-size: 1.65rem; line-height: 1.1; }
+.promo-modern .promo-modern-title { font-size: 2.9rem; letter-spacing: 0; }
+.promo-modern .promo-modern-date,
+.promo-modern .promo-modern-listen-label { font-size: 0.72rem; line-height: 1.4; }
+.promo-modern .promo-modern-cover { width: clamp(135px, 22svh, 185px); }
+
 .promo-modern .promo-audio-glow::before {
     content: "";
     position: absolute;
@@ -229,6 +233,33 @@ const PROMO_MODERN_CSS = `
 
 .promo-modern .promo-cover-hover { transition: transform 0.6s cubic-bezier(0.22,1,0.36,1); }
 .promo-modern .promo-cover-hover:hover { transform: translateY(-8px); }
+
+@media (min-width: 640px) {
+    .promo-modern .promo-modern-kicker { font-size: 1.9rem; }
+    .promo-modern .promo-modern-title { font-size: 4rem; }
+    .promo-modern .promo-modern-date,
+    .promo-modern .promo-modern-listen-label { font-size: 0.8rem; }
+    .promo-modern .promo-modern-cover { width: clamp(150px, 24svh, 200px); }
+}
+
+@media (max-height: 780px) {
+    .promo-modern .promo-modern-kicker { font-size: 1.55rem; }
+    .promo-modern .promo-modern-title { font-size: 3.5rem; }
+    .promo-modern .promo-modern-date { margin-top: 0.5rem; }
+    .promo-modern .promo-modern-cover { width: clamp(135px, 22svh, 180px); }
+}
+
+@media (max-height: 700px) {
+    .promo-modern .promo-modern-kicker { font-size: 1.35rem; }
+    .promo-modern .promo-modern-title { font-size: 2.85rem; }
+    .promo-modern .promo-modern-cover { width: clamp(120px, 20svh, 155px); }
+}
+
+@media (max-width: 420px) {
+    .promo-modern .promo-modern-kicker { font-size: 1.45rem; }
+    .promo-modern .promo-modern-title { font-size: 2.35rem; }
+    .promo-modern .promo-modern-cover { width: clamp(130px, 22svh, 175px); }
+}
 
 @keyframes promoFloat {
     0%   { transform: translate3d(0, 0, 0) scale(1); }

@@ -49,7 +49,15 @@ interface BookCollectionProps {
 export function BookCollection({ displayPreviews }: BookCollectionProps) {
     // Context: Global state shared across app
     const {
-        state: { books: cachedBooks, viewMode, selectedBook, filters, pagination },
+        state: {
+            books: cachedBooks,
+            booksCacheVersion,
+            booksLoadedVersion,
+            viewMode,
+            selectedBook,
+            filters,
+            pagination,
+        },
         dispatch,
         selectBook,
         updateFilters,
@@ -78,8 +86,8 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         });
     }, [toast]);
 
-    const onBooksLoaded = useCallback((loadedBooks: Book[]) => {
-        dispatch({ type: 'SET_BOOKS', payload: loadedBooks });
+    const onBooksLoaded = useCallback((loadedBooks: Book[], loadedVersion: number) => {
+        dispatch({ type: 'SET_BOOKS', payload: { books: loadedBooks, loadedVersion } });
     }, [dispatch]);
 
     // Custom hooks for data fetching and search
@@ -94,6 +102,8 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         displayPreviews,
         sortPreset: BOOK_SORT_PRESETS.MAIN_LIBRARY,
         initialBooks: cachedBooks,
+        initialBooksLoadedVersion: booksLoadedVersion,
+        booksCacheVersion,
         onBooksLoaded,
         onError,
     });
@@ -131,7 +141,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
         if (isInitialLoad || isLoading || selectedBookFetchStartedRef.current) return;
 
         selectedBookFetchStartedRef.current = true;
-        void fetch(`/api/books/${returnState.selectedBookId}`)
+        void fetch(`/api/books/${returnState.selectedBookId}`, { cache: 'no-store' })
             .then(async (response) => {
                 if (!response.ok) {
                     throw new Error(`Failed to restore selected book: ${response.status}`);

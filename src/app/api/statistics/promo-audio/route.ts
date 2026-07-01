@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getNeonClient, extractRows } from '@/lib/db';
 import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { handleApiError } from '@/lib/api-error-handler';
+import { getMaintenanceUserFilter, getPromoAnonymousMaintenanceFilter } from '@/lib/statistics-maintenance-ip';
 
 function getStatsParams(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -19,6 +20,10 @@ export async function GET(request: Request) {
     try {
         await requireManagedPageAccess('statistics');
         const { limit, dailyDaysFilter } = getStatsParams(request);
+        const navigationMaintenanceUserFilter = getMaintenanceUserFilter(request, 'n.user_id');
+        const navigationAnonymousMaintenanceFilter = getPromoAnonymousMaintenanceFilter(request, 'n.ip_hash');
+        const audioMaintenanceUserFilter = getMaintenanceUserFilter(request, 'a.user_id');
+        const audioAnonymousMaintenanceFilter = getPromoAnonymousMaintenanceFilter(request, 'a.ip_hash');
         const client = getNeonClient();
 
         const navigationOverTimeRows = extractRows(await client.query(`
@@ -35,10 +40,14 @@ export async function GET(request: Request) {
                             (n.user_id IS NOT NULL AND a.user_id = n.user_id)
                             OR (n.user_id IS NULL AND a.user_id IS NULL AND a.ip_hash = n.ip_hash)
                         )
+                        AND ${audioMaintenanceUserFilter}
+                        AND ${audioAnonymousMaintenanceFilter}
                 )) as converted_visitors
             FROM promo_navigation_daily_counts d
             JOIN promo_navigation_events n ON n.id = d.event_id
             WHERE 1 = 1
+                AND ${navigationMaintenanceUserFilter}
+                AND ${navigationAnonymousMaintenanceFilter}
                 ${dailyDaysFilter}
             GROUP BY d.event_date
             ORDER BY date DESC
@@ -53,6 +62,8 @@ export async function GET(request: Request) {
             FROM promo_audio_daily_counts d
             JOIN promo_audio_events a ON a.id = d.event_id
             WHERE 1 = 1
+                AND ${audioMaintenanceUserFilter}
+                AND ${audioAnonymousMaintenanceFilter}
                 ${dailyDaysFilter}
             GROUP BY d.event_date
             ORDER BY date DESC
@@ -68,6 +79,8 @@ export async function GET(request: Request) {
             FROM promo_audio_daily_counts d
             JOIN promo_audio_events a ON a.id = d.event_id
             WHERE 1 = 1
+                AND ${audioMaintenanceUserFilter}
+                AND ${audioAnonymousMaintenanceFilter}
                 ${dailyDaysFilter}
             GROUP BY a.slug, a.book_title
             ORDER BY play_count DESC
@@ -84,6 +97,8 @@ export async function GET(request: Request) {
             FROM promo_audio_daily_counts d
             JOIN promo_audio_events a ON a.id = d.event_id
             WHERE 1 = 1
+                AND ${audioMaintenanceUserFilter}
+                AND ${audioAnonymousMaintenanceFilter}
                 ${dailyDaysFilter}
             GROUP BY a.book_id, a.book_title
             ORDER BY play_count DESC
@@ -91,14 +106,24 @@ export async function GET(request: Request) {
 
         const topRegisteredUsersRows = extractRows(await client.query(`
             SELECT
-                COALESCE(a.user_name, 'Unknown') as user_name,
+                CASE
+                    WHEN a.user_id IS NULL THEN 'unregistered'
+                    ELSE COALESCE(a.user_name, 'Unknown')
+                END as user_name,
                 SUM(d.count) as play_count,
                 COUNT(DISTINCT a.slug) as promo_pages
             FROM promo_audio_daily_counts d
             JOIN promo_audio_events a ON a.id = d.event_id
-            WHERE a.user_id IS NOT NULL
+            WHERE 1 = 1
+                AND ${audioMaintenanceUserFilter}
+                AND ${audioAnonymousMaintenanceFilter}
                 ${dailyDaysFilter}
-            GROUP BY a.user_id, a.user_name
+            GROUP BY
+                CASE WHEN a.user_id IS NULL THEN NULL ELSE a.user_id END,
+                CASE
+                    WHEN a.user_id IS NULL THEN 'unregistered'
+                    ELSE COALESCE(a.user_name, 'Unknown')
+                END
             ORDER BY play_count DESC
         `)).slice(0, limit);
 
@@ -117,6 +142,8 @@ export async function GET(request: Request) {
                             (n.user_id IS NOT NULL AND a.user_id = n.user_id)
                             OR (n.user_id IS NULL AND a.user_id IS NULL AND a.ip_hash = n.ip_hash)
                         )
+                        AND ${audioMaintenanceUserFilter}
+                        AND ${audioAnonymousMaintenanceFilter}
                 )) as converted_visitors,
                 ROUND(
                     100.0 * COUNT(DISTINCT n.id) FILTER (WHERE EXISTS (
@@ -127,12 +154,16 @@ export async function GET(request: Request) {
                                 (n.user_id IS NOT NULL AND a.user_id = n.user_id)
                                 OR (n.user_id IS NULL AND a.user_id IS NULL AND a.ip_hash = n.ip_hash)
                             )
+                            AND ${audioMaintenanceUserFilter}
+                            AND ${audioAnonymousMaintenanceFilter}
                     )) / NULLIF(COUNT(DISTINCT n.id), 0),
                     2
                 ) as conversion_rate
             FROM promo_navigation_daily_counts d
             JOIN promo_navigation_events n ON n.id = d.event_id
             WHERE 1 = 1
+                AND ${navigationMaintenanceUserFilter}
+                AND ${navigationAnonymousMaintenanceFilter}
                 ${dailyDaysFilter}
             GROUP BY n.slug, n.book_title
             ORDER BY navigation_count DESC
@@ -152,6 +183,8 @@ export async function GET(request: Request) {
                             (n.user_id IS NOT NULL AND a.user_id = n.user_id)
                             OR (n.user_id IS NULL AND a.user_id IS NULL AND a.ip_hash = n.ip_hash)
                         )
+                        AND ${audioMaintenanceUserFilter}
+                        AND ${audioAnonymousMaintenanceFilter}
                 )) as converted_visitors,
                 ROUND(
                     100.0 * COUNT(DISTINCT n.id) FILTER (WHERE EXISTS (
@@ -162,12 +195,16 @@ export async function GET(request: Request) {
                                 (n.user_id IS NOT NULL AND a.user_id = n.user_id)
                                 OR (n.user_id IS NULL AND a.user_id IS NULL AND a.ip_hash = n.ip_hash)
                             )
+                            AND ${audioMaintenanceUserFilter}
+                            AND ${audioAnonymousMaintenanceFilter}
                     )) / NULLIF(COUNT(DISTINCT n.id), 0),
                     2
                 ) as conversion_rate
             FROM promo_navigation_daily_counts d
             JOIN promo_navigation_events n ON n.id = d.event_id
             WHERE 1 = 1
+                AND ${navigationMaintenanceUserFilter}
+                AND ${navigationAnonymousMaintenanceFilter}
                 ${dailyDaysFilter}
             GROUP BY n.book_id, n.book_title
             ORDER BY navigation_count DESC
@@ -183,6 +220,8 @@ export async function GET(request: Request) {
             FROM promo_audio_daily_counts d
             JOIN promo_audio_events a ON a.id = d.event_id
             WHERE 1 = 1
+                AND ${audioMaintenanceUserFilter}
+                AND ${audioAnonymousMaintenanceFilter}
                 ${dailyDaysFilter}
         `));
 
@@ -201,6 +240,8 @@ export async function GET(request: Request) {
                             (n.user_id IS NOT NULL AND a.user_id = n.user_id)
                             OR (n.user_id IS NULL AND a.user_id IS NULL AND a.ip_hash = n.ip_hash)
                         )
+                        AND ${audioMaintenanceUserFilter}
+                        AND ${audioAnonymousMaintenanceFilter}
                 )) as converted_visitors,
                 COALESCE(ROUND(
                     100.0 * COUNT(DISTINCT n.id) FILTER (WHERE EXISTS (
@@ -211,12 +252,16 @@ export async function GET(request: Request) {
                                 (n.user_id IS NOT NULL AND a.user_id = n.user_id)
                                 OR (n.user_id IS NULL AND a.user_id IS NULL AND a.ip_hash = n.ip_hash)
                             )
+                            AND ${audioMaintenanceUserFilter}
+                            AND ${audioAnonymousMaintenanceFilter}
                     )) / NULLIF(COUNT(DISTINCT n.id), 0),
                     2
                 ), 0) as conversion_rate
             FROM promo_navigation_daily_counts d
             JOIN promo_navigation_events n ON n.id = d.event_id
             WHERE 1 = 1
+                AND ${navigationMaintenanceUserFilter}
+                AND ${navigationAnonymousMaintenanceFilter}
                 ${dailyDaysFilter}
         `));
 
