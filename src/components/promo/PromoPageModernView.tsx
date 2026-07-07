@@ -79,8 +79,11 @@ function Reveal({
 
 export function PromoPageModernView({ promoPage, book, disableTracking = false }: PromoPageModernViewProps) {
     const coverUrl = useMemo(
-        () => getCoverImageUrl(book.coverImage, 'detail', { bookId: book.id }),
-        [book.coverImage, book.id]
+        () => getCoverImageUrl(book.coverImage, 'detail', {
+            bookId: book.id,
+            cacheKey: book.updatedAt,
+        }),
+        [book.coverImage, book.id, book.updatedAt]
     );
 
     const description = book.extract || book.summary || null;

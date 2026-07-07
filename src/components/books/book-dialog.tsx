@@ -554,7 +554,10 @@ export function BookDialog({
                                                         src={getCoverImageUrl(
                                                             book.coverImage,
                                                             'detail',
-                                                            { bookId: book.coverImage === IMAGE_CONFIG.placeholder.token ? book.id : undefined }
+                                                            {
+                                                                bookId: book.coverImage === IMAGE_CONFIG.placeholder.token ? book.id : undefined,
+                                                                cacheKey: book.updatedAt,
+                                                            }
                                                         )}
                                                         alt={`Cover of ${book.title}`}
                                                         className={cn(

@@ -46,13 +46,20 @@ export function BookCoverPresentation({
     const coverUrl = getCoverImageUrl(
         book.coverImage,
         size,
-        { bookId: isPlaceholder ? book.id : undefined }
+        {
+            bookId: isPlaceholder ? book.id : undefined,
+            cacheKey: book.updatedAt,
+            mode: isPlaceholder ? undefined : 'cover',
+        }
     );
-    const imageUrl = isPlaceholder ? coverUrl : `${coverUrl}?mode=cover`;
+    const imageUrl = coverUrl;
     const fallbackImageUrl = getCoverImageUrl(
         IMAGE_CONFIG.placeholder.token,
         size,
-        { bookId: book.id }
+        {
+            bookId: book.id,
+            cacheKey: book.updatedAt,
+        }
     );
     const [fallbackForUrl, setFallbackForUrl] = useState<string | null>(null);
     const [resolvedImage, setResolvedImage] = useState<ResolvedImageState | null>(null);

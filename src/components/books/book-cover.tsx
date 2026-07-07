@@ -33,9 +33,12 @@ export function BookCover({ book, orientation, className }: BookCoverProps) {
         return getCoverImageUrl(
             book.coverImage,
             'list',
-            { bookId: isPlaceholder ? book.id : undefined }
+            {
+                bookId: isPlaceholder ? book.id : undefined,
+                cacheKey: book.updatedAt,
+            }
         );
-    }, [book.coverImage, book.id]);
+    }, [book.coverImage, book.id, book.updatedAt]);
 
     // Memoize the cover image component to prevent unnecessary re-renders
     const coverImage = React.useMemo(() => (

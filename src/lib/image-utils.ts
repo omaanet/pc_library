@@ -21,6 +21,14 @@ interface CoverImageOptions {
      * Helps create deterministic placeholders
      */
     bookId?: string;
+    /**
+     * Optional cache-busting value for immutable cover URLs.
+     */
+    cacheKey?: string | number | Date | null;
+    /**
+     * Optional processing mode for cover-specific rendering.
+     */
+    mode?: 'cover';
 }
 
 /**
@@ -35,6 +43,25 @@ function normalizeImagePath(path: string): string {
 
     // Remove leading/trailing slashes and normalize path separators
     return path.replace(/^\/+|\/+$/g, '').replace(/\/{2,}/g, '/');
+}
+
+function appendImageQueryParams(url: string, options: CoverImageOptions): string {
+    const queryParams = new URLSearchParams();
+
+    if (options.bookId) {
+        queryParams.set('bookId', options.bookId);
+    }
+
+    if (options.cacheKey) {
+        queryParams.set('v', options.cacheKey instanceof Date ? options.cacheKey.toISOString() : String(options.cacheKey));
+    }
+
+    if (options.mode) {
+        queryParams.set('mode', options.mode);
+    }
+
+    const queryString = queryParams.toString();
+    return queryString ? `${url}?${queryString}` : url;
 }
 
 /**
@@ -68,15 +95,17 @@ export function getCoverImageUrl(
 
     // Handle placeholder requests without dimensions
     if (normalizedPath === IMAGE_CONFIG.placeholder.token) {
-        const queryParams = new URLSearchParams();
-        if (options.bookId) {
-            queryParams.set('bookId', options.bookId);
-        }
-        return `${IMAGE_CONFIG.baseUrl}/${width}/${height}/${normalizedPath}?${queryParams.toString()}`;
+        return appendImageQueryParams(
+            `${IMAGE_CONFIG.baseUrl}/${width}/${height}/${normalizedPath}`,
+            options
+        );
     }
 
     // Regular image path
-    return `${IMAGE_CONFIG.baseUrl}/${width}/${height}/${normalizedPath}`;
+    return appendImageQueryParams(
+        `${IMAGE_CONFIG.baseUrl}/${width}/${height}/${normalizedPath}`,
+        options
+    );
 }
 
 /**
@@ -87,10 +116,16 @@ export function getSocialCoverImageUrl(
     options: CoverImageOptions = {}
 ): string {
     const normalizedPath = normalizeImagePath(imagePath);
-    const queryParams = new URLSearchParams({ variant: 'social-classic-green-v1' });
+    const queryParams = new URLSearchParams({
+        variant: 'social-classic-green-v1',
+    });
 
     if (options.bookId) {
         queryParams.set('bookId', options.bookId);
+    }
+
+    if (options.cacheKey) {
+        queryParams.set('v', options.cacheKey instanceof Date ? options.cacheKey.toISOString() : String(options.cacheKey));
     }
 
     return `${IMAGE_CONFIG.baseUrl}/1200/630/${normalizedPath}?${queryParams.toString()}`;

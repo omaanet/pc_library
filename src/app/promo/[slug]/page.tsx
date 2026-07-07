@@ -52,7 +52,10 @@ export async function generateMetadata(
         || `Ascolta l'anteprima audio di ${book.title}, un racconto di Piero Carbonetti.`;
     const promoUrl = new URL(`/promo/${encodeURIComponent(slug)}`, siteOrigin);
     const socialImageUrl = new URL(
-        getSocialCoverImageUrl(book.coverImage, { bookId: book.id }),
+        getSocialCoverImageUrl(book.coverImage, {
+            bookId: book.id,
+            cacheKey: book.updatedAt,
+        }),
         siteOrigin
     );
     const socialImageAlt = `Copertina di ${book.title}`;

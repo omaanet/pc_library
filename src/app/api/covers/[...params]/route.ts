@@ -23,6 +23,7 @@ interface PlaceholderOptions extends ImageDimensions {
 const COVERS_DIR = path.join(process.cwd(), 'public', 'covers');
 const CACHE_CONTROL = {
     public: 'public, max-age=31536000, immutable',
+    missingFileFallback: 'no-store, max-age=0',
 };
 
 // Type guard for valid dimensions
@@ -427,7 +428,7 @@ export async function GET(
             return new Response(buffer.buffer as ArrayBuffer, {
                 headers: {
                     'Content-Type': isSocialImage ? 'image/jpeg' : 'image/png',
-                    'Cache-Control': CACHE_CONTROL.public,
+                    'Cache-Control': CACHE_CONTROL.missingFileFallback,
                 },
             });
         }

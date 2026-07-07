@@ -29,8 +29,11 @@ function formatPublishingDate(value: string | null | undefined): string | null {
  */
 export function PromoPageClassicEcruView({ promoPage, book, disableTracking = false }: PromoPageClassicEcruViewProps) {
     const coverUrl = useMemo(
-        () => getCoverImageUrl(book.coverImage, 'detail', { bookId: book.id }),
-        [book.coverImage, book.id]
+        () => getCoverImageUrl(book.coverImage, 'detail', {
+            bookId: book.id,
+            cacheKey: book.updatedAt,
+        }),
+        [book.coverImage, book.id, book.updatedAt]
     );
 
     const description = book.extract || book.summary || null;

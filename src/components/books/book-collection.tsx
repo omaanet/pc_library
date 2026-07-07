@@ -247,7 +247,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
 
         // Skip already loaded images
         const unloadedBooks = booksToPreload.filter((book) => {
-            return !loadedImages.has(book.coverImage);
+            return !loadedImages.has(`${book.coverImage}:${book.updatedAt ?? ''}`);
         });
 
         if (unloadedBooks.length === 0) return;
@@ -256,7 +256,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
             return new Promise<void>((resolve) => {
                 const img = new Image();
                 img.onload = () => {
-                    setLoadedImages((prev) => new Set([...prev, book.coverImage]));
+                    setLoadedImages((prev) => new Set([...prev, `${book.coverImage}:${book.updatedAt ?? ''}`]));
                     resolve();
                 };
                 img.onerror = () => resolve(); // Don't block on error
@@ -265,6 +265,7 @@ export function BookCollection({ displayPreviews }: BookCollectionProps) {
                 const isPlaceholder = book.coverImage === IMAGE_CONFIG.placeholder.token;
                 const imageUrl = getCoverImageUrl(book.coverImage, 'grid', {
                     bookId: isPlaceholder ? book.id : undefined,
+                    cacheKey: book.updatedAt,
                 });
                 img.src = imageUrl;
             });
