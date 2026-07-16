@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
     ArrowDown,
@@ -9,7 +9,6 @@ import {
     CalendarDays,
     Feather,
     HeartHandshake,
-    Loader2,
     MapPinned,
     Music2,
     Sparkles,
@@ -19,31 +18,31 @@ import { AuthModal } from '@/components/auth/auth-modal';
 import { BookDialogSimple } from '@/components/books/book-dialog';
 import { RootNav } from '@/components/layout/root-nav';
 import { CopyrightFooter } from '@/components/shared/copyright-footer';
-import { useToast } from '@/components/ui/use-toast';
 import { displayFontClass } from '@/config/fonts';
 import { useAuth } from '@/context/auth-context';
 import type { Book, BookResponse } from '@/types';
 
 const LINKED_BOOKS = {
     'Suor Turchese': {
-        search: 'Suor Turchese',
         libraryTitle: 'Suor Turchese',
     },
     'Il volo di Ecru': {
-        search: 'Il volo di Ecru',
         libraryTitle: 'Il volo di Ecru',
     },
     'Il segreto dell’ottico': {
-        search: 'segreto',
         libraryTitle: "Il segreto dell'Ottico",
     },
     'La maison du plaisir': {
-        search: 'maison',
         libraryTitle: 'La Maison du Plaisir (Romanzo di Ricette)',
     },
 } as const;
 
 type LinkedBookTitle = keyof typeof LINKED_BOOKS;
+
+const linkedBookEntries = Object.entries(LINKED_BOOKS) as Array<[
+    LinkedBookTitle,
+    (typeof LINKED_BOOKS)[LinkedBookTitle],
+]>;
 
 const SUOR_TURCHESE_TITLE: LinkedBookTitle = 'Suor Turchese';
 
@@ -113,60 +112,62 @@ export function AboutPage() {
     const {
         state: { isAuthenticated },
     } = useAuth();
-    const { toast } = useToast();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const linkedBookCacheRef = useRef<Partial<Record<LinkedBookTitle, Book>>>({});
+    const [availableBookTitles, setAvailableBookTitles] = useState<Set<LinkedBookTitle>>(() => new Set());
     const [selectedLinkedBook, setSelectedLinkedBook] = useState<Book | null>(null);
     const [isBookDialogOpen, setIsBookDialogOpen] = useState(false);
-    const [loadingBookTitle, setLoadingBookTitle] = useState<LinkedBookTitle | null>(null);
 
-    const openLibraryBook = async (title: LinkedBookTitle) => {
-        const cachedBook = linkedBookCacheRef.current[title];
-        if (cachedBook) {
-            setSelectedLinkedBook(cachedBook);
-            setIsBookDialogOpen(true);
-            return;
-        }
+    useEffect(() => {
+        const controller = new AbortController();
 
-        if (loadingBookTitle) return;
-
-        setLoadingBookTitle(title);
-
-        try {
-            const lookup = LINKED_BOOKS[title];
+        const resolveVisibleBooks = async () => {
             const params = new URLSearchParams({
-                search: lookup.search,
                 displayPreviews: '-1',
                 perPage: '-1',
+                isVisible: '1',
             });
-            const response = await fetch(`/api/books?${params.toString()}`, { cache: 'no-store' });
+            const response = await fetch(`/api/books?${params.toString()}`, {
+                cache: 'no-store',
+                signal: controller.signal,
+            });
 
             if (!response.ok) {
-                throw new Error(`Book lookup failed with status ${response.status}`);
+                return;
             }
 
             const data = await response.json() as BookResponse;
-            const matchingBook = data.books.find(
-                (book) => book.title.trim().localeCompare(lookup.libraryTitle, 'it', { sensitivity: 'base' }) === 0
-            );
+            const visibleTitles = new Set<LinkedBookTitle>();
 
-            if (!matchingBook) {
-                throw new Error('Book not found');
+            for (const [displayTitle, lookup] of linkedBookEntries) {
+                const matchingBook = data.books.find(
+                    (book) => book.title.trim().localeCompare(lookup.libraryTitle, 'it', { sensitivity: 'base' }) === 0
+                );
+
+                if (matchingBook) {
+                    linkedBookCacheRef.current[displayTitle] = matchingBook;
+                    visibleTitles.add(displayTitle);
+                }
             }
 
-            linkedBookCacheRef.current[title] = matchingBook;
-            setSelectedLinkedBook(matchingBook);
-            setIsBookDialogOpen(true);
-        } catch (error) {
-            console.error(`Impossibile aprire ${title}:`, error);
-            toast({
-                variant: 'destructive',
-                title: 'Libro non disponibile',
-                description: `Non è stato possibile aprire la scheda di ${title}. Riprova tra poco.`,
-            });
-        } finally {
-            setLoadingBookTitle(null);
-        }
+            setAvailableBookTitles(visibleTitles);
+        };
+
+        void resolveVisibleBooks().catch((error: unknown) => {
+            if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                setAvailableBookTitles(new Set());
+            }
+        });
+
+        return () => controller.abort();
+    }, []);
+
+    const openLibraryBook = (title: LinkedBookTitle) => {
+        const book = linkedBookCacheRef.current[title];
+        if (!book || !availableBookTitles.has(title)) return;
+
+        setSelectedLinkedBook(book);
+        setIsBookDialogOpen(true);
     };
 
     return (
@@ -285,16 +286,18 @@ export function AboutPage() {
                                 <BookOpenText className="mb-5 h-8 w-8 text-sky-600 dark:text-sky-400" aria-hidden="true" />
                                 <p className="text-xl font-light leading-8">
                                     Tra le sue opere più conosciute troviamo{' '}
-                                    <button
-                                        type="button"
-                                        onClick={() => void openLibraryBook(SUOR_TURCHESE_TITLE)}
-                                        disabled={loadingBookTitle !== null}
-                                        aria-haspopup="dialog"
-                                        className="inline-flex items-baseline gap-1 rounded-sm font-semibold text-sky-700 underline decoration-sky-400 decoration-2 underline-offset-4 transition-colors hover:text-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 dark:text-sky-300 dark:hover:text-sky-100"
-                                    >
-                                        <cite className="not-italic">{SUOR_TURCHESE_TITLE}</cite>
-                                        {loadingBookTitle === SUOR_TURCHESE_TITLE && <Loader2 className="h-4 w-4 animate-spin self-center" aria-hidden="true" />}
-                                    </button>
+                                    {availableBookTitles.has(SUOR_TURCHESE_TITLE) ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => openLibraryBook(SUOR_TURCHESE_TITLE)}
+                                            aria-haspopup="dialog"
+                                            className="inline-flex items-baseline rounded-sm font-semibold text-sky-700 underline decoration-sky-400 decoration-2 underline-offset-4 transition-colors hover:text-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:text-sky-300 dark:hover:text-sky-100"
+                                        >
+                                            <cite className="not-italic">{SUOR_TURCHESE_TITLE}</cite>
+                                        </button>
+                                    ) : (
+                                        <cite className="font-semibold not-italic">{SUOR_TURCHESE_TITLE}</cite>
+                                    )}
                                     , il libro d’esordio, accolto con particolare interesse dal pubblico e dalla critica locale.
                                 </p>
                             </div>
@@ -326,16 +329,18 @@ export function AboutPage() {
                                             <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{publication.label}</span>
                                         </div>
                                         <h3 className="mt-7 text-2xl font-semibold tracking-tight">
-                                            <button
-                                                type="button"
-                                                onClick={() => void openLibraryBook(publication.title)}
-                                                disabled={loadingBookTitle !== null}
-                                                aria-haspopup="dialog"
-                                                className={`inline-flex items-center gap-2 rounded-sm text-left underline decoration-2 underline-offset-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 ${styles.titleLink}`}
-                                            >
-                                                <span>{publication.title}</span>
-                                                {loadingBookTitle === publication.title && <Loader2 className="h-5 w-5 flex-none animate-spin" aria-hidden="true" />}
-                                            </button>
+                                            {availableBookTitles.has(publication.title) ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openLibraryBook(publication.title)}
+                                                    aria-haspopup="dialog"
+                                                    className={`inline-flex rounded-sm text-left underline decoration-2 underline-offset-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${styles.titleLink}`}
+                                                >
+                                                    {publication.title}
+                                                </button>
+                                            ) : (
+                                                publication.title
+                                            )}
                                         </h3>
                                         {'subtitle' in publication && publication.subtitle && (
                                             <p className="mt-1 text-muted-foreground">{publication.subtitle}</p>
