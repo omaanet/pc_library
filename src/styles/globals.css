@@ -339,6 +339,72 @@
         background: linear-gradient(to right, transparent, hsl(var(--border)));
     }
 
+    .about-nav-link::after {
+        content: '';
+        position: absolute;
+        inset: -40% auto -40% -45%;
+        width: 28%;
+        transform: skewX(-18deg);
+        background: linear-gradient(to right, transparent, rgb(255 255 255 / 0.8), transparent);
+        animation: aboutNavSheen 4.8s ease-in-out infinite;
+    }
+
+    .about-nav-link > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    @keyframes aboutNavSheen {
+        0%, 68% { left: -45%; }
+        90%, 100% { left: 120%; }
+    }
+
+    .about-float-slow {
+        animation: aboutFloat 6s ease-in-out infinite;
+    }
+
+    .about-orbit-one {
+        animation: aboutOrbitOne 5.5s ease-in-out infinite;
+    }
+
+    .about-orbit-two {
+        animation: aboutOrbitTwo 6.5s ease-in-out infinite;
+    }
+
+    .about-orbit-three {
+        animation: aboutOrbitThree 5.8s ease-in-out infinite;
+    }
+
+    @keyframes aboutFloat {
+        0%, 100% { transform: translateY(0) rotate(-1deg); }
+        50% { transform: translateY(-8px) rotate(1deg); }
+    }
+
+    @keyframes aboutOrbitOne {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(7px, -5px); }
+    }
+
+    @keyframes aboutOrbitTwo {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(-6px, 7px); }
+    }
+
+    @keyframes aboutOrbitThree {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(5px, -7px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .about-nav-link::after,
+        .about-float-slow,
+        .about-orbit-one,
+        .about-orbit-two,
+        .about-orbit-three {
+            animation: none;
+        }
+    }
+
     /* --- OPTION 4: FILM GRAIN OVERLAY (Parchment Relief) --- 
         This adds a 3D-like texture to the whole page, making it feel like physical parchment or paper.
     */

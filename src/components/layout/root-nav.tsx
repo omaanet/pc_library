@@ -21,6 +21,7 @@ import { getAdminRoleMenuClass } from '@/lib/admin-role-menu';
 import {
     CircleHelp,
     Mail,
+    Sparkles,
     UserCircle,
     LogOut,
     Settings as SettingsIcon,
@@ -62,12 +63,12 @@ export function RootNav({
     }, [isAuthenticated, state.user?.userLevel]);
 
     return (
-        <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-center px-4 header-fading-border">
-            <div className="container-fluid flex h-16 items-center justify-between mx-auto">
+        <header className="header-fading-border sticky top-0 z-50 w-full bg-background/95 px-4 pb-11 text-center backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:pb-0">
+            <div className="container-fluid relative flex h-16 items-center justify-between mx-auto">
                 {/* Logo and Brand */}
                 <Link href="/" className="flex items-center">
                     {/* <Library className="h-6 w-6" /> */}
-                    <svg width="55" height="65" viewBox="0 0 80 110" fill="none" stroke="currentColor" className="mt-3">
+                    <svg width="55" height="65" viewBox="0 0 80 110" fill="none" stroke="currentColor" className="mt-3 w-11 sm:w-[55px]">
                         <g transform="translate(-20.5 -5.5)" strokeWidth="4" shapeRendering="geometricPrecision" vectorEffect="non-scaling-stroke">
                             {/* Feather Quill */}
                             <path d="M20.5 90.5 C 20 90, 40 50, 80 10 C 80 10, 60 40, 50 60" stroke="var(--text-quill)" strokeLinecap="round" strokeLinejoin="round" />
@@ -79,6 +80,20 @@ export function RootNav({
                         </g>
                     </svg>
                 </Link>
+
+                <nav aria-label="Navigazione principale" className="absolute left-1/2 top-full mt-1 -translate-x-1/2 sm:top-1/2 sm:mt-0 sm:-translate-y-1/2">
+                    <Link
+                        href="/chi-siamo"
+                        aria-current={pathname === '/chi-siamo' ? 'page' : undefined}
+                        className={cn(
+                            'about-nav-link group relative inline-flex min-h-10 items-center gap-2 overflow-hidden rounded-full border border-sky-300/80 bg-gradient-to-r from-sky-100 via-amber-50 to-emerald-100 px-4 text-sm font-bold text-sky-900 shadow-[0_5px_18px_-8px_rgba(2,132,199,0.85)] transition-all hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-[0_8px_24px_-8px_rgba(2,132,199,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-sky-700/80 dark:from-sky-950 dark:via-amber-950/60 dark:to-emerald-950 dark:text-sky-100',
+                            pathname === '/chi-siamo' && 'border-sky-500 ring-1 ring-sky-400/70 dark:border-sky-400'
+                        )}
+                    >
+                        <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" aria-hidden="true" />
+                        <span>Chi siamo</span>
+                    </Link>
+                </nav>
 
                 {/* Desktop Navigation */}
                 {/* <nav className="hidden md:flex items-center space-x-6">
@@ -97,7 +112,7 @@ export function RootNav({
 
                 {/* Actions */}
                 <div className="flex min-w-0 items-center gap-1.5 sm:gap-4">
-                    <div className="inline-flex items-center text-xs sm:text-sm text-muted-foreground">
+                    <div className="inline-flex items-center text-xs text-muted-foreground sm:text-sm">
                         <a
                             href={`mailto:${SITE_CONFIG.CONTACT_EMAIL}`}
                             className="flex min-h-11 items-center gap-1.5 rounded-md px-1.5 align-middle transition-colors hover:text-yellow-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
