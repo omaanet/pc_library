@@ -20,6 +20,7 @@ import { RootNav } from '@/components/layout/root-nav';
 import { CopyrightFooter } from '@/components/shared/copyright-footer';
 import { displayFontClass } from '@/config/fonts';
 import { useAuth } from '@/context/auth-context';
+import { isBookAvailable } from '@/lib/book-visibility';
 import type { Book, BookResponse } from '@/types';
 
 const LINKED_BOOKS = {
@@ -121,7 +122,7 @@ export function AboutPage() {
     useEffect(() => {
         const controller = new AbortController();
 
-        const resolveVisibleBooks = async () => {
+        const resolveAvailableBooks = async () => {
             const params = new URLSearchParams({
                 displayPreviews: '-1',
                 perPage: '-1',
@@ -137,23 +138,23 @@ export function AboutPage() {
             }
 
             const data = await response.json() as BookResponse;
-            const visibleTitles = new Set<LinkedBookTitle>();
+            const availableTitles = new Set<LinkedBookTitle>();
 
             for (const [displayTitle, lookup] of linkedBookEntries) {
                 const matchingBook = data.books.find(
                     (book) => book.title.trim().localeCompare(lookup.libraryTitle, 'it', { sensitivity: 'base' }) === 0
                 );
 
-                if (matchingBook) {
+                if (matchingBook && isBookAvailable(matchingBook)) {
                     linkedBookCacheRef.current[displayTitle] = matchingBook;
-                    visibleTitles.add(displayTitle);
+                    availableTitles.add(displayTitle);
                 }
             }
 
-            setAvailableBookTitles(visibleTitles);
+            setAvailableBookTitles(availableTitles);
         };
 
-        void resolveVisibleBooks().catch((error: unknown) => {
+        void resolveAvailableBooks().catch((error: unknown) => {
             if (!(error instanceof DOMException && error.name === 'AbortError')) {
                 setAvailableBookTitles(new Set());
             }
