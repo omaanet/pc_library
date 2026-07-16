@@ -10,6 +10,10 @@ interface CopyrightFooterProps {
      * Whether to show detailed author info and link (for home page)
      */
     detailed?: boolean;
+    /**
+     * Whether to emphasize the named people in the copyright line
+     */
+    emphasizeNames?: boolean;
 }
 
 const DICTIONARY = {
@@ -23,7 +27,7 @@ const DICTIONARY = {
     },
 } as const;
 
-export function CopyrightFooter({ lang = 'it', detailed = false }: CopyrightFooterProps) {
+export function CopyrightFooter({ lang = 'it', detailed = false, emphasizeNames = false }: CopyrightFooterProps) {
     const { COPYRIGHT_HOLDER, SITE_NAME, SITE_URL, SITE_CREATORS, ESTABLISHED_YEAR } = SITE_CONFIG.METADATA;
     const currentYear = new Date().getFullYear();
     const yearDisplay = currentYear === ESTABLISHED_YEAR
@@ -34,7 +38,8 @@ export function CopyrightFooter({ lang = 'it', detailed = false }: CopyrightFoot
 
     return (
         <>
-            &copy; {yearDisplay} {COPYRIGHT_HOLDER}. {rights}{' '}
+            &copy; {yearDisplay}{' '}
+            {emphasizeNames ? <strong className="font-semibold text-foreground">{COPYRIGHT_HOLDER}</strong> : COPYRIGHT_HOLDER}. {rights}{' '}
             {siteCreditPrefix}{' '}
             {detailed ? (
                 <a
@@ -48,7 +53,7 @@ export function CopyrightFooter({ lang = 'it', detailed = false }: CopyrightFoot
             ) : (
                 SITE_NAME
             )}
-            {' '} - {SITE_CREATORS}.
+            {' '} - {emphasizeNames ? <strong className="font-semibold text-foreground">{SITE_CREATORS}</strong> : SITE_CREATORS}.
         </>
     );
 }

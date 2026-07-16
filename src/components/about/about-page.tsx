@@ -9,16 +9,22 @@ import {
     CalendarDays,
     Feather,
     HeartHandshake,
+    Loader2,
     MapPinned,
     Music2,
     Sparkles,
     UtensilsCrossed,
 } from 'lucide-react';
 import { AuthModal } from '@/components/auth/auth-modal';
+import { BookDialogSimple } from '@/components/books/book-dialog';
 import { RootNav } from '@/components/layout/root-nav';
 import { CopyrightFooter } from '@/components/shared/copyright-footer';
+import { useToast } from '@/components/ui/use-toast';
 import { displayFontClass } from '@/config/fonts';
 import { useAuth } from '@/context/auth-context';
+import type { Book, BookResponse } from '@/types';
+
+const SUOR_TURCHESE_TITLE = 'Suor Turchese';
 
 const pageSections = [
     { href: '#autore', label: 'L’autore', number: '01' },
@@ -33,14 +39,22 @@ const publications = [
         label: 'L’ultimo libro',
         icon: Music2,
         color: 'sky',
-        text: 'L’opera ha aggiunto una forte dimensione narrativa e artistica ad un importante evento benefico del territorio. È stata presentata nel maggio 2026 a Busto Garolfo, durante una serata musicale con il soprano Lucia Rubedo, accompagnata dal maestro Alberto Brachini.',
+        text: (
+            <>
+                L’opera ha aggiunto una forte dimensione narrativa e artistica ad un importante evento benefico del territorio. È stata presentata nel maggio 2026 a Busto Garolfo, durante una serata musicale con il soprano <strong className="font-semibold text-foreground">Lucia Rubedo</strong>, accompagnata dal maestro <strong className="font-semibold text-foreground">Alberto Brachini</strong>.
+            </>
+        ),
     },
     {
         title: 'Il segreto dell’ottico',
         label: 'Settembre 2024',
         icon: Sparkles,
         color: 'amber',
-        text: 'Il libro ha accompagnato la prima edizione di Trombusto, il grande raduno nazionale di trombettisti dedicato alla memoria di Enzio Pinciroli. La manifestazione, diretta dal maestro Francesco Marsigliese, ha avuto come ospite d’eccezione Fabrizio Bosso, tra i più influenti e celebrati trombettisti jazz al mondo.',
+        text: (
+            <>
+                Il libro ha accompagnato la prima edizione di Trombusto, il grande raduno nazionale di trombettisti dedicato alla memoria di <strong className="font-semibold text-foreground">Enzio Pinciroli</strong>. La manifestazione, diretta dal maestro <strong className="font-semibold text-foreground">Francesco Marsigliese</strong>, ha avuto come ospite d’eccezione <strong className="font-semibold text-foreground">Fabrizio Bosso</strong>, tra i più influenti e celebrati trombettisti jazz al mondo.
+            </>
+        ),
     },
     {
         title: 'La maison du plaisir',
@@ -48,7 +62,11 @@ const publications = [
         label: '2020',
         icon: UtensilsCrossed,
         color: 'emerald',
-        text: 'Pubblicato nel 2020, il libro è stato scritto da Carbonetti a quattro mani con lo chef internazionale Roberto Raimondi. Definito dagli stessi autori un “romanzo di ricette”, il volume intreccia arte culinaria e narrazione ed è nato con l’obiettivo di sostenere i progetti di due ONLUS milanesi.',
+        text: (
+            <>
+                Pubblicato nel 2020, il libro è stato scritto da <strong className="font-semibold text-foreground">Carbonetti</strong> a quattro mani con lo chef internazionale <strong className="font-semibold text-foreground">Roberto Raimondi</strong>. Definito dagli stessi autori un “romanzo di ricette”, il volume intreccia arte culinaria e narrazione ed è nato con l’obiettivo di sostenere i progetti di due ONLUS milanesi.
+            </>
+        ),
     },
 ] as const;
 
@@ -71,7 +89,54 @@ export function AboutPage() {
     const {
         state: { isAuthenticated },
     } = useAuth();
+    const { toast } = useToast();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [suorTurcheseBook, setSuorTurcheseBook] = useState<Book | null>(null);
+    const [isSuorTurcheseOpen, setIsSuorTurcheseOpen] = useState(false);
+    const [isSuorTurcheseLoading, setIsSuorTurcheseLoading] = useState(false);
+
+    const openSuorTurchese = async () => {
+        if (suorTurcheseBook) {
+            setIsSuorTurcheseOpen(true);
+            return;
+        }
+
+        setIsSuorTurcheseLoading(true);
+
+        try {
+            const params = new URLSearchParams({
+                search: SUOR_TURCHESE_TITLE,
+                displayPreviews: '-1',
+                perPage: '-1',
+            });
+            const response = await fetch(`/api/books?${params.toString()}`, { cache: 'no-store' });
+
+            if (!response.ok) {
+                throw new Error(`Book lookup failed with status ${response.status}`);
+            }
+
+            const data = await response.json() as BookResponse;
+            const matchingBook = data.books.find(
+                (book) => book.title.trim().localeCompare(SUOR_TURCHESE_TITLE, 'it', { sensitivity: 'base' }) === 0
+            );
+
+            if (!matchingBook) {
+                throw new Error('Book not found');
+            }
+
+            setSuorTurcheseBook(matchingBook);
+            setIsSuorTurcheseOpen(true);
+        } catch (error) {
+            console.error('Impossibile aprire Suor Turchese:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Racconto non disponibile',
+                description: 'Non è stato possibile aprire la scheda di Suor Turchese. Riprova tra poco.',
+            });
+        } finally {
+            setIsSuorTurcheseLoading(false);
+        }
+    };
 
     return (
         <>
@@ -97,7 +162,7 @@ export function AboutPage() {
                                 Chi siamo
                             </div>
                             <h1 className="text-balance text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-                                Piero Carbonetti
+                                <strong className="font-semibold">Piero Carbonetti</strong>
                                 <span className={`mt-3 block text-4xl font-semibold leading-tight text-sky-600 sm:text-5xl lg:text-6xl dark:text-sky-400 ${displayFontClass}`}>
                                     e Racconti in Voce e Caratteri
                                 </span>
@@ -179,7 +244,7 @@ export function AboutPage() {
                         </header>
                         <div className="space-y-6 text-lg leading-8 text-muted-foreground">
                             <p>
-                                Piero Carbonetti vive a Busto Garolfo, nell’Alto Milanese, e coltiva da sempre la passione per la scrittura.
+                                <strong className="font-semibold text-foreground">Piero Carbonetti</strong> vive a Busto Garolfo, nell’Alto Milanese, e coltiva da sempre la passione per la scrittura.
                                 Originario di Francavilla al Mare, ha affiancato questa passione a un’intensa vita lavorativa, dando vita a racconti leggeri e appassionanti.
                             </p>
                             <p>
@@ -188,7 +253,18 @@ export function AboutPage() {
                             <div className="relative overflow-hidden rounded-3xl border border-sky-200 bg-sky-50/70 p-7 text-foreground dark:border-sky-900 dark:bg-sky-950/30 sm:p-9">
                                 <BookOpenText className="mb-5 h-8 w-8 text-sky-600 dark:text-sky-400" aria-hidden="true" />
                                 <p className="text-xl font-light leading-8">
-                                    Tra le sue opere più conosciute troviamo <cite className="font-semibold not-italic">Suor Turchese</cite>, il libro d’esordio, accolto con particolare interesse dal pubblico e dalla critica locale.
+                                    Tra le sue opere più conosciute troviamo{' '}
+                                    <button
+                                        type="button"
+                                        onClick={() => void openSuorTurchese()}
+                                        disabled={isSuorTurcheseLoading}
+                                        aria-haspopup="dialog"
+                                        className="inline-flex items-baseline gap-1 rounded-sm font-semibold text-sky-700 underline decoration-sky-400 decoration-2 underline-offset-4 transition-colors hover:text-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 dark:text-sky-300 dark:hover:text-sky-100"
+                                    >
+                                        <cite className="not-italic">{SUOR_TURCHESE_TITLE}</cite>
+                                        {isSuorTurcheseLoading && <Loader2 className="h-4 w-4 animate-spin self-center" aria-hidden="true" />}
+                                    </button>
+                                    , il libro d’esordio, accolto con particolare interesse dal pubblico e dalla critica locale.
                                 </p>
                             </div>
                         </div>
@@ -240,7 +316,7 @@ export function AboutPage() {
                             </h2>
                             <div className="mt-7 space-y-5 text-lg leading-8 text-muted-foreground">
                                 <p>
-                                    <strong className="font-semibold text-foreground">Racconti in Voce e Caratteri</strong> è la piattaforma web indipendente creata da Piero Carbonetti per raccogliere e pubblicare gratuitamente storie e racconti di fantasia.
+                                    <strong className="font-semibold text-foreground">Racconti in Voce e Caratteri</strong> è la piattaforma web indipendente creata da <strong className="font-semibold text-foreground">Piero Carbonetti</strong> per raccogliere e pubblicare gratuitamente storie e racconti di fantasia.
                                 </p>
                                 <p>
                                     L’accesso ai testi è libero. Ai lettori viene rivolto un semplice invito morale: ricambiare il piacere della lettura con un gesto spontaneo di beneficenza a favore di enti, organizzazioni o persone in difficoltà.
@@ -319,10 +395,17 @@ export function AboutPage() {
 
             <footer className="w-full border-t py-6">
                 <div className="container mx-auto px-5 text-center text-sm leading-loose text-muted-foreground">
-                    <CopyrightFooter lang="it" detailed />
+                    <CopyrightFooter lang="it" detailed emphasizeNames />
                 </div>
             </footer>
 
+            <BookDialogSimple
+                book={suorTurcheseBook}
+                open={isSuorTurcheseOpen}
+                onOpenChange={setIsSuorTurcheseOpen}
+                isAuthenticated={isAuthenticated}
+                onLoginClick={() => setIsAuthModalOpen(true)}
+            />
             <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
         </>
     );
