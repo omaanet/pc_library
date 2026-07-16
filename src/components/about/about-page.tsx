@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import {
     ArrowDown,
@@ -24,7 +24,28 @@ import { displayFontClass } from '@/config/fonts';
 import { useAuth } from '@/context/auth-context';
 import type { Book, BookResponse } from '@/types';
 
-const SUOR_TURCHESE_TITLE = 'Suor Turchese';
+const LINKED_BOOKS = {
+    'Suor Turchese': {
+        search: 'Suor Turchese',
+        libraryTitle: 'Suor Turchese',
+    },
+    'Il volo di Ecru': {
+        search: 'Il volo di Ecru',
+        libraryTitle: 'Il volo di Ecru',
+    },
+    'Il segreto dell’ottico': {
+        search: 'segreto',
+        libraryTitle: "Il segreto dell'Ottico",
+    },
+    'La maison du plaisir': {
+        search: 'maison',
+        libraryTitle: 'La Maison du Plaisir (Romanzo di Ricette)',
+    },
+} as const;
+
+type LinkedBookTitle = keyof typeof LINKED_BOOKS;
+
+const SUOR_TURCHESE_TITLE: LinkedBookTitle = 'Suor Turchese';
 
 const pageSections = [
     { href: '#autore', label: 'L’autore', number: '01' },
@@ -74,14 +95,17 @@ const publicationStyles = {
     sky: {
         icon: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
         line: 'bg-sky-400',
+        titleLink: 'decoration-sky-400 hover:text-sky-700 focus-visible:ring-sky-500 dark:hover:text-sky-300',
     },
     amber: {
         icon: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
         line: 'bg-amber-400',
+        titleLink: 'decoration-amber-400 hover:text-amber-700 focus-visible:ring-amber-500 dark:hover:text-amber-300',
     },
     emerald: {
         icon: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
         line: 'bg-emerald-400',
+        titleLink: 'decoration-emerald-400 hover:text-emerald-700 focus-visible:ring-emerald-500 dark:hover:text-emerald-300',
     },
 } as const;
 
@@ -91,21 +115,27 @@ export function AboutPage() {
     } = useAuth();
     const { toast } = useToast();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [suorTurcheseBook, setSuorTurcheseBook] = useState<Book | null>(null);
-    const [isSuorTurcheseOpen, setIsSuorTurcheseOpen] = useState(false);
-    const [isSuorTurcheseLoading, setIsSuorTurcheseLoading] = useState(false);
+    const linkedBookCacheRef = useRef<Partial<Record<LinkedBookTitle, Book>>>({});
+    const [selectedLinkedBook, setSelectedLinkedBook] = useState<Book | null>(null);
+    const [isBookDialogOpen, setIsBookDialogOpen] = useState(false);
+    const [loadingBookTitle, setLoadingBookTitle] = useState<LinkedBookTitle | null>(null);
 
-    const openSuorTurchese = async () => {
-        if (suorTurcheseBook) {
-            setIsSuorTurcheseOpen(true);
+    const openLibraryBook = async (title: LinkedBookTitle) => {
+        const cachedBook = linkedBookCacheRef.current[title];
+        if (cachedBook) {
+            setSelectedLinkedBook(cachedBook);
+            setIsBookDialogOpen(true);
             return;
         }
 
-        setIsSuorTurcheseLoading(true);
+        if (loadingBookTitle) return;
+
+        setLoadingBookTitle(title);
 
         try {
+            const lookup = LINKED_BOOKS[title];
             const params = new URLSearchParams({
-                search: SUOR_TURCHESE_TITLE,
+                search: lookup.search,
                 displayPreviews: '-1',
                 perPage: '-1',
             });
@@ -117,24 +147,25 @@ export function AboutPage() {
 
             const data = await response.json() as BookResponse;
             const matchingBook = data.books.find(
-                (book) => book.title.trim().localeCompare(SUOR_TURCHESE_TITLE, 'it', { sensitivity: 'base' }) === 0
+                (book) => book.title.trim().localeCompare(lookup.libraryTitle, 'it', { sensitivity: 'base' }) === 0
             );
 
             if (!matchingBook) {
                 throw new Error('Book not found');
             }
 
-            setSuorTurcheseBook(matchingBook);
-            setIsSuorTurcheseOpen(true);
+            linkedBookCacheRef.current[title] = matchingBook;
+            setSelectedLinkedBook(matchingBook);
+            setIsBookDialogOpen(true);
         } catch (error) {
-            console.error('Impossibile aprire Suor Turchese:', error);
+            console.error(`Impossibile aprire ${title}:`, error);
             toast({
                 variant: 'destructive',
-                title: 'Racconto non disponibile',
-                description: 'Non è stato possibile aprire la scheda di Suor Turchese. Riprova tra poco.',
+                title: 'Libro non disponibile',
+                description: `Non è stato possibile aprire la scheda di ${title}. Riprova tra poco.`,
             });
         } finally {
-            setIsSuorTurcheseLoading(false);
+            setLoadingBookTitle(null);
         }
     };
 
@@ -256,13 +287,13 @@ export function AboutPage() {
                                     Tra le sue opere più conosciute troviamo{' '}
                                     <button
                                         type="button"
-                                        onClick={() => void openSuorTurchese()}
-                                        disabled={isSuorTurcheseLoading}
+                                        onClick={() => void openLibraryBook(SUOR_TURCHESE_TITLE)}
+                                        disabled={loadingBookTitle !== null}
                                         aria-haspopup="dialog"
                                         className="inline-flex items-baseline gap-1 rounded-sm font-semibold text-sky-700 underline decoration-sky-400 decoration-2 underline-offset-4 transition-colors hover:text-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 dark:text-sky-300 dark:hover:text-sky-100"
                                     >
                                         <cite className="not-italic">{SUOR_TURCHESE_TITLE}</cite>
-                                        {isSuorTurcheseLoading && <Loader2 className="h-4 w-4 animate-spin self-center" aria-hidden="true" />}
+                                        {loadingBookTitle === SUOR_TURCHESE_TITLE && <Loader2 className="h-4 w-4 animate-spin self-center" aria-hidden="true" />}
                                     </button>
                                     , il libro d’esordio, accolto con particolare interesse dal pubblico e dalla critica locale.
                                 </p>
@@ -294,7 +325,18 @@ export function AboutPage() {
                                             </div>
                                             <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{publication.label}</span>
                                         </div>
-                                        <h3 className="mt-7 text-2xl font-semibold tracking-tight">{publication.title}</h3>
+                                        <h3 className="mt-7 text-2xl font-semibold tracking-tight">
+                                            <button
+                                                type="button"
+                                                onClick={() => void openLibraryBook(publication.title)}
+                                                disabled={loadingBookTitle !== null}
+                                                aria-haspopup="dialog"
+                                                className={`inline-flex items-center gap-2 rounded-sm text-left underline decoration-2 underline-offset-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 ${styles.titleLink}`}
+                                            >
+                                                <span>{publication.title}</span>
+                                                {loadingBookTitle === publication.title && <Loader2 className="h-5 w-5 flex-none animate-spin" aria-hidden="true" />}
+                                            </button>
+                                        </h3>
                                         {'subtitle' in publication && publication.subtitle && (
                                             <p className="mt-1 text-muted-foreground">{publication.subtitle}</p>
                                         )}
@@ -400,9 +442,9 @@ export function AboutPage() {
             </footer>
 
             <BookDialogSimple
-                book={suorTurcheseBook}
-                open={isSuorTurcheseOpen}
-                onOpenChange={setIsSuorTurcheseOpen}
+                book={selectedLinkedBook}
+                open={isBookDialogOpen}
+                onOpenChange={setIsBookDialogOpen}
                 isAuthenticated={isAuthenticated}
                 onLoginClick={() => setIsAuthModalOpen(true)}
             />
