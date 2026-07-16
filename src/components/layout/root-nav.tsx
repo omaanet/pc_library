@@ -197,10 +197,10 @@ export function RootNav({
                             </>
                         ) : (
                             <>
-                                <Link href="/auth/login">
+                                <Link href="/login">
                                     Accedi
                                 </Link>
-                                <Link href="/auth/register">
+                                <Link href="/login?tab=register">
                                     Registrati
                                 </Link>
                             </>)}

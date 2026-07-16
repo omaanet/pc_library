@@ -18,12 +18,14 @@ interface AuthModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     defaultTab?: 'login' | 'register';
+    onLoginSuccess?: () => void;
 }
 
 export function AuthModal({
     open,
     onOpenChange,
-    defaultTab = 'login'
+    defaultTab = 'login',
+    onLoginSuccess
 }: AuthModalProps) {
     const { login, register, state: { isLoading, error }, dispatch } = useAuth();
     const [activeTab, setActiveTab] = React.useState<'login' | 'register'>(defaultTab);
@@ -97,6 +99,7 @@ export function AuthModal({
         try {
             await login({ email: loginData.email });
             // Silent login - just close the modal without any success message
+            onLoginSuccess?.();
             onOpenChange(false);
         } catch (error_catched) {
             setMessage({ text: error_catched instanceof Error ? error_catched.message : 'Accesso fallito', type: 'error', tab: 'login' });

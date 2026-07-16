@@ -128,8 +128,8 @@ export async function proxy(request: NextRequest) {
 
     // 1. Handle auth routes (login, register) - redirect to home if already authenticated
     if (isAuthRoute(pathname) && isAuthenticated) {
-        // Redirect authenticated users away from auth pages
-        return NextResponse.redirect(new URL('/', request.url));
+        // Return authenticated users to the requested in-app page when it is safe.
+        return NextResponse.redirect(new URL(getSafeRedirectPath(request) ?? '/', request.url));
     }
 
     // 2. Authentication check for protected routes
@@ -145,8 +145,8 @@ export async function proxy(request: NextRequest) {
         // If not authenticated or session expired, redirect to login
         if (!isAuthenticated || sessionExpired) {
             const url = new URL('/login', request.url);
-            // Add the original URL as a redirect parameter
-            url.searchParams.set('redirect', encodeURIComponent(request.url));
+            // Preserve the in-app path. URLSearchParams performs the required encoding.
+            url.searchParams.set('redirect', `${pathname}${request.nextUrl.search}`);
             return NextResponse.redirect(url);
         }
 
@@ -220,6 +220,22 @@ function isAuthRoute(pathname: string): boolean {
     return AUTH_ROUTES.some(route =>
         pathname === route || pathname.startsWith(`${route}/`)
     );
+}
+
+function getSafeRedirectPath(request: NextRequest): string | null {
+    const redirect = request.nextUrl.searchParams.get('redirect');
+    if (!redirect) return null;
+
+    try {
+        const target = new URL(redirect, request.url);
+        if (target.origin !== request.nextUrl.origin || isAuthRoute(target.pathname)) {
+            return null;
+        }
+
+        return `${target.pathname}${target.search}${target.hash}`;
+    } catch {
+        return null;
+    }
 }
 
 function isPromoPreviewRoute(pathname: string): boolean {
