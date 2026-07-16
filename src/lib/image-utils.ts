@@ -29,6 +29,10 @@ interface CoverImageOptions {
      * Optional processing mode for cover-specific rendering.
      */
     mode?: 'cover';
+    /**
+     * Avoid transparent letterboxing when the image is displayed inside a frame.
+     */
+    fit?: 'inside';
 }
 
 /**
@@ -58,6 +62,10 @@ function appendImageQueryParams(url: string, options: CoverImageOptions): string
 
     if (options.mode) {
         queryParams.set('mode', options.mode);
+    }
+
+    if (options.fit) {
+        queryParams.set('fit', options.fit);
     }
 
     const queryString = queryParams.toString();

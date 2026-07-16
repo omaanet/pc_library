@@ -33,6 +33,7 @@ export function PromoPageClassicBurgundyView({ promoPage, book, disableTracking 
         () => getCoverImageUrl(book.coverImage, 'detail', {
             bookId: book.id,
             cacheKey: book.updatedAt,
+            fit: 'inside',
         }),
         [book.coverImage, book.id, book.updatedAt]
     );
@@ -75,7 +76,7 @@ export function PromoPageClassicBurgundyView({ promoPage, book, disableTracking 
                 </div>
 
                 <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-                    {/* Book cover wrapped in a frosted paper glass frame */}
+                    {/* Book cover wrapped in the same translucent glass treatment as the player. */}
                     <div className="flex justify-center lg:justify-end">
                         <div className="relative w-[230px] sm:w-[280px] lg:w-[330px]">
                             <div
@@ -87,11 +88,7 @@ export function PromoPageClassicBurgundyView({ promoPage, book, disableTracking 
                                 }}
                             />
                             <div
-                                className="relative rounded-[20px] px-4 py-2 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.55)] ring-1 ring-white/30 backdrop-blur-md"
-                                style={{
-                                    background:
-                                        'linear-gradient(135deg, rgba(255,255,255,0.82), rgba(255,248,232,0.96))',
-                                }}
+                                className="relative rounded-[20px] border border-white/10 bg-white/[0.07] p-3 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:p-4"
                             >
                                 <Image
                                     src={coverUrl}
