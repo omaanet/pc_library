@@ -277,8 +277,8 @@ export function AboutPage() {
                         </header>
                         <div className="space-y-6 text-lg leading-8 text-muted-foreground">
                             <p>
-                                <strong className="font-semibold text-foreground">Piero Carbonetti</strong> vive a Busto Garolfo, nell’Alto Milanese, e coltiva da sempre la passione per la scrittura.
-                                Originario di Francavilla al Mare, ha affiancato questa passione a un’intensa vita lavorativa, dando vita a racconti leggeri e appassionanti.
+                                <strong className="font-semibold text-foreground">Piero Carbonetti</strong> coltiva da sempre la passione per la scrittura.
+                                Ha affiancato questa passione a un’intensa vita lavorativa, dando vita a racconti leggeri e appassionanti.
                             </p>
                             <p>
                                 La sua narrativa si distingue per uno stile accessibile, capace di alternare racconti radicati nel realismo popolare a storie ambientate in mondi onirici e fantastici.
