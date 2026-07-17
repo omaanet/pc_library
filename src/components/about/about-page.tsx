@@ -73,7 +73,7 @@ const publications = [
         color: 'amber',
         text: (
             <>
-                Il libro ha accompagnato la prima edizione di Trombusto, il grande raduno nazionale di trombettisti dedicato alla memoria di <strong className="font-semibold text-foreground">Enzio Pinciroli</strong>. La manifestazione, diretta dal maestro <strong className="font-semibold text-foreground">Francesco Marsigliese</strong>, ha avuto come ospite d’eccezione <strong className="font-semibold text-foreground">Fabrizio Bosso</strong>, tra i più influenti e celebrati trombettisti jazz al mondo.
+                Il libro ha accompagnato la prima edizione di Trombusto, il grande raduno nazionale di trombettisti dedicato alla memoria di <strong className="font-semibold text-foreground">Ezio Pinciroli</strong>. La manifestazione, diretta dal maestro <strong className="font-semibold text-foreground">Francesco Marsigliese</strong>, ha avuto come ospite d’eccezione <strong className="font-semibold text-foreground">Fabrizio Bosso</strong>, tra i più influenti e celebrati trombettisti jazz al mondo.
             </>
         ),
     },

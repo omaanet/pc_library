@@ -63,7 +63,7 @@ export function RootNav({
     }, [isAuthenticated, state.user?.userLevel]);
 
     return (
-        <header className="header-fading-border sticky top-0 z-50 w-full bg-background/95 px-4 pb-11 text-center backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:pb-0">
+        <header className="header-fading-border sticky top-0 z-50 w-full bg-background/95 px-4 text-center backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container-fluid relative flex h-16 items-center justify-between mx-auto">
                 {/* Logo and Brand */}
                 <Link href="/" className="flex items-center">
@@ -81,16 +81,16 @@ export function RootNav({
                     </svg>
                 </Link>
 
-                <nav aria-label="Navigazione principale" className="absolute left-1/2 top-full mt-1 -translate-x-1/2 sm:top-1/2 sm:mt-0 sm:-translate-y-1/2">
+                <nav aria-label="Navigazione principale" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                     <Link
                         href="/chi-siamo"
                         aria-current={pathname === '/chi-siamo' ? 'page' : undefined}
                         className={cn(
-                            'about-nav-link group relative inline-flex min-h-10 items-center gap-2 overflow-hidden rounded-full border border-sky-300/80 bg-gradient-to-r from-sky-100 via-amber-50 to-emerald-100 px-4 text-sm font-bold text-sky-900 shadow-[0_5px_18px_-8px_rgba(2,132,199,0.85)] transition-all hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-[0_8px_24px_-8px_rgba(2,132,199,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-sky-700/80 dark:from-sky-950 dark:via-amber-950/60 dark:to-emerald-950 dark:text-sky-100',
+                            'about-nav-link group relative inline-flex min-h-10 items-center gap-2 overflow-hidden rounded-full border border-sky-300/80 bg-gradient-to-r from-sky-100 via-amber-50 to-emerald-100 px-4 text-sm font-bold text-sky-900 shadow-[0_5px_18px_-8px_rgba(2,132,199,0.85)] transition-all hover:-translate-y-0.5 hover:border-sky-400 hover:shadow-[0_8px_24px_-8px_rgba(2,132,199,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:border-sky-700/80 dark:from-sky-950 dark:via-amber-950/60 dark:to-emerald-950 dark:text-sky-100 max-[400px]:min-h-8 max-[400px]:gap-1 max-[400px]:px-2.5 max-[400px]:text-xs',
                             pathname === '/chi-siamo' && 'border-sky-500 ring-1 ring-sky-400/70 dark:border-sky-400'
                         )}
                     >
-                        <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" aria-hidden="true" />
+                        <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300 max-[400px]:h-3 max-[400px]:w-3" aria-hidden="true" />
                         <span>Chi siamo</span>
                     </Link>
                 </nav>
