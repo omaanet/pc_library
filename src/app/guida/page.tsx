@@ -2,7 +2,7 @@
 
 import { RootNav } from '@/components/layout/root-nav';
 import { GuideContent } from '@/components/guide/guide-content';
-import { CopyrightFooter } from '@/components/shared/copyright-footer';
+import { SiteFooter } from '@/components/shared/site-footer';
 import { useAuth } from '@/context/auth-context';
 
 export default function GuidePage() {
@@ -18,11 +18,7 @@ export default function GuidePage() {
         <>
             <RootNav isAuthenticated={isAuthenticated} onAuthClick={() => undefined} />
             <GuideContent />
-            <footer className="mt-auto w-full border-t py-6">
-                <div className="container mx-auto text-center text-sm leading-loose text-muted-foreground">
-                    <CopyrightFooter lang="it" detailed />
-                </div>
-            </footer>
+            <SiteFooter />
         </>
     );
 }

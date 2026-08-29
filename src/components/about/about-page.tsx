@@ -17,7 +17,7 @@ import {
 import { AuthModal } from '@/components/auth/auth-modal';
 import { BookDialogSimple } from '@/components/books/book-dialog';
 import { RootNav } from '@/components/layout/root-nav';
-import { CopyrightFooter } from '@/components/shared/copyright-footer';
+import { SiteFooter } from '@/components/shared/site-footer';
 import { displayFontClass } from '@/config/fonts';
 import { useAuth } from '@/context/auth-context';
 import { isBookAvailable } from '@/lib/book-visibility';
@@ -441,11 +441,7 @@ export function AboutPage() {
                 </section>
             </main>
 
-            <footer className="w-full border-t py-6">
-                <div className="container mx-auto px-5 text-center text-sm leading-loose text-muted-foreground">
-                    <CopyrightFooter lang="it" detailed emphasizeNames />
-                </div>
-            </footer>
+            <SiteFooter emphasizeNames />
 
             <BookDialogSimple
                 book={selectedLinkedBook}

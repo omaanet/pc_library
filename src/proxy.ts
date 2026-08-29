@@ -5,6 +5,7 @@ import { getManagedPage } from '@/lib/db/queries/managed-pages';
 import { getBookById, getPromoPageById } from '@/lib/db';
 import { getNeonClient } from '@/lib/db/client';
 import { PROMO_TEMPLATES } from '@/lib/promo-page-input';
+import { getBookAccessSettings } from '@/lib/db/queries/book-access-settings';
 
 const COVERS_PATH = '/api/covers';
 
@@ -13,7 +14,6 @@ const PROTECTED_ROUTES = [
     '/profile',
     '/settings',
     '/guida',
-    '/read-book',
     '/add-book',
     '/admin',
 ];
@@ -48,7 +48,7 @@ export async function proxy(request: NextRequest) {
                     cookieLength: session.value.length,
                     hasInvalidChars: /[^A-Za-z0-9+/=]/.test(session.value)
                 });
-                return NextResponse.next(); // Continue without authentication
+                throw base64Error;
             }
 
             // Parse JSON session data
@@ -62,7 +62,7 @@ export async function proxy(request: NextRequest) {
                     decodedLength: decodedSession.length,
                     decodedPreview: decodedSession.substring(0, 100)
                 });
-                return NextResponse.next(); // Continue without authentication
+                throw jsonError;
             }
 
             // Validate session data structure
@@ -71,7 +71,7 @@ export async function proxy(request: NextRequest) {
                     type: typeof sessionData,
                     value: sessionData
                 });
-                return NextResponse.next();
+                throw new Error('Session data is not a valid object');
             }
 
             if (!sessionData.userId || !sessionData.expires) {
@@ -80,7 +80,7 @@ export async function proxy(request: NextRequest) {
                     hasExpires: !!sessionData.expires,
                     availableFields: Object.keys(sessionData)
                 });
-                return NextResponse.next();
+                throw new Error('Session data is missing required fields');
             }
 
             if (typeof sessionData.userId !== 'string' || typeof sessionData.expires !== 'string') {
@@ -88,7 +88,7 @@ export async function proxy(request: NextRequest) {
                     userIdType: typeof sessionData.userId,
                     expiresType: typeof sessionData.expires
                 });
-                return NextResponse.next();
+                throw new Error('Session data has incorrect field types');
             }
 
             // Check if session has expired
@@ -103,7 +103,7 @@ export async function proxy(request: NextRequest) {
                     error: dateError instanceof Error ? dateError.message : 'Unknown date error',
                     expiresValue: sessionData.expires
                 });
-                return NextResponse.next();
+                throw dateError;
             }
 
             if (expirationDate < new Date()) {
@@ -111,7 +111,7 @@ export async function proxy(request: NextRequest) {
             } else {
                 const parsedUserId = Number(sessionData.userId);
                 if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
-                    return NextResponse.next();
+                    throw new Error('Session user ID is invalid');
                 }
                 isAuthenticated = true;
                 authenticatedUserId = parsedUserId;
@@ -122,7 +122,8 @@ export async function proxy(request: NextRequest) {
                 error: error instanceof Error ? error.message : 'Unknown error',
                 stack: error instanceof Error ? error.stack : undefined
             });
-            return NextResponse.next(); // Continue without authentication
+            isAuthenticated = false;
+            authenticatedUserId = null;
         }
     }
 
@@ -133,7 +134,11 @@ export async function proxy(request: NextRequest) {
     }
 
     // 2. Authentication check for protected routes
-    if (isProtectedRoute(pathname)) {
+    const readingRequiresAuthentication = isReadBookRoute(pathname)
+        ? (await getBookAccessSettings()).requireAuthenticationForBookAccess
+        : false;
+
+    if (isProtectedRoute(pathname) || readingRequiresAuthentication) {
         if (isPromoPreviewRoute(pathname)) {
             const canPreview = await canAccessPromoPreview(
                 request,
@@ -213,6 +218,10 @@ function isProtectedRoute(pathname: string): boolean {
     return PROTECTED_ROUTES.some(route =>
         pathname === route || pathname.startsWith(`${route}/`)
     );
+}
+
+function isReadBookRoute(pathname: string): boolean {
+    return pathname === '/read-book' || pathname.startsWith('/read-book/');
 }
 
 // Helper to check if a route is an auth route (login, register, etc.)

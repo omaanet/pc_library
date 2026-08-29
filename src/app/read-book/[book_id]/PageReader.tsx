@@ -22,17 +22,20 @@ import {
     useSetZoomLevel
 } from '@/stores/preferences-store';
 import { SITE_CONFIG } from '@/config/site-config';
+import { useBookAccess } from '@/context/book-access-context';
 
 interface PageReaderProps {
     book: Book;
     bookId: string;
-    user: User;
+    user: User | null;
     initialPage?: number;
 }
 
 export default function PageReader({ book, bookId, user, initialPage = 1 }: PageReaderProps) {
     const source = 'PageReader';
     const logger = useLogger(source);
+    const { requireAuthenticationForBookAccess } = useBookAccess();
+    const allowAnonymousBookmarks = !requireAuthenticationForBookAccess;
     
     // Get reader preferences from Zustand store
     const readerPrefs = useReaderPreferences();
@@ -45,7 +48,10 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
         canWrite: bookmarksCanWrite,
         saveBookmark,
         deleteBookmark,
-    } = useBookmarks(bookId, Boolean(user?.id));
+    } = useBookmarks(bookId, {
+        authenticated: Boolean(user?.id),
+        allowAnonymous: allowAnonymousBookmarks,
+    });
     
     // Configuration - use values from store as defaults
     const CONFIG = {
@@ -883,18 +889,19 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
 
     // Log reader usage only once per session when the book is first opened
     useEffect(() => {
-        const logKey = `book-opened-${bookId}-${user.id}`;
+        const visitorKey = user?.id ? String(user.id) : 'anonymous';
+        const logKey = `book-opened-${bookId}-${visitorKey}`;
 
         if (!sessionStorage.getItem(logKey) && currentPage === 1) {
             logger.info('[read-book]', {
-                userMail: user.email,
+                userMail: user?.email ?? null,
                 bookTitle: book.title,
-                userId: user.id,
+                userId: user?.id ?? null,
                 bookId: bookId,
             });
             sessionStorage.setItem(logKey, 'true');
         }
-    }, [bookId, user.id, user.email, book.title, currentPage]);
+    }, [bookId, user?.id, user?.email, book.title, currentPage]);
 
     return (
         <div className="relative h-full w-full">
@@ -1135,22 +1142,23 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
                     </div>
                 </div>
 
-                {/* Fullscreen Button - Top Right */}
-                <div className="fixed top-4 right-16 z-[25] pointer-events-none">
-                    <button
-                        className="p-2 bg-black/40 hover:bg-black/60 rounded-full pointer-events-auto touch-manipulation transition-colors backdrop-blur-sm disabled:cursor-not-allowed disabled:opacity-60"
-                        onClick={toggleReaderBookmark}
-                        disabled={isSavingReaderBookmark || !bookmarksCanWrite}
-                        aria-label={isCurrentPageBookmarked ? "Rimuovi segnalibro" : "Salva segnalibro"}
-                        title={isCurrentPageBookmarked ? "Rimuovi segnalibro" : "Salva segnalibro"}
-                    >
-                        {isCurrentPageBookmarked ? (
-                            <BookmarkCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300 hover:text-emerald-200" />
-                        ) : (
-                            <Bookmark className="w-5 h-5 sm:w-6 sm:h-6 text-gray-100 hover:text-white" />
-                        )}
-                    </button>
-                </div>
+                {(user?.id || allowAnonymousBookmarks) && (
+                    <div className="fixed top-4 right-16 z-[25] pointer-events-none">
+                        <button
+                            className="p-2 bg-black/40 hover:bg-black/60 rounded-full pointer-events-auto touch-manipulation transition-colors backdrop-blur-sm disabled:cursor-not-allowed disabled:opacity-60"
+                            onClick={toggleReaderBookmark}
+                            disabled={isSavingReaderBookmark || !bookmarksCanWrite}
+                            aria-label={isCurrentPageBookmarked ? "Rimuovi segnalibro" : "Salva segnalibro"}
+                            title={isCurrentPageBookmarked ? "Rimuovi segnalibro" : "Salva segnalibro"}
+                        >
+                            {isCurrentPageBookmarked ? (
+                                <BookmarkCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300 hover:text-emerald-200" />
+                            ) : (
+                                <Bookmark className="w-5 h-5 sm:w-6 sm:h-6 text-gray-100 hover:text-white" />
+                            )}
+                        </button>
+                    </div>
+                )}
 
                 <div className="fixed top-4 right-5 z-[25] pointer-events-none">
                     <button

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState, useRef } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { Headphones, X, BookOpen, Download, MailOpen, Loader2, Info } from 'lucide-react';
+import { Headphones, X, BookOpen, Download, MailOpen, Loader2, Info, MessageSquare, Send } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -10,9 +10,13 @@ import {
     DialogTitle,
     DialogDescription,
     DialogClose,
+    DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 import { formatAudioLength, cn, isBookEffectivelyNew } from '@/lib/utils';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
 import type { Book } from '@/types';
@@ -30,6 +34,10 @@ import {
     isAudioAvailable,
     type BookPresentationMode,
 } from '@/lib/book-visibility';
+import { useBookAccess } from '@/context/book-access-context';
+
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
+const DEFAULT_DEVELOPMENT_EMAIL = 'oscar@omaa.it';
 
 interface BookDialogProps {
     book: Book | null;
@@ -219,18 +227,27 @@ export function BookDialogSimple({
     onLoginClick,
 }: BookDialogProps) {
     const [isPdfRequesting, setIsPdfRequesting] = useState(false);
+    const [isAuthorMessageOpen, setIsAuthorMessageOpen] = useState(false);
+    const [authorMessage, setAuthorMessage] = useState('');
+    const [authorMessageRecipient, setAuthorMessageRecipient] = useState(DEFAULT_DEVELOPMENT_EMAIL);
+    const [isAuthorMessageSending, setIsAuthorMessageSending] = useState(false);
     const [isCoverZoomOpen, setIsCoverZoomOpen] = useState(false);
     const { toast } = useToast();
     const { state: authState } = useAuth();
+    const { requireAuthenticationForBookAccess } = useBookAccess();
     const {
         state: { filters, sort, viewMode },
     } = useLibrary();
-    const pendingActionRef = useRef<{ type: 'request-pdf'; bookId: string } | null>(null);
+    const pendingActionRef = useRef<{
+        type: 'request-pdf' | 'open-author-message';
+        bookId: string;
+    } | null>(null);
     const isReaderNavigationRef = useRef(false);
     const coverZoomTriggerRef = useRef<HTMLButtonElement>(null);
     const presentationMode = book ? getBookPresentationMode(book) : 'unavailable';
     const hasVisibleReading = presentationMode === 'reading-only' || presentationMode === 'reading-and-audio';
     const hasVisibleAudio = presentationMode === 'audio-only' || presentationMode === 'reading-and-audio';
+    const canAccessBookFeatures = isAuthenticated || !requireAuthenticationForBookAccess;
     const extractDisclosure = useBookExtractDisclosure(book, open, presentationMode);
 
     const handleReaderNavigation = () => {
@@ -276,9 +293,16 @@ export function BookDialogSimple({
                     // Retry the PDF request
                     handleRequestPdf();
                 }, 500);
+            } else if (pendingAction.type === 'open-author-message' && book?.id === pendingAction.bookId) {
+                setIsAuthorMessageOpen(true);
             }
         }
     }, [authState.isAuthenticated, book]);
+
+    useEffect(() => {
+        setAuthorMessage('');
+        setIsAuthorMessageOpen(false);
+    }, [book?.id]);
 
     // Function to handle PDF request
     const handleRequestPdf = async () => {
@@ -341,6 +365,91 @@ export function BookDialogSimple({
         }
     };
 
+    const handleOpenAuthorMessage = () => {
+        if (!book) return;
+
+        if (!authState.isAuthenticated) {
+            pendingActionRef.current = {
+                type: 'open-author-message',
+                bookId: book.id,
+            };
+            onLoginClick?.();
+            toast({
+                title: 'Accesso richiesto',
+                description: 'Devi effettuare l\'accesso per scrivere all\'autore.',
+                variant: 'default',
+                className: 'bg-blue-100 border-blue-500 text-blue-800',
+            });
+            return;
+        }
+
+        setIsAuthorMessageOpen(true);
+    };
+
+    const handleSendAuthorMessage = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!book || !authorMessage.trim()) return;
+
+        setIsAuthorMessageSending(true);
+
+        try {
+            const csrfResponse = await fetch('/api/csrf-token', {
+                credentials: 'include',
+            });
+            if (!csrfResponse.ok) {
+                throw new Error('Impossibile preparare l\'invio. Riprova.');
+            }
+
+            const { token } = await csrfResponse.json() as { token: string };
+            const response = await fetch(`/api/books/${book.id}/author-message`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': token,
+                },
+                body: JSON.stringify({
+                    message: authorMessage.trim(),
+                    ...(IS_DEVELOPMENT && { destinationEmail: authorMessageRecipient.trim() }),
+                }),
+            });
+            const data = await response.json() as { error?: string };
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    setIsAuthorMessageOpen(false);
+                    pendingActionRef.current = {
+                        type: 'open-author-message',
+                        bookId: book.id,
+                    };
+                    onLoginClick?.();
+                }
+                throw new Error(data.error || 'Si è verificato un errore durante l\'invio del messaggio.');
+            }
+
+            setAuthorMessage('');
+            setIsAuthorMessageOpen(false);
+            toast({
+                title: 'Messaggio inviato',
+                description: 'Il tuo messaggio è stato inviato all\'autore.',
+                variant: 'default',
+                className: 'bg-green-100 border-green-500 text-green-800',
+            });
+        } catch (error) {
+            console.error('Errore durante l\'invio del messaggio all\'autore:', error);
+            toast({
+                title: 'Errore',
+                description: error instanceof Error
+                    ? error.message
+                    : 'Si è verificato un errore durante l\'invio del messaggio.',
+                variant: 'destructive',
+                className: 'bg-orange-100 border-red-600 text-red-700',
+            });
+        } finally {
+            setIsAuthorMessageSending(false);
+        }
+    };
+
     if (!book) return null;
 
     return (
@@ -399,34 +508,47 @@ export function BookDialogSimple({
                                     />
                                 </button>
 
-                                {isAuthenticated && hasVisibleReading && (
-                                    <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">
-                                        <div className="flex-1">
+                                {canAccessBookFeatures && (
+                                    <div className="flex w-full flex-col gap-2">
+                                        {hasVisibleReading && (
                                             <LinkButton url={`/read-book/${book.id}`}
                                                 icon={BookOpen}
                                                 onClick={handleReaderNavigation}
                                                 className="h-11 w-full px-3 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-cyan-400">
                                                 Leggi Racconto<span className="hidden sm:inline"> on-line</span>
                                             </LinkButton>
-                                        </div>
+                                        )}
 
-                                        <div className="flex-1">
-                                            <Button
-                                                onClick={handleRequestPdf}
-                                                disabled={isPdfRequesting}
-                                                className="h-11 w-full px-3 text-xs font-normal text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-emerald-400">
-                                                {isPdfRequesting ? (
-                                                    <>
-                                                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                                                        Invio in corso...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <MailOpen className="h-3 w-3 mr-1" />
-                                                        Richiedi il PDF<span className="hidden sm:inline"> del Racconto</span>
-                                                    </>
-                                                )}
-                                            </Button>
+                                        <div className="flex w-full flex-row items-center justify-center gap-1 sm:gap-2">
+                                            {hasVisibleReading && (
+                                                <div className="flex-1">
+                                                    <Button
+                                                        onClick={handleRequestPdf}
+                                                        disabled={isPdfRequesting}
+                                                        className="h-11 w-full px-3 text-xs font-normal text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-emerald-400">
+                                                        {isPdfRequesting ? (
+                                                            <>
+                                                                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                                                                Invio in corso...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <MailOpen className="h-3 w-3 mr-1" />
+                                                                Richiedi PDF
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            <div className="flex-1">
+                                                <Button
+                                                    type="button"
+                                                    onClick={handleOpenAuthorMessage}
+                                                    className="h-11 w-full px-3 text-xs font-normal text-dark hover:text-white bg-violet-700/30 hover:bg-violet-800 border border-violet-900 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-violet-400">
+                                                    <MessageSquare className="h-3 w-3 mr-1" />
+                                                    Scrivi all'autore
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -438,9 +560,9 @@ export function BookDialogSimple({
                     <BookExtractSection book={book} disclosure={extractDisclosure} />
 
                     <div className="flex w-full flex-col items-stretch pt-2">
-                        {isAuthenticated && hasVisibleAudio ? (
+                        {canAccessBookFeatures && hasVisibleAudio ? (
                             <AudioBookPlayer book={book} isActive={open} />
-                        ) : !isAuthenticated && presentationMode !== 'unavailable' ? (
+                        ) : !canAccessBookFeatures && presentationMode !== 'unavailable' ? (
                             <Button
                                 onClick={onLoginClick}
                                 size="lg"
@@ -451,6 +573,77 @@ export function BookDialogSimple({
                         ) : null}
                     </div>
                 </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAuthorMessageOpen} onOpenChange={(nextOpen) => {
+                if (!isAuthorMessageSending) setIsAuthorMessageOpen(nextOpen);
+            }}>
+                <DialogContent className="sm:max-w-lg">
+                    <form className="flex min-h-0 flex-col" onSubmit={handleSendAuthorMessage}>
+                        <DialogHeader className="px-6 pb-3 pt-6 sm:px-8 sm:pb-4 sm:pt-7">
+                            <DialogTitle>Scrivi all'autore</DialogTitle>
+                            <DialogDescription>
+                                Invia un messaggio riguardo a “{book.title}”.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="min-h-0 space-y-5 overflow-y-auto px-6 py-4 sm:px-8 sm:py-5">
+                            {IS_DEVELOPMENT && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="author-message-recipient">
+                                        Email destinatario
+                                        <span className="ml-1 font-normal text-muted-foreground">(sviluppo)</span>
+                                    </Label>
+                                    <Input
+                                        id="author-message-recipient"
+                                        type="email"
+                                        value={authorMessageRecipient}
+                                        onChange={(event) => setAuthorMessageRecipient(event.target.value)}
+                                        required
+                                        disabled={isAuthorMessageSending}
+                                        autoComplete="off"
+                                        autoFocus
+                                    />
+                                </div>
+                            )}
+                            <div className="space-y-2">
+                                <Label htmlFor="author-message">Messaggio</Label>
+                                <Textarea
+                                    id="author-message"
+                                    value={authorMessage}
+                                    onChange={(event) => setAuthorMessage(event.target.value)}
+                                    placeholder="Scrivi qui il tuo messaggio..."
+                                    className="min-h-36 resize-y"
+                                    maxLength={5000}
+                                    required
+                                    autoFocus={!IS_DEVELOPMENT}
+                                    disabled={isAuthorMessageSending}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter className="shrink-0 gap-2 border-t bg-muted/20 px-6 py-4 sm:gap-0 sm:px-8 sm:py-5">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsAuthorMessageOpen(false)}
+                                disabled={isAuthorMessageSending}
+                            >
+                                Annulla
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isAuthorMessageSending || !authorMessage.trim()}
+                                className="bg-violet-700 text-white hover:bg-violet-800"
+                            >
+                                {isAuthorMessageSending ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Send className="mr-2 h-4 w-4" />
+                                )}
+                                Invia
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
@@ -471,6 +664,7 @@ export function BookDialog({
     onLoginClick,
 }: BookDialogProps) {
     const [imageLoaded, setImageLoaded] = useState(false);
+    const { requireAuthenticationForBookAccess } = useBookAccess();
     const {
         state: { filters, sort, viewMode },
     } = useLibrary();
@@ -478,6 +672,7 @@ export function BookDialog({
     const presentationMode = book ? getBookPresentationMode(book) : 'unavailable';
     const hasVisibleReading = presentationMode === 'reading-only' || presentationMode === 'reading-and-audio';
     const hasVisibleAudio = presentationMode === 'audio-only' || presentationMode === 'reading-and-audio';
+    const canAccessBookFeatures = isAuthenticated || !requireAuthenticationForBookAccess;
     const extractDisclosure = useBookExtractDisclosure(book, open, presentationMode);
 
     const handleReaderNavigation = () => {
@@ -576,7 +771,7 @@ export function BookDialog({
                                                 </div>
                                             </div>
 
-                                            {isAuthenticated && hasVisibleReading && (
+                                            {canAccessBookFeatures && hasVisibleReading && (
                                                 <div className="flex flex-row justify-center items-center gap-1 sm:gap-2 w-full">
                                                     <div className="flex-1">
                                                         <LinkButton url={`/read-book/${book.id}`} icon={BookOpen} onClick={handleReaderNavigation} className="h-11 w-full px-2 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-cyan-400">
@@ -584,11 +779,13 @@ export function BookDialog({
                                                         </LinkButton>
                                                     </div>
 
-                                                    <div className="flex-1">
-                                                        <LinkButton url={`/api/download-book/${book.id}`} icon={Download} className="h-11 w-full px-2 text-xs font-normal text-dark hover:text-white bg-red-700/30 hover:bg-red-800 border border-red-900 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-red-400">
-                                                            Scarica PDF
-                                                        </LinkButton>
-                                                    </div>
+                                                    {isAuthenticated && (
+                                                        <div className="flex-1">
+                                                            <LinkButton url={`/api/download-book/${book.id}`} icon={Download} className="h-11 w-full px-2 text-xs font-normal text-dark hover:text-white bg-red-700/30 hover:bg-red-800 border border-red-900 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-red-400">
+                                                                Scarica PDF
+                                                            </LinkButton>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -604,8 +801,7 @@ export function BookDialog({
                                     <div className="mb-3 sm:mb-2">
                                         <BookExtractSection book={book} disclosure={extractDisclosure} />
 
-                                        {/* AudioBookPlayer: show only if authenticated and has audio */}
-                                        {isAuthenticated && hasVisibleAudio && (
+                                        {canAccessBookFeatures && hasVisibleAudio && (
                                             <>
                                                 {/* AudioBookPlayer is self-contained for tracks */}
                                                 <AudioBookPlayer book={book} isActive={open} />
@@ -628,7 +824,11 @@ export function BookDialog({
                                     {!isAuthenticated && presentationMode !== 'unavailable' && (
                                         <div className="mt-4 mb-1 flex justify-end">
                                             <Button onClick={onLoginClick} size="default" className="min-h-11 w-full bg-cyan-800 font-normal text-cyan-50 hover:bg-emerald-900 hover:text-emerald-50 focus-visible:ring-2 focus-visible:ring-cyan-400 sm:w-auto">
-                                                {getLoginLabel(presentationMode, true)}
+                                                {canAccessBookFeatures
+                                                    ? hasVisibleReading
+                                                        ? 'Accedi per ottenere il PDF e commentare'
+                                                        : 'Accedi per commentare'
+                                                    : getLoginLabel(presentationMode, true)}
                                             </Button>
                                         </div>
                                     )}

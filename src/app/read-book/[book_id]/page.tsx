@@ -3,6 +3,7 @@ import { getBookById, getBookmarksForBook /*, getAudioBookById */ } from '@/lib/
 import ClientReadBookPage from './ClientReadBookPage';
 import { getCurrentSessionUser } from '@/lib/auth-utils';
 import { canAccessReading } from '@/lib/book-visibility';
+import { getBookAccessSettings } from '@/lib/db/queries/book-access-settings';
 
 async function getInitialReaderPage(bookId: string, totalPages: number): Promise<number> {
     try {
@@ -28,9 +29,16 @@ export default async function ReadBookPage({ params }: { params: Promise<{ book_
         notFound();
     }
 
-    const book = await getBookById(book_id);
-    const user = await getCurrentSessionUser();
-    if (!book || !canAccessReading(book, !!user?.isAdmin)) {
+    const [book, user, bookAccess] = await Promise.all([
+        getBookById(book_id),
+        getCurrentSessionUser(),
+        getBookAccessSettings(),
+    ]);
+    if (
+        !book
+        || !canAccessReading(book, !!user?.isAdmin)
+        || (bookAccess.requireAuthenticationForBookAccess && !user)
+    ) {
         notFound();
     }
     const initialPage = book ? await getInitialReaderPage(book_id, book.pagesCount || 1) : 1;

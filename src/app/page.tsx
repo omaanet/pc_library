@@ -5,7 +5,7 @@ import { RootNav } from '@/components/layout/root-nav';
 import { BookCollectionWrapper } from '@/components/books/book-collection-wrapper';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { useAuth } from '@/context/auth-context';
-import { CopyrightFooter } from '@/components/shared/copyright-footer';
+import { SiteFooter } from '@/components/shared/site-footer';
 import { PreviewsCollection } from '@/components/books/previews-collection';
 import { BookErrorBoundary } from '@/components/books/book-error-boundary';
 import { SITE_CONFIG } from '@/config/site-config';
@@ -92,12 +92,9 @@ export default function HomePage() {
 
             </main>
 
-            {/* Footer */}
-            <footer className="w-full border-t mt-10 py-6 md:py-0">
-                <div className="container flex flex-col items-center justify-between gap-3 md:h-24 md:flex-row mx-auto">
-                    <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                        <CopyrightFooter lang="it" detailed />
-                    </p>
+            <SiteFooter
+                className="mt-10"
+                decoration={(
                     <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" className="AbstractProfile float-anim">
                         <g transform="translate(0 5.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" vectorEffect="non-scaling-stroke">
                             {/* Abstract Profile */}
@@ -115,8 +112,8 @@ export default function HomePage() {
                             </g>
                         </g>
                     </svg>
-                </div>
-            </footer>
+                )}
+            />
 
             {/* Auth Modal */}
             <AuthModal

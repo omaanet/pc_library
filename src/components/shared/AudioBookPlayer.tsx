@@ -7,6 +7,7 @@ import { isAudioAvailable } from "@/lib/book-visibility";
 import { useAuth } from '@/context/auth-context';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { SITE_CONFIG } from '@/config/site-config';
+import { useBookAccess } from '@/context/book-access-context';
 
 export interface AudioBookPlayerProps {
     book: Book | null;
@@ -28,6 +29,8 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
     const [isSavingAudioBookmark, setIsSavingAudioBookmark] = useState(false);
     const [resumeTarget, setResumeTarget] = useState<ResumeTarget | null>(null);
     const { state: authState } = useAuth();
+    const { requireAuthenticationForBookAccess } = useBookAccess();
+    const allowAnonymousBookmarks = !requireAuthenticationForBookAccess;
     const {
         bookmarks,
         initialized: bookmarksInitialized,
@@ -35,14 +38,17 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         canWrite: bookmarksCanWrite,
         saveBookmark,
         deleteBookmark,
-    } = useBookmarks(book?.id, Boolean(authState.user?.id));
+    } = useBookmarks(book?.id, {
+        authenticated: Boolean(authState.user?.id),
+        allowAnonymous: allowAnonymousBookmarks,
+        audioMediaId: audiobook?.media_id ?? null,
+    });
     const pendingAudioSaveRef = useRef<number | null>(null);
     const lastAutoSavedSecondRef = useRef<{ key: string; second: number | null } | null>(null);
     const latestMainAudioSecondRef = useRef<{ key: string; second: number } | null>(null);
     const audioAutoSaveSuspendedRef = useRef(false);
     const bookmarkWriteStateRef = useRef({
         canWrite: false,
-        userId: undefined as number | undefined,
         playerKey: null as string | null,
         saveBookmark,
         autoSaveSuspended: false,
@@ -116,11 +122,10 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
             const {
                 autoSaveSuspended,
                 canWrite,
-                userId,
                 playerKey: latestPlayerKey,
                 saveBookmark: saveLatestBookmark,
             } = bookmarkWriteStateRef.current;
-            if (autoSaveSuspended || !userId || !canWrite || !latest || latest.key !== latestPlayerKey) return;
+            if (autoSaveSuspended || !canWrite || !latest || latest.key !== latestPlayerKey) return;
 
             void saveLatestBookmark({ kind: 'audio', audioTimeSeconds: latest.second });
         };
@@ -129,18 +134,16 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
     useEffect(() => {
         bookmarkWriteStateRef.current = {
             canWrite: bookmarksCanWrite,
-            userId: authState.user?.id,
             playerKey,
             saveBookmark,
             autoSaveSuspended: audioAutoSaveSuspendedRef.current,
         };
-    }, [authState.user?.id, bookmarksCanWrite, playerKey, saveBookmark]);
+    }, [bookmarksCanWrite, playerKey, saveBookmark]);
 
     const saveLatestAudioBookmark = useCallback(() => {
         const latest = latestMainAudioSecondRef.current;
         if (
             audioAutoSaveSuspendedRef.current ||
-            !authState.user?.id ||
             !bookmarksCanWrite ||
             !latest ||
             latest.key !== playerKey
@@ -158,7 +161,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
             .catch((error) => {
                 console.error('Failed to save audio bookmark on close:', error);
             });
-    }, [authState.user?.id, bookmarksCanWrite, playerKey, saveBookmark]);
+    }, [bookmarksCanWrite, playerKey, saveBookmark]);
 
     useEffect(() => {
         if (isActive) return;
@@ -241,7 +244,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
     const activeResumeTarget = resumeTarget?.key === playerKey ? resumeTarget : null;
 
     const saveAudioBookmark = useCallback(async (audioTimeSeconds: number) => {
-        if (!authState.user?.id || !bookmarksCanWrite) return;
+        if (!bookmarksCanWrite) return;
 
         setIsSavingAudioBookmark(true);
         try {
@@ -254,7 +257,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         } finally {
             setIsSavingAudioBookmark(false);
         }
-    }, [authState.user?.id, bookmarksCanWrite, saveBookmark]);
+    }, [bookmarksCanWrite, saveBookmark]);
 
     const handleAudioProgress = useCallback((state: AudioPlayerState) => {
         if (state.resumeStatus === 'pending') return;
@@ -272,7 +275,6 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
         if (
             audioAutoSaveSuspendedRef.current ||
             !isActive ||
-            !authState.user?.id ||
             !bookmarksCanWrite ||
             bookmarksError ||
             state.track.kind !== 'main'
@@ -315,7 +317,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
                     pendingAudioSaveRef.current = null;
                 });
         }, 500);
-    }, [authState.user?.id, bookmarksCanWrite, bookmarksError, isActive, playerKey, saveBookmark]);
+    }, [bookmarksCanWrite, bookmarksError, isActive, playerKey, saveBookmark]);
 
     const isAudioBookmarkActive = useCallback((state: AudioPlayerState) => {
         if (state.track.kind !== 'main' || audioBookmark?.audioTimeSeconds === null || audioBookmark?.audioTimeSeconds === undefined) {
@@ -392,10 +394,10 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
                 initialTime={activeResumeTarget.initialTime}
                 onProgress={handleAudioProgress}
                 onFirstPlay={handleFirstPlay}
-                onBookmark={authState.user?.id && isActive ? handleManualAudioBookmark : undefined}
+                onBookmark={bookmarksCanWrite && isActive ? handleManualAudioBookmark : undefined}
                 isBookmarkActive={isAudioBookmarkActive}
                 isBookmarkSaving={isSavingAudioBookmark}
-                showBookmarkControl={Boolean(authState.user?.id)}
+                showBookmarkControl={Boolean(authState.user?.id || allowAnonymousBookmarks)}
                 isBookmarkDisabled={!bookmarksCanWrite || !isActive}
             />
         </div>

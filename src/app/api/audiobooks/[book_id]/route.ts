@@ -6,6 +6,7 @@ import { getSessionUser } from '@/lib/auth-utils';
 import { canAccessAudio } from '@/lib/book-visibility';
 import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { getManagedPage } from '@/lib/db/queries/managed-pages';
+import { getBookAccessSettings } from '@/lib/db/queries/book-access-settings';
 
 export async function GET(
     req: NextRequest,
@@ -15,6 +16,10 @@ export async function GET(
         const bookId = (await params).book_id;
         const book = await getBookById(bookId);
         const user = await getSessionUser(req);
+        const bookAccess = await getBookAccessSettings();
+        if (bookAccess.requireAuthenticationForBookAccess && !user) {
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Authentication required');
+        }
         const booksPage = user ? await getManagedPage('books') : null;
         const canManageBooks = !!user && (user.userLevel ?? 0) >= (booksPage?.accessLevel ?? Number.POSITIVE_INFINITY);
         if (!book || !canAccessAudio(book, canManageBooks)) {

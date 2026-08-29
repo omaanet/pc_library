@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/auth-utils';
 import { canAccessAudio, isReadingAvailable } from '@/lib/book-visibility';
 import { ApiError, handleApiError, HttpStatus } from '@/lib/api-error-handler';
 import { Logger } from '@/lib/logging';
+import { getBookAccessSettings } from '@/lib/db/queries/book-access-settings';
 
 export async function POST(request: NextRequest) {
     try {
@@ -19,6 +20,10 @@ export async function POST(request: NextRequest) {
         }
 
         const user = await getSessionUser(request);
+        const bookAccess = await getBookAccessSettings();
+        if (bookAccess.requireAuthenticationForBookAccess && !user) {
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Authentication required');
+        }
         const book = await getBookById(bookId);
         if (!book || !canAccessAudio(book, !!user?.isAdmin)) {
             throw new ApiError(HttpStatus.NOT_FOUND, 'Audiobook not found');

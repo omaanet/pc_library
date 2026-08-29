@@ -30,19 +30,6 @@ export default function ClientReadBookPage({ bookId, book, initialPage }: Client
         );
     }
 
-    // After loading is complete, check if user is authenticated
-    if (!user || !user.id) {
-        return (
-            <>
-                {/* <div className="flex items-center justify-center h-screen">
-                    <div className="text-center font-light text-2xl text-gray-300">
-                        Reindirizzamento alla pagina di login...
-                    </div>
-                </div> */}
-            </>
-        );
-    }
-
     return (
         <div className="h-full w-full">
             {/* Back Button */}

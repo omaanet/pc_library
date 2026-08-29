@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, BookOpenText, Headphones, Loader2 } from 'lucide-react';
-import { CopyrightFooter } from '@/components/shared/copyright-footer';
+import { SiteFooter } from '@/components/shared/site-footer';
 
 export default function SettingsPage() {
     const { state: { user, isAuthenticated } } = useAuth();
@@ -119,14 +119,7 @@ export default function SettingsPage() {
                         </CardHeader>
                     </Card>
                 </div>
-                {/* Footer */}
-                <footer className="border-t mt-auto py-6 md:py-0">
-                    <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row mx-auto">
-                        <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                            <CopyrightFooter lang="it" detailed />
-                        </p>
-                    </div>
-                </footer>
+                <SiteFooter />
             </>
         );
     }
@@ -358,14 +351,7 @@ export default function SettingsPage() {
                 )}
             </div>
 
-            {/* Footer */}
-            <footer className="border-t mt-auto py-6 md:py-0">
-                <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row mx-auto">
-                    <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                        <CopyrightFooter lang="it" detailed />
-                    </p>
-                </div>
-            </footer>
+            <SiteFooter />
         </>
     );
 }

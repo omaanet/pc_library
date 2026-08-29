@@ -7,6 +7,7 @@ import { baseFont, displayFont } from '@/config/fonts';
 import { metadata } from '@/config/metadata';
 import { getCurrentSessionUser } from '@/lib/auth-utils';
 import { APP_CONTENT_SECURITY_POLICY } from '@/lib/security/csp';
+import { getBookAccessSettings } from '@/lib/db/queries/book-access-settings';
 import '@/styles/globals.css';
 
 export { metadata };
@@ -25,7 +26,10 @@ export default async function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const initialUser = await getCurrentSessionUser();
+    const [initialUser, initialBookAccessSettings] = await Promise.all([
+        getCurrentSessionUser(),
+        getBookAccessSettings(),
+    ]);
 
     return (
         <html lang="it" suppressHydrationWarning data-scroll-behavior="smooth">
@@ -41,7 +45,10 @@ export default async function RootLayout({
             </head>
             <body className={`${baseFont.className} ${displayFont.variable}`}>
                 {/* <div className="grain-overlay" aria-hidden="true" /> */}
-                <Providers initialUser={initialUser}>
+                <Providers
+                    initialUser={initialUser}
+                    initialBookAccessSettings={initialBookAccessSettings}
+                >
                     <div className="relative min-h-screen flex flex-col">
                         {children}
                     </div>

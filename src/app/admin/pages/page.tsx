@@ -12,6 +12,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { getAdminRoleMenuClass } from '@/lib/admin-role-menu';
+import { Switch } from '@/components/ui/switch';
+import type { BookAccessSettings } from '@/config/book-access';
+import { useBookAccess } from '@/context/book-access-context';
+
+type PagesConfigurationResponse = {
+    pages: ManagedPageConfig[];
+    bookAccess: BookAccessSettings;
+};
+
+function serializeConfiguration(
+    pages: ManagedPageConfig[],
+    requireAuthenticationForBookAccess: boolean
+): string {
+    return JSON.stringify({ pages, requireAuthenticationForBookAccess });
+}
 
 function normalizeOrders(pages: ManagedPageConfig[]): ManagedPageConfig[] {
     const normalized: ManagedPageConfig[] = [];
@@ -40,16 +55,22 @@ export default function ManagePagesPage() {
     const [savedSnapshot, setSavedSnapshot] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [requireAuthenticationForBookAccess, setRequireAuthenticationForBookAccess] = useState(true);
+    const { setRequireAuthenticationForBookAccess: updateGlobalBookAccess } = useBookAccess();
 
     const loadPages = useCallback(async () => {
         setLoading(true);
         try {
             const response = await fetch('/api/admin/pages', { cache: 'no-store' });
             if (!response.ok) throw new Error(await readError(response, 'Impossibile caricare le pagine'));
-            const data = await response.json() as { pages: ManagedPageConfig[] };
+            const data = await response.json() as PagesConfigurationResponse;
             const next = sortManagedPages(data.pages);
             setPages(next);
-            setSavedSnapshot(JSON.stringify(next));
+            setRequireAuthenticationForBookAccess(data.bookAccess.requireAuthenticationForBookAccess);
+            setSavedSnapshot(serializeConfiguration(
+                next,
+                data.bookAccess.requireAuthenticationForBookAccess
+            ));
         } catch (error) {
             toast({ title: 'Errore', description: error instanceof Error ? error.message : 'Caricamento non riuscito', variant: 'destructive' });
         } finally {
@@ -59,7 +80,10 @@ export default function ManagePagesPage() {
 
     useEffect(() => { void loadPages(); }, [loadPages]);
 
-    const isDirty = useMemo(() => JSON.stringify(pages) !== savedSnapshot, [pages, savedSnapshot]);
+    const isDirty = useMemo(
+        () => serializeConfiguration(pages, requireAuthenticationForBookAccess) !== savedSnapshot,
+        [pages, requireAuthenticationForBookAccess, savedSnapshot]
+    );
 
     const changeAccessLevel = (key: ManagedPageKey, accessLevel: AdminRole) => {
         setPages((current) => {
@@ -96,14 +120,22 @@ export default function ManagePagesPage() {
             const response = await fetch('/api/admin/pages', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'x-csrf-token': token },
-                body: JSON.stringify({ pages: pages.map(({ key, accessLevel, displayOrder }) => ({ key, accessLevel, displayOrder })) }),
+                body: JSON.stringify({
+                    pages: pages.map(({ key, accessLevel, displayOrder }) => ({ key, accessLevel, displayOrder })),
+                    bookAccess: { requireAuthenticationForBookAccess },
+                }),
             });
             if (!response.ok) throw new Error(await readError(response, 'Salvataggio non riuscito'));
-            const data = await response.json() as { pages: ManagedPageConfig[] };
+            const data = await response.json() as PagesConfigurationResponse;
             const next = sortManagedPages(data.pages);
             setPages(next);
-            setSavedSnapshot(JSON.stringify(next));
-            toast({ title: 'Pagine aggiornate', description: 'Accessi e ordine del menu sono stati salvati.' });
+            setRequireAuthenticationForBookAccess(data.bookAccess.requireAuthenticationForBookAccess);
+            updateGlobalBookAccess(data.bookAccess.requireAuthenticationForBookAccess);
+            setSavedSnapshot(serializeConfiguration(
+                next,
+                data.bookAccess.requireAuthenticationForBookAccess
+            ));
+            toast({ title: 'Configurazione aggiornata', description: 'Accessi, ordine del menu e accesso ai racconti sono stati salvati.' });
         } catch (error) {
             toast({ title: 'Errore', description: error instanceof Error ? error.message : 'Salvataggio non riuscito', variant: 'destructive' });
         } finally {
@@ -126,6 +158,40 @@ export default function ManagePagesPage() {
                     Salva modifiche
                 </Button>
             </div>
+
+            <Card className="mb-6">
+                <CardHeader>
+                    <CardTitle>Accesso ai racconti</CardTitle>
+                    <CardDescription>
+                        Impostazione globale per la lettura on-line e l’ascolto degli audiolibri.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {loading ? (
+                        <div className="flex min-h-20 items-center justify-center gap-2 text-muted-foreground">
+                            <Loader2 className="h-5 w-5 animate-spin" />Caricamento…
+                        </div>
+                    ) : (
+                        <div className="flex items-start justify-between gap-6 rounded-lg border p-4">
+                            <div className="space-y-1">
+                                <label htmlFor="require-book-authentication" className="font-medium">
+                                    Richiedi autenticazione per leggere e ascoltare
+                                </label>
+                                <p className="text-sm text-muted-foreground">
+                                    Se disattivata, lettura on-line e audio sono disponibili anche agli utenti anonimi.
+                                    La richiesta del PDF richiede sempre registrazione e accesso.
+                                </p>
+                            </div>
+                            <Switch
+                                id="require-book-authentication"
+                                checked={requireAuthenticationForBookAccess}
+                                onCheckedChange={setRequireAuthenticationForBookAccess}
+                                aria-label="Richiedi autenticazione per leggere e ascoltare"
+                            />
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
             <Card>
                 <CardHeader>
