@@ -21,6 +21,7 @@ export interface PreferencesState {
     theme: ThemePreference;
     reader: ReaderPreferences;
     appearance: AppearancePreferences;
+    hydrateForAnonymous: (preferences: UserPreferences) => void;
     hydrateForUser: (userId: number, preferences: UserPreferences) => void;
     resetToDefaults: () => void;
     setTheme: (theme: ThemePreference) => void;
@@ -55,6 +56,9 @@ export const useReaderPreferencesStore = create<PreferencesState>()((set) => ({
     activeUserId: null,
     ...preferenceState({ ...DEFAULT_USER_PREFERENCES }),
 
+    hydrateForAnonymous: (preferences) => {
+        set({ activeUserId: null, ...preferenceState(preferences) });
+    },
     hydrateForUser: (userId, preferences) => {
         set({ activeUserId: userId, ...preferenceState(preferences) });
     },

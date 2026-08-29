@@ -10,10 +10,35 @@ import {
     useReaderPreferencesStore,
     useThemePreference,
 } from '@/stores/preferences-store';
+import {
+    ANONYMOUS_PREFERENCES_STORAGE_KEY,
+    loadAnonymousPreferences,
+    saveAnonymousPreferences,
+} from '@/lib/anonymous-preferences';
 import { DEFAULT_USER_PREFERENCES, type UserPreferences } from '@/types/preferences';
 
 const SAVE_DELAY_MS = 350;
 const useIsomorphicLayoutEffect = typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect;
+
+function getBrowserStorage(): Storage | null {
+    try {
+        return window.localStorage;
+    } catch {
+        return null;
+    }
+}
+
+function loadBrowserAnonymousPreferences(): UserPreferences {
+    const storage = getBrowserStorage();
+    return storage
+        ? loadAnonymousPreferences(storage)
+        : { ...DEFAULT_USER_PREFERENCES };
+}
+
+function saveBrowserAnonymousPreferences(preferences: UserPreferences): void {
+    const storage = getBrowserStorage();
+    if (storage) saveAnonymousPreferences(storage, preferences);
+}
 
 export function UserPreferencesProvider({ children }: { children: React.ReactNode }) {
     const { state: { user }, updatePreferences } = useAuth();
@@ -75,7 +100,9 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
                 user.preferences ?? { ...DEFAULT_USER_PREFERENCES }
             );
         } else {
-            useReaderPreferencesStore.getState().resetToDefaults();
+            useReaderPreferencesStore.getState().hydrateForAnonymous(
+                loadBrowserAnonymousPreferences()
+            );
         }
         hydratingRef.current = false;
     }, [clearTimer, user?.id]);
@@ -101,11 +128,16 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
         }
 
         return useReaderPreferencesStore.subscribe((state, previousState) => {
-            if (hydratingRef.current || !activeUserIdRef.current) return;
+            if (hydratingRef.current) return;
 
             const next = selectUserPreferences(state);
             const previous = selectUserPreferences(previousState);
             if (JSON.stringify(next) === JSON.stringify(previous)) return;
+
+            if (activeUserIdRef.current === null) {
+                saveBrowserAnonymousPreferences(next);
+                return;
+            }
 
             pendingRef.current = next;
             retryBlockedRef.current = false;
@@ -113,6 +145,29 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
             timerRef.current = setTimeout(() => void flushPending(), SAVE_DELAY_MS);
         });
     }, [clearTimer, flushPending]);
+
+    React.useEffect(() => {
+        const syncAnonymousPreferences = (event: StorageEvent) => {
+            const storage = getBrowserStorage();
+            if (
+                !storage
+                || activeUserIdRef.current !== null
+                || event.storageArea !== storage
+                || (event.key !== ANONYMOUS_PREFERENCES_STORAGE_KEY && event.key !== null)
+            ) {
+                return;
+            }
+
+            hydratingRef.current = true;
+            useReaderPreferencesStore.getState().hydrateForAnonymous(
+                loadAnonymousPreferences(storage)
+            );
+            hydratingRef.current = false;
+        };
+
+        window.addEventListener('storage', syncAnonymousPreferences);
+        return () => window.removeEventListener('storage', syncAnonymousPreferences);
+    }, []);
 
     React.useEffect(() => {
         const retry = () => {
