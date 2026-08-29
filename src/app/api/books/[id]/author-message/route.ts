@@ -19,16 +19,9 @@ export const POST = withCSRFProtection(async function POST(
 ) {
     try {
         const user = await getSessionUser(request);
-        if (!user) {
-            return NextResponse.json(
-                { error: 'Devi effettuare l\'accesso per scrivere all\'autore.' },
-                { status: 401 }
-            );
-        }
-
         const { id: bookId } = await params;
         const book = await getBookById(bookId);
-        if (!book || !canAccessBook(book, !!user.isAdmin)) {
+        if (!book || !canAccessBook(book, !!user?.isAdmin)) {
             return NextResponse.json({ error: 'Libro non trovato.' }, { status: 404 });
         }
 
@@ -72,6 +65,7 @@ export const POST = withCSRFProtection(async function POST(
         const senderAddress = process.env.MAIL_FROM
             || process.env.MAIL_USER
             || SITE_CONFIG.PRIVACY_EMAIL;
+        const senderName = user?.fullName || (user ? 'Utente' : 'Visitatore anonimo');
 
         const transporter = nodemailer.createTransport({
             host: process.env.MAIL_HOST,
@@ -88,20 +82,22 @@ export const POST = withCSRFProtection(async function POST(
 
         await transporter.sendMail({
             from: {
-                name: `${user.fullName || 'Utente'} tramite Racconti in Voce e Caratteri`,
+                name: `${senderName} tramite Racconti in Voce e Caratteri`,
                 address: senderAddress,
             },
             to: destinationEmail,
-            replyTo: {
-                name: user.fullName || 'Utente',
-                address: user.email,
-            },
+            ...(user?.email && {
+                replyTo: {
+                    name: senderName,
+                    address: user.email,
+                },
+            }),
             subject: `Messaggio per l'autore: ${book.title}`,
             text: [
                 'Nuovo messaggio per l’autore',
                 '',
-                `Utente: ${user.fullName || 'Utente'} (ID: ${user.id})`,
-                `Email: ${user.email}`,
+                user ? `Utente: ${senderName} (ID: ${user.id})` : 'Mittente: Visitatore anonimo',
+                ...(user?.email ? [`Email: ${user.email}`] : []),
                 `Libro: ${book.title} (ID: ${bookId})`,
                 `Data: ${new Date().toLocaleString('it-IT')}`,
                 '',

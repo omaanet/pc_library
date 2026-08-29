@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useId, useState, useRef, type CSSProperties } from 'react';
+import { useEffect, useId, useState, useRef } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { Headphones, X, BookOpen, Download, MailOpen, Loader2, Info, MessageSquare, Send, LockKeyhole } from 'lucide-react';
+import { Headphones, X, BookOpen, Download, MailOpen, Loader2, Info, MessageSquare, Send } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -45,43 +45,6 @@ interface BookDialogProps {
     onOpenChange: (open: boolean) => void;
     isAuthenticated?: boolean;
     onLoginClick?: () => void;
-}
-
-export interface BookDialogSimpleProps extends BookDialogProps {
-    /** Lock icon size in pixels. */
-    lockIconSize?: number;
-    /** Any valid CSS color used for the lock icon in light mode. */
-    lockIconLightColor?: string;
-    /** Any valid CSS color used for the lock icon in dark mode. */
-    lockIconDarkColor?: string;
-}
-
-const DEFAULT_LOCK_ICON_SIZE = 14;
-const DEFAULT_LOCK_ICON_LIGHT_COLOR = '#000000';
-const DEFAULT_LOCK_ICON_DARK_COLOR = '#fcd34d';
-
-function RestrictedFeatureLock({
-    size,
-    lightColor,
-    darkColor,
-}: {
-    size: number;
-    lightColor: string;
-    darkColor: string;
-}) {
-    return (
-        <LockKeyhole
-            className="shrink-0 text-[var(--book-dialog-lock-light)] dark:text-[var(--book-dialog-lock-dark)]"
-            style={{
-                width: size,
-                height: size,
-                '--book-dialog-lock-light': lightColor,
-                '--book-dialog-lock-dark': darkColor,
-            } as CSSProperties}
-            strokeWidth={2}
-            aria-label="Accesso riservato agli iscritti"
-        />
-    );
 }
 
 // Audio badge to show on the book cover if the book has audio
@@ -262,10 +225,7 @@ export function BookDialogSimple({
     onOpenChange,
     isAuthenticated = true,
     onLoginClick,
-    lockIconSize = DEFAULT_LOCK_ICON_SIZE,
-    lockIconLightColor = DEFAULT_LOCK_ICON_LIGHT_COLOR,
-    lockIconDarkColor = DEFAULT_LOCK_ICON_DARK_COLOR,
-}: BookDialogSimpleProps) {
+}: BookDialogProps) {
     const [isPdfRequesting, setIsPdfRequesting] = useState(false);
     const [isAuthorMessageOpen, setIsAuthorMessageOpen] = useState(false);
     const [authorMessage, setAuthorMessage] = useState('');
@@ -279,7 +239,7 @@ export function BookDialogSimple({
         state: { filters, sort, viewMode },
     } = useLibrary();
     const pendingActionRef = useRef<{
-        type: 'request-pdf' | 'open-author-message';
+        type: 'request-pdf';
         bookId: string;
     } | null>(null);
     const isReaderNavigationRef = useRef(false);
@@ -333,8 +293,6 @@ export function BookDialogSimple({
                     // Retry the PDF request
                     handleRequestPdf();
                 }, 500);
-            } else if (pendingAction.type === 'open-author-message' && book?.id === pendingAction.bookId) {
-                setIsAuthorMessageOpen(true);
             }
         }
     }, [authState.isAuthenticated, book]);
@@ -422,22 +380,6 @@ export function BookDialogSimple({
 
     const handleOpenAuthorMessage = () => {
         if (!book) return;
-
-        if (!authState.isAuthenticated) {
-            pendingActionRef.current = {
-                type: 'open-author-message',
-                bookId: book.id,
-            };
-            onLoginClick?.();
-            toast({
-                title: 'Accesso richiesto',
-                description: 'Devi effettuare l\'accesso per scrivere all\'autore.',
-                variant: 'default',
-                className: 'bg-blue-100 border-blue-500 text-blue-800',
-            });
-            return;
-        }
-
         setIsAuthorMessageOpen(true);
     };
 
@@ -471,14 +413,6 @@ export function BookDialogSimple({
             const data = await response.json() as { error?: string };
 
             if (!response.ok) {
-                if (response.status === 401) {
-                    setIsAuthorMessageOpen(false);
-                    pendingActionRef.current = {
-                        type: 'open-author-message',
-                        bookId: book.id,
-                    };
-                    onLoginClick?.();
-                }
                 throw new Error(data.error || 'Si è verificato un errore durante l\'invio del messaggio.');
             }
 
@@ -563,12 +497,11 @@ export function BookDialogSimple({
                                     />
                                 </button>
 
-                                {canAccessBookFeatures && (
-                                    <div
-                                        className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2"
-                                        aria-label="Azioni disponibili per il racconto"
-                                    >
-                                        {hasVisibleReading && (
+                                <div
+                                    className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2"
+                                    aria-label="Azioni disponibili per il racconto"
+                                >
+                                        {canAccessBookFeatures && hasVisibleReading && (
                                             <LinkButton
                                                 url={`/read-book/${book.id}`}
                                                 icon={BookOpen}
@@ -588,7 +521,7 @@ export function BookDialogSimple({
                                             </LinkButton>
                                         )}
 
-                                        {hasVisibleReading && (
+                                        {isAuthenticated && hasVisibleReading && (
                                             <Button
                                                 onClick={handleRequestPdf}
                                                 disabled={isPdfRequesting}
@@ -608,11 +541,6 @@ export function BookDialogSimple({
                                                 <span className="text-xs font-semibold sm:text-sm">
                                                     {isPdfRequesting ? 'Invio...' : 'Richiedi PDF'}
                                                 </span>
-                                                <RestrictedFeatureLock
-                                                    size={lockIconSize}
-                                                    lightColor={lockIconLightColor}
-                                                    darkColor={lockIconDarkColor}
-                                                />
                                             </Button>
                                         )}
                                         <Button
@@ -630,14 +558,8 @@ export function BookDialogSimple({
                                             <span className="text-xs font-semibold sm:text-sm">
                                                 Scrivi all'autore
                                             </span>
-                                            <RestrictedFeatureLock
-                                                size={lockIconSize}
-                                                lightColor={lockIconLightColor}
-                                                darkColor={lockIconDarkColor}
-                                            />
                                         </Button>
-                                    </div>
-                                )}
+                                </div>
                             </div>
                             <BookExtractToggle disclosure={extractDisclosure} />
                         </div>
