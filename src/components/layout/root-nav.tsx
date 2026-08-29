@@ -178,9 +178,10 @@ export function RootNav({
                             variant="outline"
                             size="default"
                             onClick={onAuthClick}
-                            className="h-9 text-xs sm:text-sm"
+                            className="h-9 gap-2 text-xs sm:text-sm"
                         >
-                            Accedi
+                            <UserCircle className="h-5 w-5" aria-hidden="true" />
+                            Profilo
                         </Button>
                     )}
 
@@ -213,7 +214,7 @@ export function RootNav({
                         ) : (
                             <>
                                 <Link href="/login">
-                                    Accedi
+                                    Profilo
                                 </Link>
                                 <Link href="/login?tab=register">
                                     Registrati
