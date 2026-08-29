@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useId, useState, useRef } from 'react';
+import { useEffect, useId, useState, useRef, type CSSProperties } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { Headphones, X, BookOpen, Download, MailOpen, Loader2, Info, MessageSquare, Send } from 'lucide-react';
+import { Headphones, X, BookOpen, Download, MailOpen, Loader2, Info, MessageSquare, Send, LockKeyhole } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -45,6 +45,43 @@ interface BookDialogProps {
     onOpenChange: (open: boolean) => void;
     isAuthenticated?: boolean;
     onLoginClick?: () => void;
+}
+
+export interface BookDialogSimpleProps extends BookDialogProps {
+    /** Lock icon size in pixels. */
+    lockIconSize?: number;
+    /** Any valid CSS color used for the lock icon in light mode. */
+    lockIconLightColor?: string;
+    /** Any valid CSS color used for the lock icon in dark mode. */
+    lockIconDarkColor?: string;
+}
+
+const DEFAULT_LOCK_ICON_SIZE = 14;
+const DEFAULT_LOCK_ICON_LIGHT_COLOR = '#000000';
+const DEFAULT_LOCK_ICON_DARK_COLOR = '#fcd34d';
+
+function RestrictedFeatureLock({
+    size,
+    lightColor,
+    darkColor,
+}: {
+    size: number;
+    lightColor: string;
+    darkColor: string;
+}) {
+    return (
+        <LockKeyhole
+            className="shrink-0 text-[var(--book-dialog-lock-light)] dark:text-[var(--book-dialog-lock-dark)]"
+            style={{
+                width: size,
+                height: size,
+                '--book-dialog-lock-light': lightColor,
+                '--book-dialog-lock-dark': darkColor,
+            } as CSSProperties}
+            strokeWidth={2}
+            aria-label="Accesso riservato agli iscritti"
+        />
+    );
 }
 
 // Audio badge to show on the book cover if the book has audio
@@ -225,7 +262,10 @@ export function BookDialogSimple({
     onOpenChange,
     isAuthenticated = true,
     onLoginClick,
-}: BookDialogProps) {
+    lockIconSize = DEFAULT_LOCK_ICON_SIZE,
+    lockIconLightColor = DEFAULT_LOCK_ICON_LIGHT_COLOR,
+    lockIconDarkColor = DEFAULT_LOCK_ICON_DARK_COLOR,
+}: BookDialogSimpleProps) {
     const [isPdfRequesting, setIsPdfRequesting] = useState(false);
     const [isAuthorMessageOpen, setIsAuthorMessageOpen] = useState(false);
     const [authorMessage, setAuthorMessage] = useState('');
@@ -307,6 +347,21 @@ export function BookDialogSimple({
     // Function to handle PDF request
     const handleRequestPdf = async () => {
         if (!book) return;
+
+        if (!authState.isAuthenticated) {
+            pendingActionRef.current = {
+                type: 'request-pdf',
+                bookId: book.id,
+            };
+            onLoginClick?.();
+            toast({
+                title: 'Accesso richiesto',
+                description: 'Devi effettuare l\'accesso per richiedere un PDF',
+                variant: 'default',
+                className: 'bg-blue-100 border-blue-500 text-blue-800',
+            });
+            return;
+        }
 
         setIsPdfRequesting(true);
 
@@ -482,7 +537,7 @@ export function BookDialogSimple({
                 <div className="flex min-h-0 flex-col overflow-y-auto">
                     <div className="flex justify-center">
                         <div className="relative flex w-full flex-col items-center rounded-lg bg-muted/30 px-3 py-3">
-                            <div className="flex flex-col items-center space-y-2">
+                            <div className="flex w-full flex-col items-center gap-3">
 
                                 <button
                                     ref={coverZoomTriggerRef}
@@ -501,55 +556,86 @@ export function BookDialogSimple({
                                         book={book}
                                         size="dialog"
                                         alt={`Copertina di ${book.title}`}
-                                        className="mx-auto flex aspect-[400/567] w-40 max-w-[calc((100dvh-5rem)*400/567)] flex-shrink-0 sm:w-52 md:w-60"
+                                        className="mx-auto flex aspect-[400/567] w-44 max-w-[calc((100dvh-5rem)*400/567)] flex-shrink-0 sm:w-56 md:w-64"
                                         imageClassName="h-full w-full"
                                         skeletonClassName="rounded-lg"
-                                        sizes="(max-width: 640px) 10rem, (max-width: 767px) 13rem, 15rem"
+                                        sizes="(max-width: 640px) 11rem, (max-width: 767px) 14rem, 16rem"
                                     />
                                 </button>
 
                                 {canAccessBookFeatures && (
-                                    <div className="flex w-full flex-col gap-2">
+                                    <div
+                                        className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2"
+                                        aria-label="Azioni disponibili per il racconto"
+                                    >
                                         {hasVisibleReading && (
-                                            <LinkButton url={`/read-book/${book.id}`}
+                                            <LinkButton
+                                                url={`/read-book/${book.id}`}
                                                 icon={BookOpen}
+                                                iconSize="h-4 w-4 !mr-0"
                                                 onClick={handleReaderNavigation}
-                                                className="h-11 w-full px-3 text-xs font-normal text-dark hover:text-white bg-cyan-600/30 hover:bg-cyan-600 border border-cyan-700 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-cyan-400">
-                                                Leggi Racconto<span className="hidden sm:inline"> on-line</span>
+                                                className={cn(
+                                                    "h-10 w-auto justify-start rounded-md border px-3 py-1 text-left",
+                                                    "transition-[background-color,border-color,color] duration-200",
+                                                    "border-cyan-700/75 bg-cyan-600/30 text-cyan-950 hover:border-cyan-700 hover:bg-cyan-600/45",
+                                                    "focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
+                                                    "dark:border-cyan-600 dark:bg-cyan-900 dark:text-cyan-50 dark:hover:border-cyan-500 dark:hover:bg-cyan-800"
+                                                )}
+                                            >
+                                                <span className="text-xs font-semibold sm:text-sm">
+                                                    Leggi online
+                                                </span>
                                             </LinkButton>
                                         )}
 
-                                        <div className="flex w-full flex-row items-center justify-center gap-1 sm:gap-2">
-                                            {hasVisibleReading && (
-                                                <div className="flex-1">
-                                                    <Button
-                                                        onClick={handleRequestPdf}
-                                                        disabled={isPdfRequesting}
-                                                        className="h-11 w-full px-3 text-xs font-normal text-dark hover:text-white bg-emerald-700/30 hover:bg-emerald-800 border border-emerald-900 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-emerald-400">
-                                                        {isPdfRequesting ? (
-                                                            <>
-                                                                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                                                                Invio in corso...
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <MailOpen className="h-3 w-3 mr-1" />
-                                                                Richiedi PDF
-                                                            </>
-                                                        )}
-                                                    </Button>
-                                                </div>
+                                        {hasVisibleReading && (
+                                            <Button
+                                                onClick={handleRequestPdf}
+                                                disabled={isPdfRequesting}
+                                                className={cn(
+                                                    "h-10 w-auto justify-start rounded-md border px-3 py-1 text-left",
+                                                    "transition-[background-color,border-color,color] duration-200",
+                                                    "border-emerald-800/70 bg-emerald-700/30 text-emerald-950 hover:border-emerald-800 hover:bg-emerald-700/45",
+                                                    "focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2",
+                                                    "dark:border-emerald-700 dark:bg-emerald-900 dark:text-emerald-50 dark:hover:border-emerald-600 dark:hover:bg-emerald-800"
+                                                )}
+                                            >
+                                                {isPdfRequesting ? (
+                                                    <Loader2 className="!h-4 !w-4 animate-spin" aria-hidden="true" />
+                                                ) : (
+                                                    <MailOpen className="!h-4 !w-4" aria-hidden="true" />
+                                                )}
+                                                <span className="text-xs font-semibold sm:text-sm">
+                                                    {isPdfRequesting ? 'Invio...' : 'Richiedi PDF'}
+                                                </span>
+                                                <RestrictedFeatureLock
+                                                    size={lockIconSize}
+                                                    lightColor={lockIconLightColor}
+                                                    darkColor={lockIconDarkColor}
+                                                />
+                                            </Button>
+                                        )}
+                                        <Button
+                                            type="button"
+                                            onClick={handleOpenAuthorMessage}
+                                            className={cn(
+                                                "h-10 w-auto justify-start rounded-md border px-3 py-1 text-left",
+                                                "transition-[background-color,border-color,color] duration-200",
+                                                "border-violet-800/70 bg-violet-700/30 text-violet-950 hover:border-violet-800 hover:bg-violet-700/45",
+                                                "focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2",
+                                                "dark:border-violet-700 dark:bg-violet-900 dark:text-violet-50 dark:hover:border-violet-600 dark:hover:bg-violet-800"
                                             )}
-                                            <div className="flex-1">
-                                                <Button
-                                                    type="button"
-                                                    onClick={handleOpenAuthorMessage}
-                                                    className="h-11 w-full px-3 text-xs font-normal text-dark hover:text-white bg-violet-700/30 hover:bg-violet-800 border border-violet-900 shadow select-none transition-colors duration-200 truncate focus-visible:ring-2 focus-visible:ring-violet-400">
-                                                    <MessageSquare className="h-3 w-3 mr-1" />
-                                                    Scrivi all'autore
-                                                </Button>
-                                            </div>
-                                        </div>
+                                        >
+                                            <MessageSquare className="!h-4 !w-4" aria-hidden="true" />
+                                            <span className="text-xs font-semibold sm:text-sm">
+                                                Scrivi all'autore
+                                            </span>
+                                            <RestrictedFeatureLock
+                                                size={lockIconSize}
+                                                lightColor={lockIconLightColor}
+                                                darkColor={lockIconDarkColor}
+                                            />
+                                        </Button>
                                     </div>
                                 )}
                             </div>

@@ -115,7 +115,7 @@ export function RootNav({
                     <div className="inline-flex items-center text-xs text-muted-foreground sm:text-sm">
                         <a
                             href={`mailto:${SITE_CONFIG.CONTACT_EMAIL}`}
-                            className="flex min-h-11 items-center gap-1.5 rounded-md px-1.5 align-middle transition-colors hover:text-yellow-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="flex min-h-11 items-center gap-1.5 rounded-md px-1.5 align-middle transition-colors hover:text-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:text-amber-300"
                             rel="nofollow"
                             aria-label={`Scrivi a ${SITE_CONFIG.CONTACT_EMAIL}`}
                         >
