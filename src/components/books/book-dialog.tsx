@@ -117,7 +117,7 @@ function BookExtractToggle({ disclosure }: { disclosure: BookExtractDisclosureSt
         <button
             type="button"
             className={cn(
-                "group absolute bottom-1 right-1 z-20 flex h-11 w-11 items-center justify-center gap-1.5 rounded-full px-0 sm:w-auto sm:px-3",
+                "group absolute bottom-1 right-1 z-20 flex h-10 w-10 items-center justify-center gap-1 rounded-full px-0 sm:h-11 sm:w-auto sm:gap-1.5 sm:px-3",
                 "text-sky-700 transition-colors hover:bg-background/70 hover:text-sky-900",
                 "dark:text-cyan-300 dark:hover:text-cyan-100",
                 "active:bg-transparent focus-visible:outline-none"
@@ -498,17 +498,17 @@ export function BookDialogSimple({
                                 </button>
 
                                 <div
-                                    className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2"
+                                    className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-1.5 sm:gap-2"
                                     aria-label="Azioni disponibili per il racconto"
                                 >
                                         {canAccessBookFeatures && hasVisibleReading && (
                                             <LinkButton
                                                 url={`/read-book/${book.id}`}
                                                 icon={BookOpen}
-                                                iconSize="h-4 w-4 !mr-0"
+                                                iconSize="h-3.5 w-3.5 !mr-0 sm:h-4 sm:w-4"
                                                 onClick={handleReaderNavigation}
                                                 className={cn(
-                                                    "h-10 w-auto justify-start rounded-md border px-3 py-1 text-left",
+                                                    "h-9 w-auto justify-start gap-1.5 rounded-md border px-2 py-1 text-left sm:h-10 sm:gap-2 sm:px-3",
                                                     "transition-[background-color,border-color,color] duration-200",
                                                     "border-cyan-700/75 bg-cyan-600/30 text-cyan-950 hover:border-cyan-700 hover:bg-cyan-600/45",
                                                     "focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
@@ -521,12 +521,12 @@ export function BookDialogSimple({
                                             </LinkButton>
                                         )}
 
-                                        {isAuthenticated && hasVisibleReading && (
+                                        {hasVisibleReading && (
                                             <Button
                                                 onClick={handleRequestPdf}
                                                 disabled={isPdfRequesting}
                                                 className={cn(
-                                                    "h-10 w-auto justify-start rounded-md border px-3 py-1 text-left",
+                                                    "h-9 w-auto justify-start gap-1.5 rounded-md border px-2 py-1 text-left sm:h-10 sm:gap-2 sm:px-3",
                                                     "transition-[background-color,border-color,color] duration-200",
                                                     "border-emerald-800/70 bg-emerald-700/30 text-emerald-950 hover:border-emerald-800 hover:bg-emerald-700/45",
                                                     "focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2",
@@ -534,9 +534,9 @@ export function BookDialogSimple({
                                                 )}
                                             >
                                                 {isPdfRequesting ? (
-                                                    <Loader2 className="!h-4 !w-4 animate-spin" aria-hidden="true" />
+                                                    <Loader2 className="!h-3.5 !w-3.5 animate-spin sm:!h-4 sm:!w-4" aria-hidden="true" />
                                                 ) : (
-                                                    <MailOpen className="!h-4 !w-4" aria-hidden="true" />
+                                                    <MailOpen className="!h-3.5 !w-3.5 sm:!h-4 sm:!w-4" aria-hidden="true" />
                                                 )}
                                                 <span className="text-xs font-semibold sm:text-sm">
                                                     {isPdfRequesting ? 'Invio...' : 'Richiedi PDF'}
@@ -547,14 +547,14 @@ export function BookDialogSimple({
                                             type="button"
                                             onClick={handleOpenAuthorMessage}
                                             className={cn(
-                                                "h-10 w-auto justify-start rounded-md border px-3 py-1 text-left",
+                                                "h-9 w-auto justify-start gap-1.5 rounded-md border px-2 py-1 text-left sm:h-10 sm:gap-2 sm:px-3",
                                                 "transition-[background-color,border-color,color] duration-200",
                                                 "border-violet-800/70 bg-violet-700/30 text-violet-950 hover:border-violet-800 hover:bg-violet-700/45",
                                                 "focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2",
                                                 "dark:border-violet-700 dark:bg-violet-900 dark:text-violet-50 dark:hover:border-violet-600 dark:hover:bg-violet-800"
                                             )}
                                         >
-                                            <MessageSquare className="!h-4 !w-4" aria-hidden="true" />
+                                            <MessageSquare className="!h-3.5 !w-3.5 sm:!h-4 sm:!w-4" aria-hidden="true" />
                                             <span className="text-xs font-semibold sm:text-sm">
                                                 Scrivi all'autore
                                             </span>
@@ -574,7 +574,7 @@ export function BookDialogSimple({
                             <Button
                                 onClick={onLoginClick}
                                 size="lg"
-                                className="min-h-11 w-full bg-cyan-800 px-5 text-base text-cyan-50 hover:bg-emerald-900 focus-visible:ring-2 focus-visible:ring-cyan-400 sm:ml-auto sm:w-auto"
+                                className="min-h-10 w-full bg-cyan-800 px-3 py-2 text-sm text-cyan-50 hover:bg-emerald-900 focus-visible:ring-2 focus-visible:ring-cyan-400 sm:ml-auto sm:min-h-11 sm:w-auto sm:px-5 sm:text-base"
                             >
                                 {getLoginLabel(presentationMode)}
                             </Button>
@@ -635,13 +635,14 @@ export function BookDialogSimple({
                                 variant="outline"
                                 onClick={() => setIsAuthorMessageOpen(false)}
                                 disabled={isAuthorMessageSending}
+                                className="h-9 px-3 text-sm sm:h-10 sm:px-4"
                             >
                                 Annulla
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={isAuthorMessageSending || !authorMessage.trim()}
-                                className="bg-violet-700 text-white hover:bg-violet-800"
+                                className="h-9 bg-violet-700 px-3 text-sm text-white hover:bg-violet-800 sm:h-10 sm:px-4"
                             >
                                 {isAuthorMessageSending ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
