@@ -183,6 +183,7 @@ export function BookTable({
                     <div className="flex items-center space-x-2 select-none">
                         <Switch
                             id="audio-filter"
+                            className="data-[state=checked]:bg-green-500"
                             checked={showAudioOnly}
                             onCheckedChange={setShowAudioOnly}
                         />

@@ -240,7 +240,11 @@ function AddBookPageContent() {
                 if (!createdBook) {
                     return;
                 }
-                console.log('Book created successfully');
+                setEditingBook(createdBook);
+                setActiveView('edit');
+                invalidateBooksCache();
+                await fetchBooks();
+                return;
             }
 
             invalidateBooksCache();

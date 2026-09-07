@@ -70,3 +70,9 @@ reports/
 .devin
 .vercel
 .playwright-cli
+# Runtime preview assets: provision and back up separately.
+/public/previews/*
+!/public/previews/.gitkeep
+
+# Local browser verification artifacts
+/output/playwright/

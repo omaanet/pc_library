@@ -265,6 +265,15 @@ Notes:
 
 ## Common Gotchas
 
+- Book-owned previews now use `book_previews`, `src/lib/db/queries/book-previews.ts`,
+  `/api/previews`, and `/api/books/[id]/preview`. Preview saves and migration never update
+  `books`; keep legacy `is_preview` library filtering independent. The book form contains
+  a separate `Salva anteprima` action. See `BOOK_PREVIEWS_RELEASE.md` for migration and
+  persistent local storage requirements; no production migration was run during implementation.
+- Preview covers live in `public/previews/covers`, prepared pages in
+  `public/previews/<book-id>/pages`; runtime serving uses `/api/preview-assets`.
+  `pnpm test:previews` validates the new feature using isolated in-memory PostgreSQL.
+
 - Use `Get-Content -LiteralPath ...` in PowerShell for files under `[param]` route folders.
 - Do not reintroduce the old activate-email flow unless the code is being intentionally redesigned.
 - `src/app/api/user/preferences/route.ts` is a placeholder implementation, so DB-backed preference changes need new persistence work.

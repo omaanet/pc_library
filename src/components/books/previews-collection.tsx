@@ -2,12 +2,11 @@
 
 import { usePreviewBooks } from '@/hooks/use-preview-books';
 import { Book as BookIcon, RefreshCw } from 'lucide-react';
-import type { Book } from '@/types';
-import { PreviewCover } from '@/components/books/preview-cover';
+import { BookPreviewCard } from '@/components/previews/book-preview-card';
 import { Button } from '@/components/ui/button';
 
 export function PreviewsCollection() {
-    const { books, loading, mounted, error, retry } = usePreviewBooks();
+    const { previews, loading, error, retry } = usePreviewBooks();
 
     return (
         <div className="rounded-xl border bg-card p-6">
@@ -49,11 +48,11 @@ export function PreviewsCollection() {
                                 Riprova
                             </Button>
                         </div>
-                    ) : !Array.isArray(books) || books.length === 0 ? (
+                    ) : previews.length === 0 ? (
                         <div className="p-0 text-muted-foreground">Al momento non sono disponibili anteprime dei libri.</div>
                     ) : (
-                        books.map((book, index) => (
-                            <PreviewCover key={`${book.id}-${index}`} mounted={mounted} book={book} index={index} itemsVerticalAlign="items-start" />
+                        previews.map((preview) => (
+                            <BookPreviewCard key={preview.bookId} preview={preview} />
                         ))
                     )}
 

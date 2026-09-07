@@ -13,11 +13,6 @@ export interface FetchBooksParams {
   filters?: LibraryFilters;
 }
 
-export interface PreviewBooksParams {
-  sortOrder?: 'asc' | 'desc';
-  isVisible?: number;
-}
-
 /**
  * Service layer for book API operations.
  * Centralizes all /api/books API calls and URL parameter construction.
@@ -103,29 +98,4 @@ export const bookApiService = {
     return this.fetchBooks(params);
   },
 
-  /**
-   * Fetches preview books from the API
-   * Preview books are books marked with isPreview flag for promotional purposes
-   * 
-   * @param params - Optional parameters for sorting and visibility filtering
-   * @returns Promise resolving to BookResponse containing preview books
-   * @throws Error if the request fails
-   */
-  async fetchPreviewBooks(params: PreviewBooksParams = {}): Promise<BookResponse> {
-    const { sortOrder = 'desc', isVisible = 1 } = params;
-
-    const urlParams = new URLSearchParams({
-      displayPreviews: SITE_CONFIG.DISPLAY_PREVIEWS.PREVIEW_ONLY.toString(),
-      sortOrder,
-      isVisible: isVisible.toString(),
-    });
-
-    const response = await fetch(`/api/books?${urlParams}`, { cache: 'no-store' });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch preview books: ${response.status}`);
-    }
-
-    return response.json();
-  },
 };

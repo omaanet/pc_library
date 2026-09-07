@@ -39,6 +39,7 @@ import {
 import { Book } from '@/types';
 import { IMAGE_CONFIG } from '@/lib/image-utils';
 import ThemedButton from '@/components/ThemedButton';
+import { BookPreviewEditor } from '@/components/admin/books/book-preview-editor';
 import { CoverImagePicker } from '@/components/admin/books/cover-image-picker';
 import {
     getBulkVisibilityUpdate,
@@ -674,126 +675,20 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     )}
                 />
 
-                <FormField
-                    control={form.control}
-                    name="isPreview"
-                    render={({ field }) => (
-                        <FormItem className={`space-y-4 rounded-lg border-2 p-4 transition-colors ${field.value ? 'border-primary/50' : 'border-border'}`}>
-                            <div className="flex flex-row items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <FormLabel className="text-base">Preview Book</FormLabel>
-                                    <FormDescription>
-                                        Is this book a preview version?
-                                    </FormDescription>
-                                </div>
-                                <FormControl>
-                                    <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                        className="data-[state=checked]:bg-green-500"
-                                    />
-                                </FormControl>
+                <FormField control={form.control} name="isPreview" render={({ field }) => (
+                    <FormItem className={`space-y-4 rounded-lg border-2 p-4 transition-colors ${field.value ? 'border-primary/50' : 'border-border'}`}>
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base">Preview Book</FormLabel>
+                                <FormDescription>Esclude il libro dalla biblioteca ordinaria. I contenuti e la visibilità dell’anteprima si configurano qui sotto, indipendentemente da questo flag.</FormDescription>
                             </div>
-
-                            {field.value && (
-                                <div className="ms-10 space-y-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="mediaId"
-                                        render={({ field: mediaIdField }) => (
-                                            <FormItem>
-                                                <FormLabel>Media ID <span className="text-muted-foreground">(optional)</span></FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="Mux playback ID"
-                                                        value={mediaIdField.value || ''}
-                                                        onChange={(e) => mediaIdField.onChange(e.target.value || null)}
-                                                        className="w-auto"
-                                                    />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    Optional Mux playback ID used for the preview video
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="mediaTitle"
-                                        render={({ field: mediaTitleField }) => (
-                                            <FormItem>
-                                                <FormLabel>Media Title <span className="text-muted-foreground">(optional)</span></FormLabel>
-                                                <div className="flex items-center gap-2">
-                                                    <FormControl>
-                                                        <Input
-                                                            placeholder="Mux media title"
-                                                            value={mediaTitleField.value || ''}
-                                                            onChange={(e) => mediaTitleField.onChange(e.target.value || null)}
-                                                            className="flex-1"
-                                                        />
-                                                    </FormControl>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            const currentTitle = (form.getValues().title || '').trim();
-                                                            mediaTitleField.onChange(currentTitle.length ? currentTitle : null);
-                                                        }}
-                                                    >
-                                                        Use Book Title
-                                                    </Button>
-                                                </div>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="mediaUid"
-                                        render={({ field: mediaUidField }) => (
-                                            <FormItem>
-                                                <FormLabel>Media UserID <span className="text-muted-foreground">(optional)</span></FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="Viewer user id"
-                                                        value={mediaUidField.value || ''}
-                                                        onChange={(e) => mediaUidField.onChange(e.target.value || null)}
-                                                        className="w-auto"
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="previewPlacement"
-                                        render={({ field: placementField }) => (
-                                            <FormItem>
-                                                <FormLabel>Preview placement (left/right) <span className="text-muted-foreground">(optional)</span></FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="left or right"
-                                                        value={placementField.value || ''}
-                                                        onChange={(e) => placementField.onChange(e.target.value || null)}
-                                                        className="w-auto"
-                                                    />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    Determines whether the preview video appears before (left) or after (right) the cover
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                            )}
-                        </FormItem>
-                    )}
-                />
-
+                            <FormControl><Switch className="shrink-0 data-[state=checked]:bg-green-500" checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </div>
+                        <div hidden={!field.value} className="sm:ms-10">
+                            {book?.id ? <BookPreviewEditor key={book.id} book={book} /> : <p className="border-t pt-4 text-sm text-muted-foreground">Salva prima il libro: potrai poi configurare qui copertina, video ed estratto dell’anteprima.</p>}
+                        </div>
+                    </FormItem>
+                )} />
                 <div className={`space-y-4 rounded-lg border-2 p-4 transition-colors ${allAvailableVersionsVisible ? 'border-primary/50' : 'border-border'}`}>
                     <div className="flex items-center justify-between gap-4">
                         <div className="space-y-0.5">
