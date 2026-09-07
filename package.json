@@ -86,8 +86,7 @@
   },
   "pnpm": {
     "ignoredBuiltDependencies": [
-      "core-js",
-      "sqlite3"
+      "esbuild"
     ],
     "onlyBuiltDependencies": [
       "core-js",
