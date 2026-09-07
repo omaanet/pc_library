@@ -26,7 +26,7 @@ function formatPublishingDate(value: string | null | undefined): string | null {
 /**
  * Reveal-on-scroll wrapper. Fades and lifts its children into view once, the
  * first time they intersect the viewport. Motion is disabled automatically for
- * users who prefer reduced motion (handled in the CSS below).
+ * users who prefer reduced motion (handled in the CSS below).2
  */
 function Reveal({
     children,
