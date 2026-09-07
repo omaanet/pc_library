@@ -64,11 +64,17 @@ export function getMasterVisibilityState(book: BookVisibility): MasterVisibility
     return 'indeterminate';
 }
 
-export function getBulkVisibilityUpdate(book: BookVisibility): VisibilityDefaults {
-    const nextVisible = getMasterVisibilityState(book) !== true;
+export function isAnyVersionVisible(book: BookVisibility): boolean {
+    return getMasterVisibilityState(book) !== false;
+}
+
+export function setAllVersionsVisible(
+    book: Pick<BookVisibility, 'hasAudio'>,
+    visible: boolean
+): VisibilityDefaults {
     return {
-        isReadingVisible: nextVisible,
-        isAudioVisible: book.hasAudio ? nextVisible : false,
+        isReadingVisible: visible,
+        isAudioVisible: visible && book.hasAudio,
     };
 }
 

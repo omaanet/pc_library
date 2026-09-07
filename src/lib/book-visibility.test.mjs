@@ -6,11 +6,12 @@ import {
     canAccessBook,
     canAccessReading,
     getBookPresentationMode,
-    getBulkVisibilityUpdate,
     getMasterVisibilityState,
+    isAnyVersionVisible,
     isAudioAvailable,
     isBookAvailable,
     normalizeBookVisibility,
+    setAllVersionsVisible,
 } from './book-visibility.ts';
 
 const states = {
@@ -45,21 +46,25 @@ test('master visibility is checked, unchecked, or indeterminate', () => {
     assert.equal(getMasterVisibilityState(states.noAudio), true);
 });
 
-test('master click hides all from checked and shows all from mixed or unchecked', () => {
-    assert.deepEqual(getBulkVisibilityUpdate(states.both), {
+test('the master toggle is on unless every available version is hidden', () => {
+    assert.equal(isAnyVersionVisible(states.both), true);
+    assert.equal(isAnyVersionVisible(states.reading), true);
+    assert.equal(isAnyVersionVisible(states.audio), true);
+    assert.equal(isAnyVersionVisible(states.neither), false);
+    assert.equal(isAnyVersionVisible(states.noAudio), true);
+});
+
+test('the master toggle shows or hides every available version', () => {
+    assert.deepEqual(setAllVersionsVisible(states.reading, true), {
+        isReadingVisible: true,
+        isAudioVisible: true,
+    });
+    assert.deepEqual(setAllVersionsVisible(states.both, false), {
         isReadingVisible: false,
         isAudioVisible: false,
     });
-    assert.deepEqual(getBulkVisibilityUpdate(states.reading), {
+    assert.deepEqual(setAllVersionsVisible(states.noAudio, true), {
         isReadingVisible: true,
-        isAudioVisible: true,
-    });
-    assert.deepEqual(getBulkVisibilityUpdate(states.neither), {
-        isReadingVisible: true,
-        isAudioVisible: true,
-    });
-    assert.deepEqual(getBulkVisibilityUpdate(states.noAudio), {
-        isReadingVisible: false,
         isAudioVisible: false,
     });
 });

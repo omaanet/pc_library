@@ -23,3 +23,17 @@ export const displayFont = Dancing_Script({
 
 // CSS class to apply display font
 export const displayFontClass = 'font-[family-name:var(--font-display)]';
+
+// Reading face for long-form book extracts (the preview dialog). Not preloaded:
+// it is only used inside that dialog, so the browser fetches it on first render there.
+export const readingFont = Lora({
+    subsets: ['latin'],
+    weight: ['400', '500', '600'],
+    style: ['normal', 'italic'],
+    display: 'swap',
+    preload: false,
+    variable: '--font-reading',
+});
+
+// CSS class to apply the reading font
+export const readingFontClass = 'font-[family-name:var(--font-reading),ui-serif,Georgia,serif]';

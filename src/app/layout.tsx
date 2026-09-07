@@ -3,7 +3,7 @@ import type { Viewport } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import { Providers } from '@/providers/providers';
 import { Toaster } from '@/components/ui/toaster';
-import { baseFont, displayFont } from '@/config/fonts';
+import { baseFont, displayFont, readingFont } from '@/config/fonts';
 import { metadata } from '@/config/metadata';
 import { getCurrentSessionUser } from '@/lib/auth-utils';
 import { APP_CONTENT_SECURITY_POLICY } from '@/lib/security/csp';
@@ -43,7 +43,7 @@ export default async function RootLayout({
                     content={APP_CONTENT_SECURITY_POLICY}
                 />
             </head>
-            <body className={`${baseFont.className} ${displayFont.variable}`}>
+            <body className={`${baseFont.className} ${baseFont.variable} ${displayFont.variable} ${readingFont.variable}`}>
                 {/* <div className="grain-overlay" aria-hidden="true" /> */}
                 <Providers
                     initialUser={initialUser}

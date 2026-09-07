@@ -14,6 +14,9 @@ export function isCalendarDate(value: string): boolean {
 }
 
 const nullableText = z.string().max(500).nullable();
+// Shared with the admin editor so an uploaded extract file is rejected before
+// it reaches a save that the schema would refuse anyway.
+export const EXTRACT_HTML_MAX_LENGTH = 200000;
 const assetPath = z.string().refine(safeAssetPath, 'Percorso immagine non valido');
 export const previewSchema = z.object({
     title: z.string().trim().min(1, 'Inserisci il titolo').max(500),
@@ -29,7 +32,7 @@ export const previewSchema = z.object({
     videoPlacement: z.enum(['left', 'right']),
     extractEnabled: z.boolean(),
     extractSource: z.enum(['text', 'images']),
-    extractHtml: z.string().max(200000).nullable(),
+    extractHtml: z.string().max(EXTRACT_HTML_MAX_LENGTH).nullable(),
     extractImagePaths: z.array(assetPath).max(50),
 }).superRefine((data, ctx) => {
     const error = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message });

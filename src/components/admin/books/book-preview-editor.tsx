@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useState, type Ref } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Book } from '@/types';
 import type { PreviewInput, PublicBookPreview } from '@/types/book-preview';
-import { emptyPreview, previewAssetUrl, previewSchema, publicPreview } from '@/lib/book-preview';
+import { EXTRACT_HTML_MAX_LENGTH, emptyPreview, previewAssetUrl, previewSchema, publicPreview } from '@/lib/book-preview';
 import { previewRequest } from '@/lib/services/preview-api-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,8 +15,17 @@ import { BookPreviewDialogContent } from '@/components/previews/book-preview-car
 import { PreviewAssetPicker } from './preview-asset-picker';
 
 type Assets = { preview: string[]; book: string[]; pages: string[] };
-export function BookPreviewEditor({ book }: { book: Book }) {
+export type BookPreviewEditorHandle = {
+    save: (onlyIfChanged?: boolean) => Promise<void>;
+};
+
+export function BookPreviewEditor({ book, ref, disabled = false }: {
+    book: Book;
+    ref?: Ref<BookPreviewEditorHandle>;
+    disabled?: boolean;
+}) {
     const [draft, setDraft] = useState<PreviewInput>(emptyPreview(book.title));
+    const [savedDraft, setSavedDraft] = useState<PreviewInput | null>(null);
     const [bookCover, setBookCover] = useState<string | null>(book.coverImage || null);
     const [assets, setAssets] = useState<Assets>({ preview: [], book: [], pages: [] });
     const [assetsLoaded, setAssetsLoaded] = useState(false);
@@ -42,25 +51,31 @@ export function BookPreviewEditor({ book }: { book: Book }) {
         try {
             const data = await previewRequest(`/api/books/${encodeURIComponent(book.id)}/preview`);
             setMigrationRequired(!!data.migrationRequired);
-            setDraft(data.preview || emptyPreview(data.book.title)); setBookCover(data.book.coverImage || null); setReady(true);
+            const loadedDraft = data.preview || emptyPreview(data.book.title);
+            setDraft(loadedDraft); setSavedDraft(loadedDraft); setBookCover(data.book.coverImage || null); setReady(true);
             await refreshAssets();
         } catch (e) { setError((e as Error).message); }
         finally { setLoading(false); }
     }, [book.id, refreshAssets]);
     useEffect(() => { void load(); }, [load]);
 
-    async function save() {
+    async function save(onlyIfChanged = false) {
         setError(''); setMessage('');
-        const parsed = previewSchema.safeParse(draft);
-        if (!parsed.success) { setError(parsed.error.issues.map(i => i.message).join('. ')); return; }
-        setBusy(true);
         try {
+            if (loading || !ready) throw new Error('Attendi il caricamento dell’anteprima o riprova a caricarla prima di salvare.');
+            if (busy) throw new Error('Attendi il completamento dell’operazione sull’anteprima prima di salvare.');
+            if (onlyIfChanged && JSON.stringify(draft) === JSON.stringify(savedDraft)) return;
+            if (migrationRequired) throw new Error('Esegui la migrazione delle anteprime e ricarica la pagina prima di salvare.');
+            const parsed = previewSchema.safeParse(draft);
+            if (!parsed.success) throw new Error(parsed.error.issues.map(i => i.message).join('. '));
+            setBusy(true);
             const data = await previewRequest(`/api/books/${encodeURIComponent(book.id)}/preview`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(parsed.data) });
-            setDraft(data.preview); setMessage('Anteprima salvata.');
+            setDraft(data.preview); setSavedDraft(data.preview); setMessage('Anteprima salvata.');
             await cache.invalidateQueries({ queryKey: ['book-previews'] });
-        } catch (e) { setError((e as Error).message); }
-        finally { setBusy(false); }
+        } catch (e) { setError((e as Error).message); throw e; }
+        finally { if (!busy) setBusy(false); }
     }
+    useImperativeHandle(ref, () => ({ save }));
     async function upload(file: File | undefined) {
         if (!file) return;
         setBusy(true); setError('');
@@ -95,6 +110,22 @@ export function BookPreviewEditor({ book }: { book: Book }) {
         if (failures.length) setError(failures.join(' '));
         setUploadProgress(''); setBusy(false);
     }
+    async function loadExtractText(file: File | undefined) {
+        if (!file) return;
+        setBusy(true); setError(''); setMessage('');
+        try {
+            // Any file the admin picks is read as plain text: the extract field is
+            // HTML, so the bytes are shown verbatim instead of being converted.
+            const text = await file.text();
+            if (text.length > EXTRACT_HTML_MAX_LENGTH) {
+                setError(`Il file contiene ${text.length} caratteri: il massimo è ${EXTRACT_HTML_MAX_LENGTH}.`);
+                return;
+            }
+            setDraft(previous => ({ ...previous, extractHtml: text || null }));
+            setMessage(`Testo caricato da ${file.name}. Controlla il contenuto e salva l’anteprima.`);
+        } catch (e) { setError((e as Error).message); }
+        finally { setBusy(false); }
+    }
     function move(index: number, delta: number) {
         const pages = [...draft.extractImagePaths];
         [pages[index], pages[index + delta]] = [pages[index + delta], pages[index]];
@@ -116,9 +147,9 @@ export function BookPreviewEditor({ book }: { book: Book }) {
         if (event.key === 'Enter' && (event.target as HTMLElement).closest('input, select')) event.preventDefault();
     }}>
         <h2 className="text-xl font-semibold">Anteprima del libro</h2>
-        <p className="text-sm text-muted-foreground">Questa anteprima ha contenuti e visibilità indipendenti. Il salvataggio non modifica il libro. Il flag “Preview Book” del libro continua a escluderlo dalla biblioteca ordinaria.</p>
+        <p className="text-sm text-muted-foreground">Questa anteprima ha contenuti e visibilità indipendenti, salvati anche con “Update Book” e “Update & close”. “Salva anteprima” aggiorna solo l’anteprima. Il flag “Preview Book” del libro continua a escluderlo dalla biblioteca ordinaria.</p>
         {migrationRequired && <p role="status" className="rounded border border-amber-500 p-3 text-sm">La tabella delle anteprime non è ancora disponibile. Puoi preparare e visualizzare i contenuti; per salvarli, esegui la migrazione delle anteprime dalla gestione migrazioni e ricarica questa pagina.</p>}
-        {loading ? <p>Caricamento anteprima…</p> : !ready ? <Button type="button" onClick={load}>Riprova caricamento anteprima</Button> : <fieldset disabled={busy} className="space-y-5">
+        {loading ? <p>Caricamento anteprima…</p> : !ready ? <Button type="button" disabled={disabled} onClick={load}>Riprova caricamento anteprima</Button> : <fieldset disabled={busy || disabled} className="space-y-5">
             <label className="block space-y-2"><span>Titolo anteprima</span><Input value={draft.title} onChange={e => change('title', e.target.value)} /></label>
             <label className="flex items-center gap-3"><Switch className="data-[state=checked]:bg-green-500" checked={draft.isVisible} onCheckedChange={v => change('isVisible', v)} />Visibile in homepage</label>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -183,7 +214,13 @@ export function BookPreviewEditor({ book }: { book: Book }) {
                 </div>
             {draft.extractEnabled && <div id={`preview-extract-fields-${book.id}`} className="mt-5 space-y-5 border-t pt-5">
                 <label className="block space-y-2"><span>Origine estratto</span><select className="w-full rounded border bg-background p-2 sm:w-auto sm:min-w-48 sm:block" value={draft.extractSource} onChange={e => change('extractSource', e.target.value as 'text' | 'images')}><option value="text">Testo</option><option value="images">Immagini</option></select></label>
-                {draft.extractSource === 'text' ? <label className="block space-y-2"><span>HTML dell’estratto</span><Textarea rows={10} className="font-mono" value={draft.extractHtml || ''} onChange={e => change('extractHtml', e.target.value || null)} /><span className="block text-sm text-muted-foreground">Il testo è interpretato come HTML. Usa &lt;p&gt; per i paragrafi e &lt;br&gt; per gli a capo.</span></label> : <>
+                {draft.extractSource === 'text' ? <div className="space-y-4">
+                    <label className="block space-y-2"><span>HTML dell’estratto</span><Textarea rows={10} className="font-mono" value={draft.extractHtml || ''} onChange={e => change('extractHtml', e.target.value || null)} /><span className="block text-sm text-muted-foreground">Il testo è interpretato come HTML. Usa &lt;p&gt; per i paragrafi e &lt;br&gt; per gli a capo.</span></label>
+                    <label className="block space-y-2"><span>Oppure carica un file</span>
+                        <Input type="file" onChange={event => { void loadExtractText(event.target.files?.[0]); event.target.value = ''; }} />
+                        <span className="block text-sm text-muted-foreground">Qualsiasi file caricato viene letto come testo e sostituisce il contenuto qui sopra (massimo {EXTRACT_HTML_MAX_LENGTH} caratteri). Controlla il risultato e salva l’anteprima.</span>
+                    </label>
+                </div> : <>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div className="min-w-0 flex-1"><PreviewAssetPicker
                             files={unselectedPages} label="Pagine disponibili" placeholder="Seleziona una pagina"
@@ -218,7 +255,7 @@ export function BookPreviewEditor({ book }: { book: Book }) {
             </div>}
             </div>
             <div className="flex flex-wrap gap-3">
-                <Button type="button" disabled={migrationRequired} onClick={save}>{busy ? 'Salvataggio…' : 'Salva anteprima'}</Button>
+                <Button type="button" disabled={migrationRequired} onClick={() => { void save().catch(() => {}); }}>{busy ? 'Salvataggio…' : 'Salva anteprima'}</Button>
                 <Dialog open={inspectOpen} onOpenChange={setInspectOpen}>
                     <DialogTrigger asChild><Button type="button" variant="outline" onClick={() => setInspection(resolved)}>Visualizza anteprima</Button></DialogTrigger>
                     {inspectOpen && inspection && <BookPreviewDialogContent preview={inspection} />}

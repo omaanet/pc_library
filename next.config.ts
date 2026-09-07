@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     allowedDevOrigins: ['127.0.0.1', '192.168.1.3'],
+    // Keep jsdom's runtime assets relative to its installed package during SSR.
+    serverExternalPackages: ['isomorphic-dompurify'],
+    experimental: {
+        // Next 16.2.6's persistent dev cache caused repeated output invalidations
+        // on Windows (sustained CPU and growing RAM). Keep Turbopack in memory.
+        turbopackFileSystemCacheForDev: false,
+    },
     // The admin migrations API reads .sql files from scripts/migrations at runtime
     // via fs (process.cwd()). Next's static tracing can't detect those dynamic
     // reads, so include them explicitly to survive a standalone/serverless build.

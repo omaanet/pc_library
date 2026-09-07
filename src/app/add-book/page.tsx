@@ -195,7 +195,7 @@ function AddBookPageContent() {
     };
 
     // Handle form submission
-    const handleSubmit = async (values: BookFormValues) => {
+    const handleSubmit = async (values: BookFormValues, options?: { close?: boolean }) => {
         // console.log('handleSubmit - Form values:', values);
         setIsSubmitting(true);
 
@@ -251,6 +251,12 @@ function AddBookPageContent() {
 
             // Refresh the book list
             await fetchBooks();
+
+            // "Update Book" saves without leaving the form; only "Update & close"
+            // (and an implicit form submit) asks to go back to the book list.
+            if (options?.close === false) {
+                return;
+            }
 
             if (activeView === 'edit' || activeView === 'audio-tracks') {
                 returnToManageBooks();

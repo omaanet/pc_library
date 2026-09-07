@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Select,
     SelectContent,
@@ -39,11 +38,11 @@ import {
 import { Book } from '@/types';
 import { IMAGE_CONFIG } from '@/lib/image-utils';
 import ThemedButton from '@/components/ThemedButton';
-import { BookPreviewEditor } from '@/components/admin/books/book-preview-editor';
+import { BookPreviewEditor, type BookPreviewEditorHandle } from '@/components/admin/books/book-preview-editor';
 import { CoverImagePicker } from '@/components/admin/books/cover-image-picker';
 import {
-    getBulkVisibilityUpdate,
-    getMasterVisibilityState,
+    isAnyVersionVisible,
+    setAllVersionsVisible,
 } from '@/lib/book-visibility';
 
 const MIN_PUBLISHING_DATE = new Date(1900, 0, 1);
@@ -111,12 +110,17 @@ type BookFormValues = z.infer<typeof bookFormSchema>;
 
 interface BookFormProps {
     book?: Book;
-    onSubmit: (values: BookFormValues) => Promise<void>;
+    onSubmit: (values: BookFormValues, options?: { close?: boolean }) => Promise<void>;
     onCancel: () => void;
     isSubmitting: boolean;
 }
 
-export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormProps) {
+export function BookForm({ book, onSubmit, onCancel, isSubmitting: parentSubmitting }: BookFormProps) {
+    const previewEditorRef = React.useRef<BookPreviewEditorHandle>(null);
+    const savingRef = React.useRef(false);
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState('');
+    const isSubmitting = parentSubmitting || saving;
     // Debug log to see what data is being received
     console.log('[BookForm] Received book data:', JSON.stringify(book, null, 2));
     console.log('[BookForm] hasAudio:', book?.hasAudio);
@@ -228,24 +232,33 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
     }, [hasAudio]);
 
     const visibility = { hasAudio, isReadingVisible, isAudioVisible };
-    const masterVisibilityState = getMasterVisibilityState(visibility);
-    const allAvailableVersionsVisible = masterVisibilityState === true;
+    const anyVersionVisible = isAnyVersionVisible(visibility);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const setAllAvailableVersionsVisible = () => {
-        const next = getBulkVisibilityUpdate(visibility);
+    const toggleAllAvailableVersions = (visible: boolean) => {
+        const next = setAllVersionsVisible(visibility, visible);
         form.setValue('isReadingVisible', next.isReadingVisible, { shouldDirty: true });
         form.setValue('isAudioVisible', next.isAudioVisible, { shouldDirty: true });
     };
 
     // Submit handler that properly logs and calls the parent's onSubmit function
-    const handleSubmit = async (data: BookFormValues) => {
-        // console.log("Form submitted with values:", data);
+    const handleSubmit = async (data: BookFormValues, options?: { close?: boolean }) => {
+        if (savingRef.current || parentSubmitting) return;
+        savingRef.current = true;
+        setSaving(true);
+        setSaveError('');
         try {
-            await onSubmit(data);
+            // Persist the entire preview before the parent can close/unmount the editor.
+            // A collapsed preview still has to save any pending changes.
+            await previewEditorRef.current?.save(!data.isPreview);
+            await onSubmit(data, options);
         } catch (error) {
+            setSaveError((error as Error).message);
             console.error("Error submitting form:", error);
+        } finally {
+            savingRef.current = false;
+            setSaving(false);
         }
     };
 
@@ -253,7 +266,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
         <Form {...form}>
             <form
                 className="space-y-6"
-                onSubmit={form.handleSubmit(handleSubmit)}
+                onSubmit={form.handleSubmit(values => handleSubmit(values, { close: true }))}
                 noValidate
                 lang="it"
             >
@@ -685,27 +698,29 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                             <FormControl><Switch className="shrink-0 data-[state=checked]:bg-green-500" checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </div>
                         <div hidden={!field.value} className="sm:ms-10">
-                            {book?.id ? <BookPreviewEditor key={book.id} book={book} /> : <p className="border-t pt-4 text-sm text-muted-foreground">Salva prima il libro: potrai poi configurare qui copertina, video ed estratto dell’anteprima.</p>}
+                            {book?.id ? <BookPreviewEditor key={book.id} ref={previewEditorRef} book={book} disabled={isSubmitting} /> : <p className="border-t pt-4 text-sm text-muted-foreground">Salva prima il libro: potrai poi configurare qui copertina, video ed estratto dell’anteprima.</p>}
                         </div>
                     </FormItem>
                 )} />
-                <div className={`space-y-4 rounded-lg border-2 p-4 transition-colors ${allAvailableVersionsVisible ? 'border-primary/50' : 'border-border'}`}>
+                <div className={`space-y-4 rounded-lg border-2 p-4 transition-colors ${anyVersionVisible ? 'border-primary/50' : 'border-border'}`}>
                     <div className="flex items-center justify-between gap-4">
                         <div className="space-y-0.5">
-                            <FormLabel className="text-base">Visible to Users</FormLabel>
+                            <FormLabel className="text-base" htmlFor="visible-to-users">Visible to Users</FormLabel>
                             <FormDescription>
-                                Bulk control for all available versions. A minus means that only one version is visible.
+                                Bulk control for all available versions. Turn it off to hide every version at once.
                             </FormDescription>
                         </div>
-                        <Checkbox
-                            checked={masterVisibilityState}
-                            onCheckedChange={setAllAvailableVersionsVisible}
-                            aria-label="Toggle visibility for all available versions"
-                            className="h-5 w-5"
+                        <Switch
+                            id="visible-to-users"
+                            aria-controls="visible-to-users-fields"
+                            aria-expanded={anyVersionVisible}
+                            checked={anyVersionVisible}
+                            onCheckedChange={toggleAllAvailableVersions}
+                            className="shrink-0 data-[state=checked]:bg-green-500"
                         />
                     </div>
 
-                    <div className="ms-6 space-y-3 border-s ps-4">
+                    <div id="visible-to-users-fields" hidden={!anyVersionVisible} className="ms-6 space-y-3 border-s ps-4">
                         <FormField
                             control={form.control}
                             name="isReadingVisible"
@@ -803,7 +818,8 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                     )}
                 />
 
-                <div className="flex justify-end space-x-4">
+                {saveError && <p role="alert" className="text-destructive">Salvataggio non completato: {saveError}</p>}
+                <div className="flex flex-wrap justify-end gap-4">
                     <Button
                         type="button"
                         variant="outline"
@@ -832,18 +848,23 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting }: BookFormPro
                         type="button"
                         disabled={isSubmitting}
                         color="green"
-                        onClick={() => {
-                            const formData = form.getValues();
-                            /*console.log("Button clicked, submitting with values:", formData);
-                            if (Object.keys(form.formState.errors).length > 0) {
-                                console.log("Form validation errors:", form.formState.errors);
-                            }*/
-                            handleSubmit(formData);
-                        }}
+                        onClick={form.handleSubmit(values => handleSubmit(values, { close: false }))}
                         className="select-none"
                     >
                         {isSubmitting ? 'Saving...' : book ? 'Update Book' : 'Add Book'}
                     </ThemedButton>
+                    {book?.id && (
+                        <ThemedButton
+                            type="button"
+                            disabled={isSubmitting}
+                            color="green"
+                            variant="outline"
+                            onClick={form.handleSubmit(values => handleSubmit(values, { close: true }))}
+                            className="select-none"
+                        >
+                            {isSubmitting ? 'Saving...' : 'Update & close'}
+                        </ThemedButton>
+                    )}
                 </div>
             </form>
 
