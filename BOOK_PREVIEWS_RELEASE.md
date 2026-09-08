@@ -48,9 +48,12 @@ maintenance window; exclude concurrent ordinary book editing from that compariso
 Use Node.js **24.15 or newer in the 24.x line** (validation used 24.18). The new
 isomorphic DOMPurify dependency also supports Node 22.22.2+ and 26+; older Node 20
 hosts must be upgraded before release. Install with the repository's pnpm workflow.
-`package.json` declares `engines.node: ^24.15.0` so Vercel selects the 24.x runtime
-and local package managers can detect unsupported Node versions. Redeploy after
-changing the runtime; an existing deployment keeps its original runtime.
+`package.json` has neither `engines.node` nor `devEngines.runtime`. Use an installed
+Node 24.x version (at least 24.15.0) locally for development, builds and the production
+server. Select Node 24.x in Vercel's project settings for builds and deployed functions.
+Vercel manages its minor/patch updates; the local and deployed patch versions may
+differ. Redeploy after changing the runtime; an existing deployment keeps its original
+runtime. The separate jsdom dependency override remains required for the workaround below.
 
 ### Diagnosing Vercel preview failures
 
