@@ -1,3 +1,6 @@
 # Environment values must come from Vercel's encrypted project settings.
 .env*
 !.env.example
+# Local transfer backups and browser artifacts must never be deployed.
+tmp/
+output/

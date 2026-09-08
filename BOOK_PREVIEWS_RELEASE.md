@@ -1,5 +1,64 @@
 # Book previews: release and operations
 
+## Four-book transfer completed on 2026-09-08
+
+Production release: `dpl_8bEBkR6hC3S5G4dzMv6rzBukd3K9`, promoted to
+`https://pc-library.vercel.app`. Three parent books and four preview rows were
+inserted in one transaction. All five image checksums and all transferred fields
+matched; the existing Carillon parent and unrelated book/preview rows remained
+unchanged. A repeated apply performed no writes. The actual data and rollback
+were rehearsed in isolated PostgreSQL before applying. All four dialogs were
+checked at desktop and mobile widths. Twelve preview tests, six transfer safety
+tests, and local/Vercel builds passed. Repository lint remains blocked by the
+pre-existing ESLint 10 / React plugin `getFilename` compatibility error.
+
+`scripts/transfer-four-previews.mjs` transfers only `book-1746324080859`,
+`book-1788793702419`, `book-1788814362610`, and `book-1788814413810` to the
+linked Vercel `pc-library` production database. It leaves the first book's parent
+row unchanged and inserts only missing, identical-or-absent new books/previews.
+Conflicting existing records are rejected rather than overwritten.
+
+Run from the repository root with Node 24 and installed pnpm dependencies:
+
+```sh
+node --test scripts/transfer-four-previews.test.mjs
+node scripts/transfer-four-previews.mjs            # dry run; no database writes
+node scripts/transfer-four-previews.mjs --apply    # assets must already be live
+node scripts/transfer-four-previews.mjs --verify
+node scripts/transfer-four-previews.mjs --rollback # guarded, explicit rollback
+```
+
+The script reads `.env.local` as source and `.env.production` as destination
+explicitly. Before applying, verifying or rolling back, it uses the existing
+Vercel CLI login (or `VERCEL_TOKEN` / `VERCEL_AUTH_FILE`) to compare only the
+production database identity in memory. It never persists Vercel environment
+values. Source and target must be different databases with matching columns.
+
+The immutable dry-run manifest, complete destination `books`/`book_previews`
+backup, source rows, image copies/checksums and execution receipts live in
+gitignored `tmp/preview-transfer-20260908/`. Keep this directory securely and
+retain the original manifest for repeat runs and rollback. Do not regenerate it
+after applying. An identical repeat apply makes no writes. Concurrent book or
+preview edits cause the transaction to abort; all inserted fields, generated
+visibility and unrelated book/preview rows are checked before commit. Rollback
+also refuses to delete new books if other foreign-key child rows reference them.
+
+Five images are verified byte-for-byte before applying: the existing Carillon
+cover, three new preview covers, and the saved (currently inactive) extract page.
+Only these four new image files have Git exceptions; Next.js explicitly traces
+all five into the preview asset function. This is a bundled, immutable Vercel
+release, not support for live production uploads. Future deployments must retain
+these files and tracing entries.
+
+For CLI deployment, stage only tracked `src/`, `public/`, `scripts/migrations/`,
+the required named build/package configuration files, and these explicitly named
+assets into a clean directory, preserving the tracked `next-env.d.ts` in that
+release. Inspect `vercel deploy --dry --json` there before deploying. The
+working folder contains ignored database dumps and other local files that must
+not be uploaded. Keep backups outside the release directory. Deploy images and
+verify `/api/preview-assets/...` before applying the data transfer. No schema
+migration is needed for this transfer.
+
 ## Migration supplied, not applied
 
 New file: `scripts/migrations/20260905_add_book_previews.sql`.

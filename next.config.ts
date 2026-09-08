@@ -14,6 +14,13 @@ const nextConfig: NextConfig = {
     // reads, so include them explicitly to survive a standalone/serverless build.
     outputFileTracingIncludes: {
         '/api/admin/migrations/**': ['./scripts/migrations/**/*'],
+        '/api/preview-assets/**': [
+            './public/covers/copertina-la-ragazza-del-carillon.jpg',
+            './public/previews/covers/10879c1e-7b15-4a79-9d69-afcc729d7968.webp',
+            './public/previews/covers/3df800bd-9438-49e9-ac2d-3778fd56f85a.webp',
+            './public/previews/covers/f871964d-6ca4-4220-8069-5033c22e9584.webp',
+            './public/previews/book-1746324080859/pages/page-01-or8-57ecb88b-ab5a-4fbf-a781-f7594093d8f7.png',
+        ],
     },
     images: {
         unoptimized: true, // Disables Next.js image optimization
