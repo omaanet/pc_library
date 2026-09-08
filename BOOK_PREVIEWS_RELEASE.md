@@ -48,6 +48,28 @@ maintenance window; exclude concurrent ordinary book editing from that compariso
 Use Node.js **24.15 or newer in the 24.x line** (validation used 24.18). The new
 isomorphic DOMPurify dependency also supports Node 22.22.2+ and 26+; older Node 20
 hosts must be upgraded before release. Install with the repository's pnpm workflow.
+`package.json` declares `engines.node: ^24.15.0` so Vercel selects the 24.x runtime
+and local package managers can detect unsupported Node versions. Redeploy after
+changing the runtime; an existing deployment keeps its original runtime.
+
+### Diagnosing Vercel preview failures
+
+- React error #419 reports that server rendering could not finish a Suspense boundary;
+  the original exception is in the Vercel runtime logs, not the browser's minified stack.
+- If `/api/previews` returns a Next.js **HTML** error page, inspect the failed request
+  under the project's **Logs** for module initialization/runtime errors. The route's
+  normal error handler returns JSON. Check the Node version and sanitizer dependency
+  loading before assuming the database migration is missing.
+- `ERR_REQUIRE_ESM` from `html-encoding-sniffer` loading `@exodus/bytes/encoding-lite.js`
+  occurs while initializing the sanitizer, before the preview database query runs.
+  This dependency chain needs Node's synchronous `require(esm)` support. Use the
+  declared Node 24.15+ runtime and ensure `NODE_OPTIONS` does not disable that support
+  with `--no-experimental-require-module`.
+- If the logs or JSON response report `relation "book_previews" does not exist`, apply
+  `20260905_add_book_previews.sql` through **Admin → Migrations** as described above.
+- After redeploying, verify `/api/previews` returns HTTP 200 with `{ "previews": [...] }`
+  and reload the homepage to check server rendering. Successful local tests alone do
+  not confirm that the deployed runtime, database, or asset storage is configured.
 
 Local storage must persist across restarts and application deployments:
 
