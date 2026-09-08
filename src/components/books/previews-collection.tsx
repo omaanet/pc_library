@@ -1,7 +1,7 @@
 'use client';
 
 import { usePreviewBooks } from '@/hooks/use-preview-books';
-import { Book as BookIcon, RefreshCw } from 'lucide-react';
+import { ArrowUp, RefreshCw } from 'lucide-react';
 import { BookPreviewCard } from '@/components/previews/book-preview-card';
 import { Button } from '@/components/ui/button';
 
@@ -9,8 +9,8 @@ export function PreviewsCollection() {
     const { previews, loading, error, retry } = usePreviewBooks();
 
     return (
-        <div className="rounded-xl border bg-card p-6">
-            <div className="flex flex-row items-center justify-center mb-4 sm:mb-8">
+        <div id="previews-collection" tabIndex={-1} className="scroll-mt-20 rounded-xl border bg-card p-6 outline-none">
+            <div className="flex flex-row items-center justify-center mb-2">
                 {/* <BookIcon className="h-8 w-8 -mt-1 mx-2" /> */}
                 <svg width="48" height="48" viewBox="0 0 25.95 24" fill="none" stroke="currentColor" className="h-11 w-11 -mt-1 mx-2 float-anim">
                     <g transform="translate(2.5 0)" strokeWidth="1" shapeRendering="geometricPrecision" vectorEffect="non-scaling-stroke">
@@ -27,8 +27,11 @@ export function PreviewsCollection() {
                         </g>
                     </g>
                 </svg>
-                <div className="text-xl font-semibold mx-2 text-center">Racconti In Anteprima</div>
+                <h2 id="previews-title" className="text-xl font-semibold mx-2 text-center">Racconti In Anteprima</h2>
             </div>
+            <p className="mb-4 text-center text-sm text-muted-foreground sm:mb-8">
+                Clicca su una copertina per leggere l’estratto.
+            </p>
 
             <div id="previews-collection-list">
                 <div className="container-fluid text-center flex flex-wrap gap-4 justify-center items-start">
@@ -58,6 +61,16 @@ export function PreviewsCollection() {
 
                 </div>
             </div>
+            <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="ml-auto mt-4 flex h-11 w-11 rounded-full text-muted-foreground hover:text-sky-700 dark:hover:text-sky-300 motion-reduce:transition-none"
+            >
+                <a href="#library-title" aria-label="Torna alla Biblioteca" title="Torna alla Biblioteca">
+                    <ArrowUp aria-hidden="true" />
+                </a>
+            </Button>
         </div>
     );
 }

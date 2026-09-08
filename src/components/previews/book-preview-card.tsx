@@ -149,10 +149,10 @@ export function BookPreviewCard({ preview }: { preview: PublicBookPreview }) {
     return <Dialog open={open} onOpenChange={value => { if (value) player.current?.pause(); setOpen(value); }}>
         <article className="relative isolate min-w-0 max-w-full rounded-lg p-3 text-center transition-colors duration-200 hover:bg-accent/50 focus-within:bg-accent/50 motion-reduce:transition-none">
             <div className={`flex flex-col items-center justify-center gap-4 ${preview.video?.placement === 'left' ? 'sm:flex-row-reverse sm:items-start' : 'sm:flex-row sm:items-start'}`}>
-                <div className="max-w-full space-y-2 sm:max-w-64">
+                <div className="min-w-0 max-w-full space-y-2" style={{ width: DEFAULT_COVER_SIZES.list.width }}>
                     {preview.coverUrl && <Cover url={preview.coverUrl} title={preview.title} compact />}
                     {/* Stretch the single trigger across the card, keeping video controls above it. */}
-                    <h3 className="break-words text-sm font-semibold">{hasContent ? <DialogTrigger asChild><button type="button" aria-label={`Apri anteprima di ${preview.title}`} className="no-underline outline-none after:absolute after:inset-0 after:rounded-lg after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-offset-2">{preview.title}</button></DialogTrigger> : preview.title}</h3>
+                    <h3 className="break-words text-sm font-semibold" title={preview.title}>{hasContent ? <DialogTrigger asChild><button type="button" aria-label={`Apri anteprima di ${preview.title}`} className="w-full no-underline outline-none after:absolute after:inset-0 after:rounded-lg after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-offset-2"><span className="line-clamp-2">{preview.title}</span></button></DialogTrigger> : <span className="line-clamp-2">{preview.title}</span>}</h3>
                     {preview.expectedPublicationDate && <p className="text-sm text-muted-foreground">{publicationAnnouncement(preview.expectedPublicationDate)}</p>}
                 </div>
                 {preview.video && <div className="relative z-10 max-w-full min-w-0" style={{ width: DEFAULT_COVER_SIZES.video.width }}><MuxPlayer ref={player} style={{ width: '100%', height: DEFAULT_COVER_SIZES.video.height }} playbackId={preview.video.playbackId} preload="none" metadata={{ video_title: preview.video.title, viewer_user_id: preview.video.viewerUid || undefined }} /></div>}

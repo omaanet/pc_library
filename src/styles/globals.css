@@ -291,6 +291,36 @@
         opacity: 0.8;
     }
 
+    .preview-sparkles {
+        --sparkle-base: #0284c7;
+        --sparkle-highlight: #ca8a04;
+    }
+
+    .dark .preview-sparkles {
+        --sparkle-base: #38bdf8;
+        --sparkle-highlight: #facc15;
+    }
+
+    @keyframes previewSparkleTwinkle {
+        0%, 100% {
+            color: var(--sparkle-base);
+            opacity: 0.75;
+            transform: scale(0.94) rotate(-6deg);
+        }
+        50% {
+            color: var(--sparkle-highlight);
+            opacity: 1;
+            transform: scale(1.16) rotate(6deg);
+        }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .preview-sparkles {
+            transform-origin: center;
+            animation: previewSparkleTwinkle 4s ease-in-out infinite;
+        }
+    }
+
     /* Icon Animation: Float */
     .float-anim {
         animation: float 3s ease-in-out infinite;

@@ -84,7 +84,7 @@ export default function HomePage() {
                 </section>
 
                 {/* Previews Collection Section */}
-                <section id="previews-collection" className="w-full py-12 sm:py-16">
+                <section aria-labelledby="previews-title" className="w-full py-12 sm:py-16">
                     <BookErrorBoundary>
                         <PreviewsCollection />
                     </BookErrorBoundary>
