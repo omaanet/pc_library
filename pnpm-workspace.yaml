@@ -1,4 +1,14 @@
+# Define the root of your project
+packages:
+  - '.'
+
+# List the packages allowed to run build scripts
 allowBuilds:
   esbuild: true
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+  sharp: true
+  unrs-resolver: true
+
+# Add this section below your existing configs:
+peerDependencyRules:
+  allowAny:
+    - 'eslint'
