@@ -3,12 +3,30 @@ import test from 'node:test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import { spawnSync } from 'node:child_process';
 import sharp from 'sharp';
 import { PGlite } from '@electric-sql/pglite';
 import { emptyPreview, previewSchema, publicPreview, isCalendarDate, publicationAnnouncement, safeAssetPath, previewAssetUrl } from './book-preview.ts';
 import { sanitizePreviewHtml, hasPreviewText } from './preview-html.ts';
 import { canFitSpread, spreadStart, clampPan } from './preview-reader.ts';
 import { assetRoot, resolveAsset, listAssets, uploadCover, uploadPage, PREVIEW_ASSET_LIMITS } from './preview-assets.ts';
+
+test('server sanitizer loads without synchronous require(esm) support', () => {
+    // Reproduce the Vercel loader restriction in a fresh process: ordinary local
+    // Node 24 imports succeed even with the incompatible jsdom dependency chain.
+    for (const mode of ['module', 'commonjs']) {
+        const loader = mode === 'module'
+            ? "import DOMPurify from 'isomorphic-dompurify';"
+            : "const DOMPurify = require('isomorphic-dompurify').default;";
+        const result = spawnSync(process.execPath, [
+            '--no-experimental-require-module', `--input-type=${mode}`, '-e',
+            `${loader} process.stdout.write(DOMPurify.sanitize('<p>Ciao</p><script>bad()</script>'));`,
+        ], { cwd: new URL('../../', import.meta.url), encoding: 'utf8' });
+        assert.ifError(result.error);
+        assert.equal(result.status, 0, `${mode}: ${result.stderr}`);
+        assert.equal(result.stdout, '<p>Ciao</p>');
+    }
+});
 
 test('strict calendar dates and announcement have no timezone or parent date inheritance', () => {
     for (const date of ['2028-02-29', '2026-12-31', '1900-01-01']) assert.ok(isCalendarDate(date));

@@ -62,9 +62,14 @@ changing the runtime; an existing deployment keeps its original runtime.
   loading before assuming the database migration is missing.
 - `ERR_REQUIRE_ESM` from `html-encoding-sniffer` loading `@exodus/bytes/encoding-lite.js`
   occurs while initializing the sanitizer, before the preview database query runs.
-  This dependency chain needs Node's synchronous `require(esm)` support. Use the
-  declared Node 24.15+ runtime and ensure `NODE_OPTIONS` does not disable that support
-  with `--no-experimental-require-module`.
+  Upgrading Node alone is insufficient: Vercel's module loader can still reject
+  synchronous `require(esm)`. `pnpm-workspace.yaml` pins only the sanitizer's jsdom
+  dependency to `25.0.1`, following the
+  [maintainer's workaround](https://github.com/kkomelin/isomorphic-dompurify/issues/394).
+  DOMPurify itself remains current. Keep this override until a replacement passes
+  the import regression test with `--no-experimental-require-module` and a Vercel
+  deployment check. Deploy `pnpm-workspace.yaml` and `pnpm-lock.yaml` together;
+  redeploy without the existing build cache when replacing the failing deployment.
 - If the logs or JSON response report `relation "book_previews" does not exist`, apply
   `20260905_add_book_previews.sql` through **Admin → Migrations** as described above.
 - After redeploying, verify `/api/previews` returns HTTP 200 with `{ "previews": [...] }`

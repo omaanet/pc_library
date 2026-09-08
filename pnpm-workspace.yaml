@@ -2,6 +2,12 @@
 packages:
   - '.'
 
+# Vercel's module loader can reject require(esm), even on Node 24.
+# Keep DOMPurify current while using its maintainer's compatible jsdom pin.
+# https://github.com/kkomelin/isomorphic-dompurify/issues/394
+overrides:
+  'isomorphic-dompurify>jsdom': '25.0.1'
+
 # List the packages allowed to run build scripts
 allowBuilds:
   esbuild: true
