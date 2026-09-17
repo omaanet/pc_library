@@ -436,10 +436,11 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting: parentSubmitt
                                     value={field.value || ''}
                                     onValueChange={field.onChange}
                                     bookId={book?.id}
+                                    disabled={isSubmitting}
                                 />
                             </FormControl>
                             <FormDescription>
-                                Inserisci un percorso libero oppure scegli una copertina dal server. Usa {IMAGE_CONFIG.placeholder.token} per un'immagine segnaposto.
+                                Carica un'immagine, inserisci un percorso libero oppure scegli una copertina dal server. Usa {IMAGE_CONFIG.placeholder.token} per un'immagine segnaposto.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
 import { ApiError, handleApiError, HttpStatus } from '@/lib/api-error-handler';
-import { assetRoot, listAssets, PREVIEW_ASSET_LIMITS, uploadCover, uploadPage } from '@/lib/preview-assets';
+import { assetRoot, listAssets, PREVIEW_ASSET_LIMITS, uploadBookCover, uploadCover, uploadPage } from '@/lib/preview-assets';
 import { getBookById } from '@/lib/db/queries/books';
 
 export const runtime = 'nodejs';
@@ -19,7 +19,7 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
     try {
         await requireManagedPageAccess('books');
         const source = request.nextUrl.searchParams.get('source') || 'preview';
-        if (!['preview', 'pages'].includes(source)) throw new ApiError(HttpStatus.BAD_REQUEST, 'Destinazione immagini non valida');
+        if (!['preview', 'book', 'pages'].includes(source)) throw new ApiError(HttpStatus.BAD_REQUEST, 'Destinazione immagini non valida');
         const bookId = request.nextUrl.searchParams.get('bookId');
         if (source === 'pages') {
             if (!bookId || !await getBookById(bookId)) throw new ApiError(HttpStatus.NOT_FOUND, 'Libro non trovato');
@@ -52,7 +52,11 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
         let filename: string;
         try {
             const bytes = Buffer.from(await file.arrayBuffer());
-            filename = source === 'pages' ? await uploadPage(bookId!, bytes, file.name) : await uploadCover(bytes);
+            filename = source === 'pages'
+                ? await uploadPage(bookId!, bytes, file.name)
+                : source === 'book'
+                    ? await uploadBookCover(bytes)
+                    : await uploadCover(bytes);
         }
         catch (error) {
             if (['EACCES', 'EPERM', 'EROFS'].includes((error as NodeJS.ErrnoException).code || '')) throw new ApiError(503, 'Directory immagini non scrivibile: verificare il disco persistente.');

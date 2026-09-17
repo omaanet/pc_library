@@ -35,6 +35,7 @@ import {
     type BookPresentationMode,
 } from '@/lib/book-visibility';
 import { useBookAccess } from '@/context/book-access-context';
+import { useBookViewTracking } from '@/hooks/use-vercel-book-tracking';
 
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 const DEFAULT_DEVELOPMENT_EMAIL = 'oscar@omaa.it';
@@ -226,6 +227,7 @@ export function BookDialogSimple({
     isAuthenticated = true,
     onLoginClick,
 }: BookDialogProps) {
+    useBookViewTracking(book?.id, open);
     const [isPdfRequesting, setIsPdfRequesting] = useState(false);
     const [isAuthorMessageOpen, setIsAuthorMessageOpen] = useState(false);
     const [authorMessage, setAuthorMessage] = useState('');
@@ -672,6 +674,7 @@ export function BookDialog({
     isAuthenticated = true,
     onLoginClick,
 }: BookDialogProps) {
+    useBookViewTracking(book?.id, open);
     const [imageLoaded, setImageLoaded] = useState(false);
     const { requireAuthenticationForBookAccess } = useBookAccess();
     const {

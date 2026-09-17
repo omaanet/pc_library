@@ -265,6 +265,16 @@ Notes:
 
 ## Common Gotchas
 
+- The Vercel statistics tab uses `/api/admin/analytics` and `/api/admin/analytics/check`.
+  Reads require admin; check and CSRF-protected `/api/admin/analytics/refresh` require
+  superadmin. All require managed statistics access. Shared ten-minute Neon caching
+  requires `scripts/migrations/20260909_vercel_analytics_cache.sql` before deployment.
+  Configure `VERCEL_TOKEN`,
+  `VERCEL_PROJECT_ID`, and optional `VERCEL_TEAM_ID` server-side. Custom events are
+  disabled on Hobby; `NEXT_PUBLIC_VERCEL_CUSTOM_EVENTS_ENABLED=true` requires a
+  Pro/Enterprise upgrade and rebuild/redeploy. See `VERCEL_ANALYTICS.md`.
+  `pnpm test:analytics` runs isolated analytics tests without production requests.
+
 - Book-owned previews now use `book_previews`, `src/lib/db/queries/book-previews.ts`,
   `/api/previews`, and `/api/books/[id]/preview`. Preview saves and migration never update
   `books`; keep legacy `is_preview` library filtering independent. The book form contains

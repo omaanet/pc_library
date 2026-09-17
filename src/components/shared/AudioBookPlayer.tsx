@@ -8,6 +8,7 @@ import { useAuth } from '@/context/auth-context';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { SITE_CONFIG } from '@/config/site-config';
 import { useBookAccess } from '@/context/book-access-context';
+import { useAudioAnalytics } from '@/hooks/use-vercel-book-tracking';
 
 export interface AudioBookPlayerProps {
     book: Book | null;
@@ -351,6 +352,7 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
 
     const trackingBookId = book?.id ?? null;
     const trackingMediaId = activeAudiobook?.media_id ?? null;
+    const analytics = useAudioAnalytics(trackingBookId || undefined, trackingMediaId || undefined, 'library');
 
     const handleFirstPlay = useCallback(() => {
         if (!trackingBookId || !trackingMediaId) return;
@@ -393,7 +395,8 @@ const AudioBookPlayer = ({ book, autoPlay = false, isActive = true }: AudioBookP
                 initialTrackIndex={activeResumeTarget.initialTrackIndex}
                 initialTime={activeResumeTarget.initialTime}
                 onProgress={handleAudioProgress}
-                onFirstPlay={handleFirstPlay}
+                onFirstPlay={(state) => { analytics.start(state.track.kind); handleFirstPlay(); }}
+                onPlaybackCoverage={(state, seconds) => analytics.coverage(state.track.kind, seconds, state.duration)}
                 onBookmark={bookmarksCanWrite && isActive ? handleManualAudioBookmark : undefined}
                 isBookmarkActive={isAudioBookmarkActive}
                 isBookmarkSaving={isSavingAudioBookmark}

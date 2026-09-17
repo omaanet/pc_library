@@ -23,6 +23,7 @@ import {
 } from '@/stores/preferences-store';
 import { SITE_CONFIG } from '@/config/site-config';
 import { useBookAccess } from '@/context/book-access-context';
+import { useReaderOpenTracking } from '@/hooks/use-vercel-book-tracking';
 
 interface PageReaderProps {
     book: Book;
@@ -32,6 +33,7 @@ interface PageReaderProps {
 }
 
 export default function PageReader({ book, bookId, user, initialPage = 1 }: PageReaderProps) {
+    const trackReaderImage = useReaderOpenTracking(bookId);
     const source = 'PageReader';
     const logger = useLogger(source);
     const { requireAuthenticationForBookAccess } = useBookAccess();
@@ -1075,7 +1077,8 @@ export default function PageReader({ book, bookId, user, initialPage = 1 }: Page
                                         draggable="false"
                                         data-page={pageNum}
                                         loading="eager"
-                                        onLoad={() => {
+                                        onLoad={(event) => {
+                                            trackReaderImage(event.currentTarget);
                                             // When an image loads, ensure it's marked as loaded in our state
                                             if (!imagesLoaded[pageNum]) {
                                                 setImagesLoaded(prev => ({

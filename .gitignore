@@ -87,3 +87,4 @@ reports/
 
 # Local browser verification artifacts
 /output/playwright/
+VERCEL_ANALYTICS.md

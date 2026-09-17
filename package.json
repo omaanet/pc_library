@@ -10,6 +10,7 @@
     "start": "next start -p 3006",
     "lint": "eslint .",
     "test:previews": "tsx --test src/lib/book-preview.test.mjs",
+    "test:analytics": "tsx --test src/lib/vercel-analytics/*.test.ts src/lib/vercel-analytics/*.test.mjs",
     "check-env": "node scripts/check-env.js",
     "devENV": "node -r ./scripts/check-env.js ./node_modules/.bin/next dev --turbo -p 3005",
     "knip:json": "knip --reporter json > reports/knip.json || exit 0",

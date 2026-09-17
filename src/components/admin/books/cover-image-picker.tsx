@@ -19,10 +19,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { getCoverImageUrl, IMAGE_CONFIG } from '@/lib/image-utils';
+import { previewRequest } from '@/lib/services/preview-api-service';
 
 interface CoversResponse {
     covers: string[];
 }
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 interface CoverImagePickerProps
     extends Omit<React.ComponentPropsWithoutRef<'input'>, 'onChange' | 'value'> {
@@ -59,6 +62,9 @@ export const CoverImagePicker = React.forwardRef<
     const [covers, setCovers] = React.useState<string[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [loadError, setLoadError] = React.useState<string | null>(null);
+    const [isUploading, setIsUploading] = React.useState(false);
+    const [uploadError, setUploadError] = React.useState<string | null>(null);
+    const [uploadMessage, setUploadMessage] = React.useState<string | null>(null);
 
     React.useEffect(() => {
         const controller = new AbortController();
@@ -138,9 +144,50 @@ export const CoverImagePicker = React.forwardRef<
         setSearch('');
     };
 
+    const uploadCover = async (file: File | undefined) => {
+        if (!file) return;
+
+        setUploadError(null);
+        setUploadMessage(null);
+        if (file.size > MAX_UPLOAD_BYTES) {
+            setUploadError('File troppo grande: il limite è 10 MB.');
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            const body = new FormData();
+            body.set('file', file);
+            const result: unknown = await previewRequest('/api/previews/assets?source=book', {
+                method: 'POST',
+                body,
+            });
+            if (!result || typeof result !== 'object' || !('path' in result) || typeof result.path !== 'string') {
+                throw new Error('Risposta di caricamento non valida.');
+            }
+            const uploadedPath = result.path;
+
+            setCovers((current) => (
+                current.includes(uploadedPath)
+                    ? current
+                    : [...current, uploadedPath].sort((left, right) =>
+                        left.localeCompare(right, 'it', { numeric: true })
+                    )
+            ));
+            onValueChange(uploadedPath);
+            setUploadMessage('Copertina caricata e selezionata. Salva il libro per applicarla.');
+        } catch (error) {
+            console.error('[CoverImagePicker] Failed to upload cover:', error);
+            setUploadError(error instanceof Error ? error.message : 'Caricamento non riuscito.');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     return (
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_7rem] sm:items-start">
-            <Popover open={isOpen} onOpenChange={handleOpenChange}>
+            <div className="min-w-0 space-y-3">
+                <Popover open={isOpen} onOpenChange={handleOpenChange}>
                 <div className="flex min-w-0">
                     <Input
                         {...inputProps}
@@ -244,7 +291,30 @@ export const CoverImagePicker = React.forwardRef<
                         </ScrollArea>
                     )}
                 </PopoverContent>
-            </Popover>
+                </Popover>
+
+                <label className="block space-y-2 text-sm">
+                    <span>Carica una nuova copertina (JPEG, PNG o WebP; massimo 10 MB)</span>
+                    <Input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled={disabled || isUploading}
+                        onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = '';
+                            void uploadCover(file);
+                        }}
+                    />
+                </label>
+                {isUploading && (
+                    <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Caricamento copertina...
+                    </p>
+                )}
+                {uploadError && <p className="text-sm text-destructive" role="alert">{uploadError}</p>}
+                {uploadMessage && <p className="text-sm text-green-700 dark:text-green-400" role="status">{uploadMessage}</p>}
+            </div>
 
             <div className="flex min-h-40 items-center justify-center overflow-hidden rounded-md border bg-muted/30 p-1">
                 {previewPath ? (

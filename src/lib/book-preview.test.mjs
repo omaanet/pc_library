@@ -9,7 +9,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { emptyPreview, previewSchema, publicPreview, isCalendarDate, publicationAnnouncement, safeAssetPath, previewAssetUrl } from './book-preview.ts';
 import { sanitizePreviewHtml, hasPreviewText } from './preview-html.ts';
 import { canFitSpread, spreadStart, clampPan } from './preview-reader.ts';
-import { assetRoot, resolveAsset, listAssets, uploadCover, uploadPage, PREVIEW_ASSET_LIMITS } from './preview-assets.ts';
+import { assetRoot, resolveAsset, listAssets, uploadBookCover, uploadCover, uploadPage, PREVIEW_ASSET_LIMITS } from './preview-assets.ts';
 
 test('server sanitizer loads without synchronous require(esm) support', () => {
     // Reproduce the Vercel loader restriction in a fresh process: ordinary local
@@ -116,6 +116,22 @@ test('cover uploads decode, bound pixels/bytes, use immutable names and preserve
             assert.equal((await sharp(await fs.readFile(await resolveAsset(assetRoot('preview'), file))).metadata()).format, 'webp');
         }
     } finally { for (const file of files) await fs.unlink(await resolveAsset(assetRoot('preview'), file)); }
+});
+
+test('book cover uploads are stored in the main cover collection', async () => {
+    const bytes = await sharp({ create: { width: 20, height: 30, channels: 3, background: '#963' } }).png().toBuffer();
+    let file;
+    try {
+        file = await uploadBookCover(bytes);
+        assert.match(file, /^[0-9a-f-]+\.webp$/);
+        const uploaded = await resolveAsset(assetRoot('book'), file);
+        const metadata = await sharp(await fs.readFile(uploaded)).metadata();
+        assert.equal(metadata.format, 'webp');
+        assert.equal((await listAssets(assetRoot('book'))).includes(file), true);
+        await assert.rejects(resolveAsset(assetRoot('preview'), file));
+    } finally {
+        if (file) await fs.unlink(await resolveAsset(assetRoot('book'), file));
+    }
 });
 
 test('page uploads preserve full resolution, remain book-scoped and reject invalid input', async () => {

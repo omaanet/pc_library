@@ -17,14 +17,20 @@ import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AdminAccessDenied } from '@/components/auth/admin-access-denied';
 import { AuthModal } from '@/components/auth/auth-modal';
+import { VercelControls } from '@/components/statistics/VercelControls';
+import { useVercelDashboard } from '@/hooks/use-vercel-dashboard';
+import { isSuperAdminLevel } from '@/config/admin-roles';
+import { VercelDashboard } from '@/components/statistics/VercelDashboard';
+import { initialStatisticsTab, STATISTICS_TABS, TAB_STORAGE_KEY } from '@/lib/vercel-analytics/tab-preference';
 
-const ACTIVE_TAB_STORAGE_KEY = 'user-statistics-active-tab';
+const ACTIVE_TAB_STORAGE_KEY = TAB_STORAGE_KEY;
 const INCLUDE_MAINTENANCE_IP_STORAGE_KEY = 'user-statistics-include-maintenance-ip';
-const STATISTICS_TAB_VALUES = ['overview', 'downloads', 'reading', 'audio', 'promo', 'users', 'errors'] as const;
+const STATISTICS_TAB_VALUES = STATISTICS_TABS;
 type StatisticsTab = typeof STATISTICS_TAB_VALUES[number];
 const STATISTICS_TAB_BASE_CLASS = 'flex-shrink-0 data-[state=inactive]:border data-[state=inactive]:border-gray-600 data-[state=active]:border-transparent';
 
 const STATISTICS_TAB_CLASSES: Record<StatisticsTab, string> = {
+    vercel: STATISTICS_TAB_BASE_CLASS,
     overview: STATISTICS_TAB_BASE_CLASS,
     downloads: `${STATISTICS_TAB_BASE_CLASS} data-[state=inactive]:bg-blue-50 data-[state=inactive]:text-blue-700 hover:data-[state=inactive]:bg-blue-100 data-[state=active]:bg-blue-600 data-[state=active]:text-white dark:data-[state=inactive]:bg-blue-950/50 dark:data-[state=inactive]:text-blue-200 dark:hover:data-[state=inactive]:bg-blue-900/70 dark:data-[state=active]:bg-blue-500 dark:data-[state=active]:text-white`,
     reading: `${STATISTICS_TAB_BASE_CLASS} data-[state=inactive]:bg-amber-50 data-[state=inactive]:text-amber-700 hover:data-[state=inactive]:bg-amber-100 data-[state=active]:bg-amber-600 data-[state=active]:text-white dark:data-[state=inactive]:bg-amber-950/50 dark:data-[state=inactive]:text-amber-200 dark:hover:data-[state=inactive]:bg-amber-900/70 dark:data-[state=active]:bg-amber-500 dark:data-[state=active]:text-white`,
@@ -43,28 +49,29 @@ export default function UserStatisticsPage() {
     const { state } = useAuth();
     const [timeRange, setTimeRange] = useState('all');
     const [topListSize, setTopListSize] = useState('10');
-    const [activeTab, setActiveTab] = useState<StatisticsTab>('overview');
+    const [activeTab, setActiveTab] = useState<StatisticsTab>('vercel');
+    const isVercel = activeTab === 'vercel';
     const [includeMaintenanceIp, setIncludeMaintenanceIp] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [language, setLanguage] = useState<'en' | 'it'>('it');
     const [isMounted, setIsMounted] = useState(false);
+    const vercel = useVercelDashboard(isMounted && !state.isLoading && state.isAuthenticated && isVercel, Boolean(state.user?.isAdmin && isSuperAdminLevel(state.user?.userLevel))); 
     
     useEffect(() => {
         setIsMounted(true);
-        const saved = localStorage.getItem('user-statistics-lang');
-        if (saved === 'en' || saved === 'it') {
-            setLanguage(saved);
-        }
+        try {
+            const saved = localStorage.getItem('user-statistics-lang');
+            if (saved === 'en' || saved === 'it') {
+                setLanguage(saved);
+            }
 
-        const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-        if (isStatisticsTab(savedTab)) {
-            setActiveTab(savedTab);
-        }
+            setActiveTab(initialStatisticsTab(localStorage));
 
-        const savedIncludeMaintenanceIp = localStorage.getItem(INCLUDE_MAINTENANCE_IP_STORAGE_KEY);
-        setIncludeMaintenanceIp(savedIncludeMaintenanceIp === 'true');
+            const savedIncludeMaintenanceIp = localStorage.getItem(INCLUDE_MAINTENANCE_IP_STORAGE_KEY);
+            setIncludeMaintenanceIp(savedIncludeMaintenanceIp === 'true');
+        } catch { /* Preferences are optional when browser storage is blocked. */ }
     }, []);
     
     const translations = React.useMemo(() => ({
@@ -316,19 +323,19 @@ export default function UserStatisticsPage() {
     
     const handleLanguageChange = useCallback((newLang: 'en' | 'it') => {
         setLanguage(newLang);
-        localStorage.setItem('user-statistics-lang', newLang);
+        try { localStorage.setItem('user-statistics-lang', newLang); } catch { /* Optional preference. */ }
     }, []);
 
     const handleTabChange = useCallback((value: string) => {
         if (!isStatisticsTab(value)) return;
 
         setActiveTab(value);
-        localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, value);
+        try { localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, value); } catch { /* Optional preference. */ }
     }, []);
 
     const handleIncludeMaintenanceIpChange = useCallback((checked: boolean) => {
         setIncludeMaintenanceIp(checked);
-        localStorage.setItem(INCLUDE_MAINTENANCE_IP_STORAGE_KEY, String(checked));
+        try { localStorage.setItem(INCLUDE_MAINTENANCE_IP_STORAGE_KEY, String(checked)); } catch { /* Optional preference. */ }
     }, []);
 
     const t = useCallback((key: string): string => {
@@ -420,10 +427,10 @@ export default function UserStatisticsPage() {
     };
 
     useEffect(() => {
-        if (state.isAuthenticated) {
+        if (isMounted && state.isAuthenticated && !isVercel) {
             fetchStatistics();
         }
-    }, [fetchStatistics, state.isAuthenticated, state.user?.userLevel]);
+    }, [fetchStatistics, state.isAuthenticated, state.user?.userLevel, isVercel, isMounted]);
 
     // Show loading state while checking authentication or mounting
     if (state.isLoading || !isMounted) {
@@ -452,30 +459,6 @@ export default function UserStatisticsPage() {
         );
     }
 
-    // Show initial loading screen only when there's no data yet
-    if (loading && !statistics) {
-        return (
-            <div className="container mx-auto p-4 sm:p-6 lg:p-10 flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <p className="text-lg text-muted-foreground">{t('loadingStats')}</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="container mx-auto p-4 sm:p-6 lg:p-10">
-                <div className="text-center">
-                    <p className="text-lg text-red-600">{error}</p>
-                    <Button onClick={fetchStatistics} className="mt-4">
-                        {t('retry')}
-                    </Button>
-                </div>
-            </div>
-        );
-    }
-
     const formatBytes = (bytes: number) => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -486,7 +469,7 @@ export default function UserStatisticsPage() {
 
     return (
         <div className="container mx-auto px-2 sm:px-4 lg:px-0 py-2 sm:py-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
+            <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3 mb-4 sm:mb-6">
                 <div className="flex items-center gap-2">
                     <Button
                         variant="ghost"
@@ -499,8 +482,8 @@ export default function UserStatisticsPage() {
                     </Button>
                     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
                 </div>
-                <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4">
-                    <Button
+                <div className="flex min-w-0 flex-wrap justify-start sm:justify-end items-center gap-2">
+                    {!isVercel && <Button
                         type="button"
                         variant="outline"
                         size="icon"
@@ -511,7 +494,7 @@ export default function UserStatisticsPage() {
                     >
                         <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         <span className="sr-only">{t('refreshStatistics')}</span>
-                    </Button>
+                    </Button>}
                     <Select value={language} onValueChange={handleLanguageChange}>
                         <SelectTrigger className="w-[80px] sm:w-[100px]">
                             <SelectValue />
@@ -521,7 +504,8 @@ export default function UserStatisticsPage() {
                             <SelectItem value="it">IT</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Select value={timeRange} onValueChange={setTimeRange}>
+                    {isVercel && <VercelControls model={vercel} language={language} />}
+                    {!isVercel && <><Select value={timeRange} onValueChange={setTimeRange}>
                         <SelectTrigger className="w-[140px] sm:w-[180px]">
                             <SelectValue placeholder={t('selectTimeRange')} />
                         </SelectTrigger>
@@ -554,6 +538,7 @@ export default function UserStatisticsPage() {
                             {t('includeMaintenanceIp')}
                         </Label>
                     </div>
+                    </>}
                     {/* <Button asChild variant="outline" size="sm" className="hidden sm:flex flex-shrink-0">
                         <Link href="/" className="select-none">
                             {t('backToHome')}
@@ -563,7 +548,7 @@ export default function UserStatisticsPage() {
             </div>
 
             {/* Error Summary */}
-            {failedEndpoints.length > 0 && (
+            {!isVercel && failedEndpoints.length > 0 && (
                 <Alert className="mb-4 sm:mb-6 border-orange-200 bg-orange-50">
                     <AlertTriangle className="h-4 w-4 text-orange-600 flex-shrink-0" />
                     <AlertDescription className="space-y-2">
@@ -593,7 +578,7 @@ export default function UserStatisticsPage() {
             )}
 
             {/* Overview Cards */}
-            <div className="grid gap-2 sm:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-4 sm:mb-6">
+            {!isVercel && <div className="grid gap-2 sm:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 mb-4 sm:mb-6">
                 <StatsCard
                     title={t('totalDownloads')}
                     value={statistics?.downloads?.totalStats?.total_downloads?.toLocaleString('it-IT') || '0'}
@@ -632,8 +617,12 @@ export default function UserStatisticsPage() {
                 />
             </div>
 
+            }
+            {!isVercel && loading && <p role="status">{t('loadingStats')}</p>}
+            {!isVercel && error && <p role="alert">{error}</p>}
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-                <TabsList className="w-full overflow-x-auto flex flex-nowrap whitespace-nowrap gap-1 scrollbar-hide">
+                <TabsList className="w-full overflow-x-auto flex flex-nowrap justify-start whitespace-nowrap gap-1 scrollbar-hide">
+                    <TabsTrigger value="vercel" className={STATISTICS_TAB_CLASSES.vercel}>Vercel</TabsTrigger>
                     <TabsTrigger value="overview" className={STATISTICS_TAB_CLASSES.overview}>{t('overview')}</TabsTrigger>
                     <TabsTrigger value="downloads" className={STATISTICS_TAB_CLASSES.downloads}>{t('downloads')}</TabsTrigger>
                     <TabsTrigger value="reading" className={STATISTICS_TAB_CLASSES.reading}>{t('reading')}</TabsTrigger>
@@ -643,6 +632,7 @@ export default function UserStatisticsPage() {
                     <TabsTrigger value="errors" className={STATISTICS_TAB_CLASSES.errors}>{t('errorsTab')}</TabsTrigger>
                 </TabsList>
 
+                <TabsContent value="vercel"><VercelDashboard language={language} model={vercel} /></TabsContent>
                 <TabsContent value="overview" className="space-y-4">
                     <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                         <ActivityChart

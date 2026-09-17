@@ -15,6 +15,7 @@ import { TimeDisplay } from './components/TimeDisplay';
 import { SeekBar } from './components/SeekBar';
 import { VolumeControl } from './components/VolumeControl';
 import { AudioControls } from './components/AudioControls';
+import { uniquePlayedSeconds } from '@/lib/vercel-analytics/tracking';
 
 function getAudioSourceType(url: string): string | undefined {
     const pathname = url.split('?')[0]?.toLowerCase() ?? '';
@@ -33,6 +34,7 @@ const HTML5Player = ({
     initialTime = 0,
     onProgress,
     onFirstPlay,
+    onPlaybackCoverage,
     onBookmark,
     isBookmarkActive,
     isBookmarkSaving = false,
@@ -107,6 +109,12 @@ const HTML5Player = ({
         });
     }, [currentState, onFirstPlay]);
 
+    const handlePlaybackCoverage = (event: SyntheticEvent<HTMLAudioElement>) => {
+        if (!currentState || !onPlaybackCoverage || currentState.track.kind !== 'main') return;
+        const audio = event.currentTarget;
+        onPlaybackCoverage({ ...currentState, currentTime: audio.currentTime, duration: audio.duration, isPlaying: !audio.paused }, uniquePlayedSeconds(audio.played, audio.duration));
+    };
+
     if (!tracks || tracks.length === 0 || !currentState) {
         return <div>No tracks available</div>;
     }
@@ -119,6 +127,9 @@ const HTML5Player = ({
                     muted={muted || volume === 0}
                     preload="auto"
                     onPlaying={handleAudioPlaying}
+                    onTimeUpdate={handlePlaybackCoverage}
+                    onPause={handlePlaybackCoverage}
+                    onEnded={handlePlaybackCoverage}
                 >
                     <source
                         src={tracks[currentTrack].url}

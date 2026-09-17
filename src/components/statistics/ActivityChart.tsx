@@ -16,6 +16,7 @@ interface ActivityChartProps {
     title: string;
     description?: string;
     className?: string;
+    locale?: string;
 }
 
 export function ActivityChart({ 
@@ -23,11 +24,13 @@ export function ActivityChart({
     lines, 
     title, 
     description, 
-    className 
+    className,
+    locale = 'it-IT'
 }: ActivityChartProps) {
     const formatXAxis = (tickItem: string) => {
         const date = new Date(tickItem);
-        return date.toLocaleDateString('it-IT', { 
+        return date.toLocaleDateString(locale, {
+            timeZone: 'Europe/Rome',
             day: 'numeric', 
             month: 'short' 
         });
@@ -59,7 +62,8 @@ export function ActivityChart({
                                     return value;
                                 }
 
-                                return date.toLocaleDateString('it-IT', { 
+                                return date.toLocaleDateString(locale, {
+                                    timeZone: 'Europe/Rome',
                                     weekday: 'long',
                                     year: 'numeric',
                                     month: 'long',

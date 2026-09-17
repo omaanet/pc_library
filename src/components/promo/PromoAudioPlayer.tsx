@@ -7,6 +7,7 @@ import { SITE_CONFIG } from '@/config/site-config';
 import { ClientSanitizedHtml } from '@/components/promo/ClientSanitizedHtml';
 import { DEFAULT_PROMO_AUDIO_TYPE } from '@/lib/promo-page-input';
 import type { Book, PromoPage } from '@/types';
+import { useAudioAnalytics } from '@/hooks/use-vercel-book-tracking';
 
 interface PromoAudioPlayerProps {
     promoPage: PromoPage;
@@ -16,6 +17,7 @@ interface PromoAudioPlayerProps {
 }
 
 export function PromoAudioPlayer({ promoPage, book, unavailableClassName, disableTracking = false }: PromoAudioPlayerProps) {
+    const analytics = useAudioAnalytics(book.id, promoPage.mediaId || undefined, 'promo', disableTracking);
     const hasTrackedPlay = useRef(false);
     const tracks: Track[] = useMemo(() => {
         if (!promoPage.mediaId) return [];
@@ -59,5 +61,7 @@ export function PromoAudioPlayer({ promoPage, book, unavailableClassName, disabl
         );
     }
 
-    return <HTML5Player tracks={tracks} onFirstPlay={handleFirstPlay} />;
+    return <HTML5Player key={`${book.id}:${promoPage.mediaId}`} tracks={tracks}
+        onFirstPlay={(state) => { analytics.start(state.track.kind); handleFirstPlay(); }}
+        onPlaybackCoverage={(state, seconds) => analytics.coverage(state.track.kind, seconds, state.duration)} />;
 }

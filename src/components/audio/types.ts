@@ -32,6 +32,7 @@ export interface HTML5PlayerProps {
     initialTime?: number;
     onProgress?: (state: AudioPlayerState) => void;
     onFirstPlay?: (state: AudioPlayerState) => void;
+    onPlaybackCoverage?: (state: AudioPlayerState, playedSeconds: number) => void;
     onBookmark?: (state: AudioPlayerState) => void;
     isBookmarkActive?: (state: AudioPlayerState) => boolean;
     isBookmarkSaving?: boolean;

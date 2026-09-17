@@ -69,15 +69,23 @@ async function decodeUpload(bytes: Buffer) {
     return decoder;
 }
 
-export async function uploadCover(bytes: Buffer): Promise<string> {
+async function uploadCoverTo(source: 'preview' | 'book', bytes: Buffer): Promise<string> {
     const decoder = await decodeUpload(bytes);
     // Fully decode and re-encode, removing metadata and rejecting corrupt data.
     const output = await decoder.rotate().resize({ width: PREVIEW_ASSET_LIMITS.coverEdge, height: PREVIEW_ASSET_LIMITS.coverEdge, fit: 'inside', withoutEnlargement: true }).webp({ quality: 90 }).toBuffer();
-    const root = assetRoot('preview');
+    const root = assetRoot(source);
     await fs.mkdir(root, { recursive: true });
     const name = `${randomUUID()}.webp`;
     await fs.writeFile(path.join(await fs.realpath(root), name), output, { flag: 'wx' });
     return name;
+}
+
+export async function uploadCover(bytes: Buffer): Promise<string> {
+    return uploadCoverTo('preview', bytes);
+}
+
+export async function uploadBookCover(bytes: Buffer): Promise<string> {
+    return uploadCoverTo('book', bytes);
 }
 
 export async function uploadPage(bookId: string, bytes: Buffer, originalName: string): Promise<string> {
