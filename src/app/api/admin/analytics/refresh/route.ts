@@ -6,7 +6,8 @@ import { analyticsRoute } from '@/lib/vercel-analytics/route-handler';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 240;
+// Stay within the Hobby limit when Fluid compute is disabled.
+export const maxDuration = 60;
 const refresh = withCSRFProtection(async (request: NextRequest) => analyticsRoute(request, {
     authorize: async () => { await requireSuperAdmin(); await requireManagedPageAccess('statistics'); return { diagnostics: true }; },
     dashboard: (period, limit) => cachedDashboard(period, limit, true),
