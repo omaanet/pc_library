@@ -6,7 +6,7 @@ import { IMAGE_CONFIG } from '@/lib/image-utils';
 export const bookFormSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     coverImage: z.string().default(IMAGE_CONFIG.placeholder.token),
-    pagesCount: z.number().int().min(1, 'Page count must be at least 1').optional(),
+    pagesCount: z.number().int().min(1, 'Page count must be at least 1').nullable().optional(),
     replaceFirstPageWithCopyrightOverride: z.boolean().nullable().optional(),
     displayOrder: z.number().int().nullable().optional(),
     publishingDate: z.date({

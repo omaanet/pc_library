@@ -173,6 +173,7 @@ function AddBookPageContent() {
             const formattedValues = {
                 ...values,
                 publishingDate: values.publishingDate.toISOString(),
+                pagesCount: values.pagesCount ?? undefined,
                 audioLength: values.audioLength ?? undefined,
                 displayOrder: values.displayOrder ?? undefined,
                 rating: values.rating ?? undefined,

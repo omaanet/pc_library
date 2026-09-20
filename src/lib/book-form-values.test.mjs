@@ -27,6 +27,53 @@ test('reported book validates without touching the Preview Book switch', () => {
     assert.equal(bookFormSchema.safeParse({ ...values, isPreview: 1 }).success, false);
 });
 
+test('nullable optional database fields validate when unset', () => {
+    const values = getBookFormValues({
+        ...book,
+        pagesCount: null,
+        replaceFirstPageWithCopyrightOverride: null,
+        displayOrder: null,
+        summary: null,
+        audioLength: null,
+        extract: null,
+        rating: null,
+        audiobook: {
+            mediaId: null,
+            introAudioOverride: false,
+            introAudioTitle: null,
+            introAudioId: null,
+        },
+        mediaId: null,
+        mediaTitle: null,
+        mediaUid: null,
+        previewPlacement: null,
+    });
+
+    const result = bookFormSchema.safeParse(values);
+    assert.equal(result.success, true, JSON.stringify(result.error?.issues));
+    assert.equal(result.data.pagesCount, null);
+});
+
+test('page count accepts only unset values or positive integers', () => {
+    const values = getBookFormValues(book);
+
+    for (const pagesCount of [null, undefined, 1, 42]) {
+        assert.equal(
+            bookFormSchema.safeParse({ ...values, pagesCount }).success,
+            true,
+            `expected ${String(pagesCount)} to be valid`,
+        );
+    }
+
+    for (const pagesCount of [0, -1, 1.5, '12']) {
+        assert.equal(
+            bookFormSchema.safeParse({ ...values, pagesCount }).success,
+            false,
+            `expected ${String(pagesCount)} to be invalid`,
+        );
+    }
+});
+
 test('numeric and boolean flags normalize consistently, including nested defaults', () => {
     for (const value of [0, 1, false, true]) {
         const values = getBookFormValues({ ...book, hasAudio: value, isPreview: value,
