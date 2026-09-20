@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useImperativeHandle, useState, type Ref } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Book } from '@/types';
-import type { PreviewInput, PublicBookPreview } from '@/types/book-preview';
+import type { PreviewInput } from '@/types/book-preview';
 import { EXTRACT_HTML_MAX_LENGTH, emptyPreview, previewAssetUrl, previewSchema, publicPreview } from '@/lib/book-preview';
 import { previewRequest } from '@/lib/services/preview-api-service';
 import { Button } from '@/components/ui/button';
@@ -19,14 +19,14 @@ export type BookPreviewEditorHandle = {
     save: (onlyIfChanged?: boolean) => Promise<void>;
 };
 
-export function BookPreviewEditor({ book, ref, disabled = false }: {
+export function BookPreviewEditor({ book, bookCover = book.coverImage || null, ref, disabled = false }: {
     book: Book;
+    bookCover?: string | null;
     ref?: Ref<BookPreviewEditorHandle>;
     disabled?: boolean;
 }) {
     const [draft, setDraft] = useState<PreviewInput>(emptyPreview(book.title));
     const [savedDraft, setSavedDraft] = useState<PreviewInput | null>(null);
-    const [bookCover, setBookCover] = useState<string | null>(book.coverImage || null);
     const [assets, setAssets] = useState<Assets>({ preview: [], book: [], pages: [] });
     const [assetsLoaded, setAssetsLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -36,7 +36,6 @@ export function BookPreviewEditor({ book, ref, disabled = false }: {
     const [uploadProgress, setUploadProgress] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
-    const [inspection, setInspection] = useState<PublicBookPreview | null>(null);
     const [inspectOpen, setInspectOpen] = useState(false);
     const cache = useQueryClient();
     const change = <K extends keyof PreviewInput>(key: K, value: PreviewInput[K]) => {
@@ -52,7 +51,7 @@ export function BookPreviewEditor({ book, ref, disabled = false }: {
             const data = await previewRequest(`/api/books/${encodeURIComponent(book.id)}/preview`);
             setMigrationRequired(!!data.migrationRequired);
             const loadedDraft = data.preview || emptyPreview(data.book.title);
-            setDraft(loadedDraft); setSavedDraft(loadedDraft); setBookCover(data.book.coverImage || null); setReady(true);
+            setDraft(loadedDraft); setSavedDraft(loadedDraft); setReady(true);
             await refreshAssets();
         } catch (e) { setError((e as Error).message); }
         finally { setLoading(false); }
@@ -257,8 +256,8 @@ export function BookPreviewEditor({ book, ref, disabled = false }: {
             <div className="flex flex-wrap gap-3">
                 <Button type="button" disabled={migrationRequired} onClick={() => { void save().catch(() => {}); }}>{busy ? 'Salvataggio…' : 'Salva anteprima'}</Button>
                 <Dialog open={inspectOpen} onOpenChange={setInspectOpen}>
-                    <DialogTrigger asChild><Button type="button" variant="outline" onClick={() => setInspection(resolved)}>Visualizza anteprima</Button></DialogTrigger>
-                    {inspectOpen && inspection && <BookPreviewDialogContent preview={inspection} />}
+                    <DialogTrigger asChild><Button type="button" variant="outline">Visualizza anteprima</Button></DialogTrigger>
+                    {inspectOpen && <BookPreviewDialogContent preview={resolved} />}
                 </Dialog>
             </div>
         </fieldset>}

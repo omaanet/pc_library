@@ -95,7 +95,7 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
                 description: errorMessage,
                 variant: 'destructive',
             });
-            return null;
+            throw new Error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -138,7 +138,7 @@ export function useBooks({ initialRefetch = true }: UseBookOptions = {}) {
                 description: errorMessage,
                 variant: 'destructive',
             });
-            return null;
+            throw new Error(errorMessage);
         } finally {
             setLoading(false);
         }

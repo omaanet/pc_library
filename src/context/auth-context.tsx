@@ -14,6 +14,8 @@ import type {
 import type { UserPreferences } from '@/types/preferences';
 import type { User } from '@/types';
 
+const AUTOMATIC_SESSION_REFRESH_INTERVAL_MS = 60_000;
+
 function createInitialState(initialUser: User | null): AuthState {
     return {
         user: initialUser,
@@ -79,12 +81,14 @@ async function makeAuthenticatedRequest(url: string, options: RequestInit = {}):
 export function AuthProvider({ children, initialUser }: { children: React.ReactNode; initialUser: User | null }) {
     const [state, dispatch] = useReducer(authReducer, initialUser, createInitialState);
     const refreshPromiseRef = React.useRef<Promise<User | null> | null>(null);
+    const lastRefreshStartedAtRef = React.useRef<number>(-Infinity);
     const currentUserRef = React.useRef<User | null>(initialUser);
     currentUserRef.current = state.user;
 
     const refreshSession = useCallback((): Promise<User | null> => {
         if (refreshPromiseRef.current) return refreshPromiseRef.current;
 
+        lastRefreshStartedAtRef.current = Date.now();
         const request = (async () => {
             try {
                 const response = await fetch('/api/auth/session', {
@@ -113,20 +117,22 @@ export function AuthProvider({ children, initialUser }: { children: React.ReactN
     React.useEffect(() => {
         if (!state.isAuthenticated) return;
 
-        const handleFocus = () => {
+        const refreshOnReturn = () => {
+            if (document.visibilityState !== 'visible') return;
+            if (Date.now() - lastRefreshStartedAtRef.current < AUTOMATIC_SESSION_REFRESH_INTERVAL_MS) return;
             void refreshSession();
         };
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                void refreshSession();
-            }
+        const handleFocus = (event: FocusEvent) => {
+            // Only window focus represents returning to the page; input focus
+            // and text selection must not start a session check.
+            if (event.target === window) refreshOnReturn();
         };
 
         window.addEventListener('focus', handleFocus);
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        document.addEventListener('visibilitychange', refreshOnReturn);
         return () => {
             window.removeEventListener('focus', handleFocus);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('visibilitychange', refreshOnReturn);
         };
     }, [refreshSession, state.isAuthenticated]);
 

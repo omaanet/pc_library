@@ -413,7 +413,7 @@ export function AboutPage() {
                                     <p className="mt-3 text-3xl font-semibold">2025</p>
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-semibold">“CAPitolo”</h3>
+                                    <h3 className="text-xl font-semibold">“CAPitolo 20025”</h3>
                                     <p className="mt-3 leading-7 text-slate-300">Giornata dedicata agli autori del territorio, ospitata dalla biblioteca di Legnano (MI).</p>
                                 </div>
                             </article>

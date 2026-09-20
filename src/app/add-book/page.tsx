@@ -9,42 +9,10 @@ import { BookTable } from '@/components/admin/books/book-table';
 import { AudioTrackForm } from '@/components/admin/books/audio-track-form';
 import { useBooks } from '@/hooks/admin/use-books';
 import { Book } from '@/types';
-import { z } from 'zod';
+import type { BookFormValues } from '@/lib/book-form-values';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { IMAGE_CONFIG } from '@/lib/image-utils';
 
-// Book form validation schema (matches BookForm component schema)
-const bookFormSchema = z.object({
-    title: z.string().min(1, 'Title is required'),
-    coverImage: z.string().default(IMAGE_CONFIG.placeholder.token),
-    pagesCount: z.number().int().min(1).optional(),
-    replaceFirstPageWithCopyrightOverride: z.boolean().nullable().optional(),
-    displayOrder: z.number().int().nullable().optional(),
-    publishingDate: z.date({
-        required_error: 'Publishing date is required',
-    }),
-    summary: z.string().nullable().optional(),
-    hasAudio: z.boolean().default(false),
-    audioLength: z.number().min(1).nullable().optional(),
-    extract: z.string().nullable().optional(),
-    rating: z.number().min(1).max(5).nullable().optional(),
-    isPreview: z.boolean().default(false),
-    isNew: z.boolean().default(false),
-    isReadingVisible: z.boolean().default(true),
-    isAudioVisible: z.boolean().default(false),
-    audiobook: z.object({
-        mediaId: z.string().nullable().optional(),
-        introAudioOverride: z.boolean().default(false),
-        introAudioTitle: z.string().nullable().optional(),
-        introAudioId: z.string().nullable().optional()
-    }).optional(),
-    mediaId: z.string().nullable().optional(),
-    mediaTitle: z.string().nullable().optional(),
-    mediaUid: z.string().nullable().optional(),
-    previewPlacement: z.string().nullable().optional(),
-});
-
-type BookFormValues = z.infer<typeof bookFormSchema>;
 type TopLevelTab = 'manage' | 'add' | 'test';
 type AdminView = TopLevelTab | 'edit' | 'audio-tracks';
 type SortField = 'title' | 'publishingDate' | 'hasAudio' | 'isPreview' | 'isNew' | 'book_id' | 'displayOrder' | 'isReadingVisible' | 'isAudioVisible';
@@ -77,6 +45,7 @@ import { AuthModal } from '@/components/auth/auth-modal';
 
 function AddBookPageContent() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const searchParams = useSearchParams();
     const { state } = useAuth();
     const { dispatch: libraryDispatch } = useLibrary();
@@ -230,15 +199,17 @@ function AddBookPageContent() {
                 // Update existing book
                 const updatedBook = await updateBook(editingBook.id, formattedValues);
                 if (!updatedBook) {
-                    return;
+                    throw new Error('Impossibile aggiornare il libro. Riprova.');
                 }
+                setEditingBook(updatedBook);
+                await queryClient.invalidateQueries({ queryKey: ['book-previews'] });
                 console.log('Book updated successfully');
             } else {
                 console.log('Creating new book', formattedValues);
                 // Create new book (including cloned books)
                 const createdBook = await createBook(formattedValues);
                 if (!createdBook) {
-                    return;
+                    throw new Error('Impossibile creare il libro. Riprova.');
                 }
                 setEditingBook(createdBook);
                 setActiveView('edit');
@@ -265,6 +236,7 @@ function AddBookPageContent() {
             }
         } catch (error) {
             console.error('Error saving book:', error);
+            throw error;
         } finally {
             setIsSubmitting(false);
         }
@@ -415,7 +387,7 @@ function AddBookPageContent() {
                 </Button>
             </div>
 
-            <p className="text-muted-foreground mt-2 select-none">
+            <p className="text-muted-foreground mt-2">
                 Add, edit, and manage books in the library.
             </p>
 
@@ -445,7 +417,7 @@ function AddBookPageContent() {
                     <Card>
                         <CardHeader className="px-0">
                             <CardTitle>Books Library</CardTitle>
-                            <CardDescription className="select-none">
+                            <CardDescription>
                                 View and manage all books in the database.
                             </CardDescription>
                         </CardHeader>
@@ -473,8 +445,8 @@ function AddBookPageContent() {
                 <TabsContent value="add" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="select-none">Add New Book</CardTitle>
-                            <CardDescription className="select-none">
+                            <CardTitle>Add New Book</CardTitle>
+                            <CardDescription>
                                 Fill in the details to add a new book to the library.
                             </CardDescription>
                         </CardHeader>
@@ -492,7 +464,7 @@ function AddBookPageContent() {
                     <TabsContent value="edit" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="select-none">
+                                <CardTitle>
                                     {editingBook.id ? (
                                         <>
                                             Edit Book <span className="text-sm text-gray-500 ms-3">[<span className="font-bold text-cyan-400 mx-1">{editingBook.id}</span>]</span>
@@ -501,7 +473,7 @@ function AddBookPageContent() {
                                         'Clone Book'
                                     )}
                                 </CardTitle>
-                                <CardDescription className="select-none">
+                                <CardDescription>
                                     {editingBook.id
                                         ? `Edit details for "${editingBook.title}"`
                                         : 'Review the copied details before adding the cloned book.'}
@@ -523,8 +495,8 @@ function AddBookPageContent() {
                     <TabsContent value="audio-tracks" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="select-none">Audio Tracks for "{editingBook.title}"</CardTitle>
-                                <CardDescription className="select-none">
+                                <CardTitle>Audio Tracks for "{editingBook.title}"</CardTitle>
+                                <CardDescription>
                                     Manage audio tracks for this book.
                                 </CardDescription>
                             </CardHeader>
@@ -542,8 +514,8 @@ function AddBookPageContent() {
                 <TabsContent value="test" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="select-none">Environment Variables</CardTitle>
-                            <CardDescription className="select-none">All environment variables</CardDescription>
+                            <CardTitle>Environment Variables</CardTitle>
+                            <CardDescription>All environment variables</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <pre className="text-sm">{JSON.stringify(envVars, null, 2)}</pre>
@@ -551,7 +523,7 @@ function AddBookPageContent() {
                     </Card>
                     <Card>
                         <CardHeader>
-                            <CardTitle className="select-none">Send Test Email</CardTitle>
+                            <CardTitle>Send Test Email</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={e => {

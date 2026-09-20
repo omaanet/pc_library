@@ -63,6 +63,18 @@ test('cover namespaces are distinct and placeholders never become preview images
     assert.notEqual(previewAssetUrl('book', 'same.jpg'), previewAssetUrl('preview', 'same.jpg'));
 });
 
+test('automatic covers follow the current book cover while explicit covers remain independent', () => {
+    const base = { ...emptyPreview('A'), bookId: '1', bookCover: 'old.jpg' };
+    assert.equal(publicPreview({ ...base, bookCover: 'new.jpg' }).coverUrl, '/api/preview-assets/book/new.jpg');
+    for (const coverSource of ['book', 'preview']) {
+        const explicit = { ...base, coverSource, coverPath: 'selected.jpg', bookCover: 'new.jpg' };
+        assert.equal(publicPreview(explicit).coverUrl, `/api/preview-assets/${coverSource}/selected.jpg`);
+        assert.equal(publicPreview({ ...explicit, coverSource: null, coverPath: null }).coverUrl, '/api/preview-assets/book/new.jpg');
+    }
+    assert.equal(publicPreview({ ...base, bookCover: null }).coverUrl, null);
+    assert.equal(publicPreview({ ...base, bookCover: '@placeholder' }).coverUrl, null);
+});
+
 test('HTML allowlist removes executable markup and styling without newline conversion', () => {
     const source = '<p class="x" style="color:red" onclick="bad()">Uno\nDue<br><em>Tre</em></p><script>bad()</script><iframe src="x"></iframe><img src=x onerror=bad()><a href="javascript:bad()">Link</a><a href="https://example.org">Safe</a>';
     const result = sanitizePreviewHtml(source);

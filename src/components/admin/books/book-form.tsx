@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { bookFormSchema, getBookFormValues, getBookFormErrorMessages, type BookFormValues } from '@/lib/book-form-values';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 
@@ -47,67 +47,6 @@ import {
 
 const MIN_PUBLISHING_DATE = new Date(1900, 0, 1);
 
-// Form validation schema
-const bookFormSchema = z.object({
-    title: z.string().min(1, 'Title is required'),
-    coverImage: z.string().default(IMAGE_CONFIG.placeholder.token),
-    pagesCount: z.number().int().min(1, 'Page count must be at least 1').optional(),
-    replaceFirstPageWithCopyrightOverride: z.boolean().nullable().optional(),
-    displayOrder: z.number().int().nullable().optional(),
-    publishingDate: z.date({
-        required_error: 'Publishing date is required',
-    }),
-    summary: z.string().nullable().optional(),
-    hasAudio: z.boolean().default(false),
-    audioLength: z.number().min(1).nullable().optional(),
-    extract: z.string().nullable().optional(),
-    rating: z.number().min(1).max(5).nullable().optional(),
-    isPreview: z.boolean().default(false),
-    isNew: z.boolean().default(false),
-    isReadingVisible: z.boolean().default(true),
-    isAudioVisible: z.boolean().default(false),
-    // Audiobook specific fields
-    audiobook: z.object({
-        mediaId: z.string().nullable().optional(),
-        introAudioOverride: z.boolean().default(false),
-        introAudioTitle: z.string().nullable().optional(),
-        introAudioId: z.string().nullable().optional()
-    }).optional()
-        .default({
-            mediaId: null,
-            introAudioOverride: false,
-            introAudioTitle: null,
-            introAudioId: null
-        }),
-    // Preview media fields (optional)
-    mediaId: z.string().nullable().optional(),
-    mediaTitle: z.string().nullable().optional(),
-    mediaUid: z.string().nullable().optional(),
-    previewPlacement: z.string().nullable().optional(),
-}).superRefine((data, ctx) => {
-    if (!data.hasAudio || !data.audiobook?.introAudioOverride) {
-        return;
-    }
-
-    if (!data.audiobook.introAudioTitle?.trim()) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'Title is required when intro override is enabled',
-            path: ['audiobook', 'introAudioTitle']
-        });
-    }
-
-    if (!data.audiobook.introAudioId?.trim()) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'IntroAudioID is required when intro override is enabled',
-            path: ['audiobook', 'introAudioId']
-        });
-    }
-});
-
-type BookFormValues = z.infer<typeof bookFormSchema>;
-
 interface BookFormProps {
     book?: Book;
     onSubmit: (values: BookFormValues, options?: { close?: boolean }) => Promise<void>;
@@ -121,62 +60,9 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting: parentSubmitt
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState('');
     const isSubmitting = parentSubmitting || saving;
-    // Debug log to see what data is being received
-    console.log('[BookForm] Received book data:', JSON.stringify(book, null, 2));
-    console.log('[BookForm] hasAudio:', book?.hasAudio);
-    console.log('[BookForm] audiobook:', book?.audiobook);
-    console.log('[BookForm] audiobook.mediaId:', book?.audiobook?.mediaId);
-
-    const [showAudioLength, setShowAudioLength] = useState(book?.hasAudio || false);
+    const defaultValues = React.useMemo(() => getBookFormValues(book), [book]);
     const [isPublishingDateOpen, setIsPublishingDateOpen] = useState(false);
-    const [publishingMonth, setPublishingMonth] = useState(
-        book?.publishingDate ? new Date(book.publishingDate) : new Date()
-    );
-
-    // Ensure book.audiobook is defined if hasAudio is true
-    if (book?.hasAudio && !book.audiobook) {
-        console.log('[BookForm] Creating missing audiobook object');
-        book = {
-            ...book,
-            audiobook: {
-                mediaId: null,
-                introAudioOverride: false,
-                introAudioTitle: null,
-                introAudioId: null
-            }
-        };
-    }
-
-    // Default values for the form
-    const defaultValues: Partial<BookFormValues> = {
-        title: book?.title || '',
-        coverImage: book?.coverImage || IMAGE_CONFIG.placeholder.token,
-        pagesCount: book?.pagesCount,
-        replaceFirstPageWithCopyrightOverride: book?.replaceFirstPageWithCopyrightOverride ?? null,
-        displayOrder: book?.displayOrder ?? null,
-        publishingDate: book?.publishingDate ? new Date(book.publishingDate) : new Date(),
-        summary: book?.summary || '',
-        hasAudio: book?.hasAudio || false,
-        audioLength: book?.audioLength,
-        extract: book?.extract || '',
-        rating: book?.rating,
-        isPreview: book?.isPreview || false,
-        isNew: book?.isNew || false,
-        isReadingVisible: book?.isReadingVisible ?? (book?.isVisible !== undefined ? Boolean(book.isVisible) : true),
-        isAudioVisible: book?.hasAudio
-            ? (book?.isAudioVisible ?? (book?.isVisible !== undefined ? Boolean(book.isVisible) : true))
-            : false,
-        audiobook: {
-            mediaId: book?.audiobook?.mediaId || null,
-            introAudioOverride: Boolean(book?.audiobook?.introAudioOverride),
-            introAudioTitle: book?.audiobook?.introAudioTitle ?? null,
-            introAudioId: book?.audiobook?.introAudioId ?? null
-        },
-        mediaId: book?.mediaId ?? null,
-        mediaTitle: book?.mediaTitle ?? null,
-        mediaUid: book?.mediaUid ?? '1',
-        previewPlacement: book?.previewPlacement ?? null,
-    };
+    const [publishingMonth, setPublishingMonth] = useState(defaultValues.publishingDate);
 
     const form = useForm<BookFormValues>({
         resolver: zodResolver(bookFormSchema),
@@ -184,52 +70,21 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting: parentSubmitt
         mode: "onBlur",
     });
 
-    // Reset form when book prop changes
+    // The parent replaces this baseline only when switching books or after a save.
+    // Background auth renders keep the same book and leave in-progress edits intact.
+    const { reset } = form;
     useEffect(() => {
-        console.log('[BookForm] Book changed, resetting form with:', book);
-        if (book) {
-            const publishingDate = book.publishingDate ? new Date(book.publishingDate) : new Date();
+        reset(defaultValues);
+        setPublishingMonth(defaultValues.publishingDate);
+        setSaveError('');
+    }, [defaultValues, reset]);
 
-            form.reset({
-                title: book.title || '',
-                coverImage: book.coverImage || IMAGE_CONFIG.placeholder.token,
-                pagesCount: book.pagesCount,
-                replaceFirstPageWithCopyrightOverride: book.replaceFirstPageWithCopyrightOverride ?? null,
-                displayOrder: book.displayOrder ?? null,
-                publishingDate,
-                summary: book.summary || '',
-                hasAudio: book.hasAudio || false,
-                audioLength: book.audioLength,
-                extract: book.extract || '',
-                rating: book.rating,
-                isPreview: book.isPreview || false,
-                isNew: book.isNew || false,
-                isReadingVisible: book.isReadingVisible ?? (book.isVisible !== undefined ? Boolean(book.isVisible) : true),
-                isAudioVisible: book.hasAudio
-                    ? (book.isAudioVisible ?? (book.isVisible !== undefined ? Boolean(book.isVisible) : true))
-                    : false,
-                audiobook: {
-                    mediaId: book.audiobook?.mediaId || null,
-                    introAudioOverride: Boolean(book.audiobook?.introAudioOverride),
-                    introAudioTitle: book.audiobook?.introAudioTitle ?? null,
-                    introAudioId: book.audiobook?.introAudioId ?? null
-                },
-                mediaId: book.mediaId ?? null,
-                mediaTitle: book.mediaTitle ?? null,
-                mediaUid: book.mediaUid ?? '1',
-                previewPlacement: book.previewPlacement ?? null,
-            });
-            setPublishingMonth(publishingDate);
-        }
-    }, [book, form]);
-
-    // Watch hasAudio to show/hide audioLength field
     const hasAudio = form.watch('hasAudio');
+    const showAudioLength = hasAudio;
+    const coverImage = form.watch('coverImage');
     const isReadingVisible = form.watch('isReadingVisible');
     const isAudioVisible = form.watch('isAudioVisible');
-    useEffect(() => {
-        setShowAudioLength(hasAudio);
-    }, [hasAudio]);
+    const validationMessages = getBookFormErrorMessages(form.formState.errors);
 
     const visibility = { hasAudio, isReadingVisible, isAudioVisible };
     const anyVersionVisible = isAnyVersionVisible(visibility);
@@ -242,7 +97,7 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting: parentSubmitt
         form.setValue('isAudioVisible', next.isAudioVisible, { shouldDirty: true });
     };
 
-    // Submit handler that properly logs and calls the parent's onSubmit function
+    // Save the preview before the parent is allowed to close the editor.
     const handleSubmit = async (data: BookFormValues, options?: { close?: boolean }) => {
         if (savingRef.current || parentSubmitting) return;
         savingRef.current = true;
@@ -698,8 +553,9 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting: parentSubmitt
                             </div>
                             <FormControl><Switch className="shrink-0 data-[state=checked]:bg-green-500" checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </div>
+                        <FormMessage />
                         <div hidden={!field.value} className="sm:ms-10">
-                            {book?.id ? <BookPreviewEditor key={book.id} ref={previewEditorRef} book={book} disabled={isSubmitting} /> : <p className="border-t pt-4 text-sm text-muted-foreground">Salva prima il libro: potrai poi configurare qui copertina, video ed estratto dell’anteprima.</p>}
+                            {book?.id ? <BookPreviewEditor key={book.id} ref={previewEditorRef} book={book} bookCover={coverImage} disabled={isSubmitting} /> : <p className="border-t pt-4 text-sm text-muted-foreground">Salva prima il libro: potrai poi configurare qui copertina, video ed estratto dell’anteprima.</p>}
                         </div>
                     </FormItem>
                 )} />
@@ -819,6 +675,14 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting: parentSubmitt
                     )}
                 />
 
+                {validationMessages.length > 0 && (
+                    <div role="alert" className="text-destructive">
+                        <p>Controlla i campi prima di salvare:</p>
+                        <ul className="list-disc pl-5">
+                            {validationMessages.map(message => <li key={message}>{message}</li>)}
+                        </ul>
+                    </div>
+                )}
                 {saveError && <p role="alert" className="text-destructive">Salvataggio non completato: {saveError}</p>}
                 <div className="flex flex-wrap justify-end gap-4">
                     <Button
