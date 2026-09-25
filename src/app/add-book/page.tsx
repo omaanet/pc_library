@@ -164,7 +164,10 @@ function AddBookPageContent() {
     };
 
     // Handle form submission
-    const handleSubmit = async (values: BookFormValues, options?: { close?: boolean }) => {
+    const handleSubmit = async (
+        values: Omit<BookFormValues, 'pagesCount'> & { pagesCount?: number | null },
+        options?: { close?: boolean },
+    ) => {
         // console.log('handleSubmit - Form values:', values);
         setIsSubmitting(true);
 

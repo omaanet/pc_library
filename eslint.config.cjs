@@ -17,6 +17,7 @@ module.exports = [
             '**/.windsurf/**',
             'reports/**',
             'tmp/**',
+            'output/playwright/**',
         ],
     },
     {

@@ -20,8 +20,8 @@ function route(kind, level, managed = true) {
     const filename = `../../app/api/admin/analytics/${kind === 'dashboard' ? '' : `${kind}/`}route.ts`;
     const source = fs.readFileSync(new URL(filename, import.meta.url), 'utf8');
     const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-    const module = { exports: {} };
-    vm.runInNewContext(compiled, { module, exports: module.exports, require: name => {
+    const routeModule = { exports: {} };
+    vm.runInNewContext(compiled, { module: routeModule, exports: routeModule.exports, require: name => {
         if (name.endsWith('/admin-auth')) return {
             requireAdmin: () => authorize(false), requireSuperAdmin: () => authorize(true),
             requireManagedPageAccess: async key => { pageChecks++; assert.equal(key, 'statistics'); if (!managed) throw new ApiError(403, 'private page details'); },
@@ -34,7 +34,7 @@ function route(kind, level, managed = true) {
         if (name.endsWith('/service')) return { checkSetup: async () => { calls++; return { checked: true }; } };
         throw new Error(`Unexpected import ${name}`);
     } });
-    return { handler: module.exports[kind === 'refresh' ? 'POST' : 'GET'], counts: () => ({ calls, adminChecks, superChecks, pageChecks }) };
+    return { handler: routeModule.exports[kind === 'refresh' ? 'POST' : 'GET'], counts: () => ({ calls, adminChecks, superChecks, pageChecks }) };
 }
 function request(kind, params = '', csrf = true, body) {
     return new NextRequest(`http://localhost/api/admin/analytics/${kind}?${params}`, {

@@ -40,6 +40,7 @@
   ],
   "exclude": [
     "node_modules",
-    "_docs"
+    "_docs",
+    "tmp"
   ]
 }

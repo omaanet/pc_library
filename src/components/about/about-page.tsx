@@ -392,19 +392,19 @@ export function AboutPage() {
                             <p className="text-sm font-bold tracking-[0.2em] text-sky-300">04 — SUL TERRITORIO</p>
                             <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">La scrittura come occasione d’incontro.</h2>
                             <p className="mt-5 text-lg leading-8 text-slate-300">
-                                Il progetto ha preso parte a due iniziative dedicate agli autori locali.
+                                Il progetto ha preso parte a tre iniziative dedicate agli autori locali.
                             </p>
                         </header>
 
                         <div className="space-y-5">
                             <article className="grid gap-5 rounded-3xl border border-white/15 bg-white/[0.06] p-6 sm:grid-cols-[7rem_1fr] sm:p-8">
                                 <div>
-                                    <CalendarDays className="h-6 w-6 text-sky-300" aria-hidden="true" />
-                                    <p className="mt-3 text-3xl font-semibold">2024</p>
+                                    <BookOpenText className="h-6 w-6 text-emerald-300" aria-hidden="true" />
+                                    <p className="mt-3 text-3xl font-semibold">2026</p>
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-semibold">“Autori Kilometro Zero”</h3>
-                                    <p className="mt-3 leading-7 text-slate-300">Iniziativa organizzata dalla biblioteca di Busto Garolfo.</p>
+                                    <h3 className="text-xl font-semibold">“CAPitolo 20025”</h3>
+                                    <p className="mt-3 leading-7 text-slate-300">Seconda partecipazione all’evento organizzato da “CAPitolo 20025”, con la presentazione del racconto “Il volo di Ecru”.</p>
                                 </div>
                             </article>
                             <article className="grid gap-5 rounded-3xl border border-white/15 bg-white/[0.06] p-6 sm:grid-cols-[7rem_1fr] sm:p-8">
@@ -415,6 +415,16 @@ export function AboutPage() {
                                 <div>
                                     <h3 className="text-xl font-semibold">“CAPitolo 20025”</h3>
                                     <p className="mt-3 leading-7 text-slate-300">Giornata dedicata agli autori del territorio, ospitata dalla biblioteca di Legnano (MI).</p>
+                                </div>
+                            </article>
+                            <article className="grid gap-5 rounded-3xl border border-white/15 bg-white/[0.06] p-6 sm:grid-cols-[7rem_1fr] sm:p-8">
+                                <div>
+                                    <CalendarDays className="h-6 w-6 text-sky-300" aria-hidden="true" />
+                                    <p className="mt-3 text-3xl font-semibold">2024</p>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-semibold">“Autori Kilometro Zero”</h3>
+                                    <p className="mt-3 leading-7 text-slate-300">Iniziativa organizzata dalla biblioteca di Busto Garolfo.</p>
                                 </div>
                             </article>
                         </div>
