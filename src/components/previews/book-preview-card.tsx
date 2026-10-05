@@ -101,7 +101,14 @@ function Cover({ url, title, compact = false, className }: { url: string; title:
 }
 
 export function PreviewHtmlExtract({ html }: { html: string }) {
-    return <div className={EXTRACT_CLASSES} dangerouslySetInnerHTML={{ __html: sanitizePreviewHtml(html) }} />;
+    // The publication footer is authored inside the extract HTML.
+    const sanitizedHtml = sanitizePreviewHtml(html).replace(/<p\b[^>]*>((?:(?!<p\b)[\s\S])*)<\/p>\s*$/i, (paragraph, content: string) => {
+        const text = content.replace(/<[^>]*>/g, '').replace(/&nbsp;|&#160;/gi, ' ').trim();
+        return /^Pubblicazione(?: sul sito)? entro(?: il)? 31 dicembre 2026\.?$/i.test(text)
+            ? '<p>Prossima Pubblicazione</p>'
+            : paragraph;
+    });
+    return <div className={EXTRACT_CLASSES} dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />;
 }
 
 export function BookPreviewDialogContent({ preview }: { preview: PublicBookPreview }) {
