@@ -1,10 +1,12 @@
 import * as z from 'zod';
 import type { Book } from '@/types';
 import { IMAGE_CONFIG } from '@/lib/image-utils';
+import { bookGenresSchema, getBookGenres } from './book-genres';
 
 // Form validation schema
 export const bookFormSchema = z.object({
     title: z.string().min(1, 'Title is required'),
+    genres: bookGenresSchema.default(['Racconti']),
     coverImage: z.string().default(IMAGE_CONFIG.placeholder.token),
     pagesCount: z.number().int().min(1, 'Page count must be at least 1').nullable().optional(),
     replaceFirstPageWithCopyrightOverride: z.boolean().nullable().optional(),
@@ -70,6 +72,7 @@ export function getBookFormValues(book?: Partial<Book>): BookFormValues {
     const legacyVisible = book?.isVisible !== undefined ? Boolean(book.isVisible) : true;
     return {
         title: book?.title || '',
+        genres: getBookGenres(book?.genres),
         coverImage: book?.coverImage || IMAGE_CONFIG.placeholder.token,
         pagesCount: book?.pagesCount,
         replaceFirstPageWithCopyrightOverride: book?.replaceFirstPageWithCopyrightOverride == null

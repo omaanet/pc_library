@@ -1,5 +1,6 @@
 import type { Book } from '../types';
 import { serializeCsv } from './csv.js';
+import { getBookGenres } from './book-genres';
 
 type CsvValue = string | number | boolean | null | undefined;
 
@@ -28,6 +29,7 @@ interface BooksLibraryViewOptions {
 const CSV_HEADERS: CsvValue[] = [
     'ID',
     'Title',
+    'Genere',
     'Published',
     'Audio',
     'Preview',
@@ -105,6 +107,7 @@ export function createBooksLibraryCsv(books: Book[], isBookNew: IsBookNew): stri
     const rows: CsvValue[][] = books.map(book => [
         book.id,
         book.title,
+        getBookGenres(book.genres).join(', '),
         toIsoDate(book.publishingDate),
         book.hasAudio,
         Boolean(book.isPreview),

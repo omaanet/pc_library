@@ -52,21 +52,26 @@ const books = [
 
 const isBookNew = book => Boolean(book.isNew);
 
+test('CSV includes both selected genres in a quoted field', () => {
+    const csv = createBooksLibraryCsv([{ ...books[0], genres: ['Racconti', 'Racconti per bambini'] }], isBookNew);
+    assert.ok(csv.includes(',"Racconti, Racconti per bambini",'));
+});
+
 test('CSV exports visible columns with ISO dates and effective boolean values', () => {
     const csv = createBooksLibraryCsv(books, isBookNew);
     const lines = csv.split('\r\n');
 
     assert.equal(
         lines[0],
-        'ID,Title,Published,Audio,Preview,Is New,Display order,Reading visible,Audio visible'
+        'ID,Title,Genere,Published,Audio,Preview,Is New,Display order,Reading visible,Audio visible'
     );
     assert.equal(
         lines[1],
-        'book-2,"Beta, ""Quoted""",2025-02-03,true,false,false,,false,true'
+        'book-2,"Beta, ""Quoted""",Racconti,2025-02-03,true,false,false,,false,true'
     );
     assert.equal(
         lines[2],
-        "book-1,'=FORMULA(),2024-01-02,false,true,true,4,true,false"
+        "book-1,'=FORMULA(),Racconti,2024-01-02,false,true,true,4,true,false"
     );
 });
 

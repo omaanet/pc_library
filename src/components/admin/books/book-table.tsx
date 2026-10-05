@@ -15,7 +15,8 @@ import {
     Copy,
     Sparkles,
     BookOpen,
-    Download
+    Download,
+    MoreVertical
 } from 'lucide-react';
 import { formatDate, isBookEffectivelyNew } from '@/lib/utils';
 import {
@@ -26,6 +27,13 @@ import {
     type BooksLibrarySortField,
 } from '@/lib/books-library-csv';
 import { downloadCsv } from '@/lib/csv';
+import { getBookGenres } from '@/lib/book-genres';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Book } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -224,6 +232,7 @@ export function BookTable({
                                     Title {getSortIcon('title')}
                                 </Button>
                             </TableHead>
+                            <TableHead className="text-xs text-muted-foreground">Genere</TableHead>
                             <TableHead className="text-xs text-muted-foreground">
                                 <Button
                                     variant="ghost"
@@ -277,7 +286,7 @@ export function BookTable({
                     <TableBody>
                         {filteredBooks.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={10} className="h-24 text-center">
+                                <TableCell colSpan={11} className="h-24 text-center">
                                     {isLoading ? 'Loading books...' : 'No books found.'}
                                 </TableCell>
                             </TableRow>
@@ -286,6 +295,9 @@ export function BookTable({
                                 <TableRow key={book.id}>
                                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{book.id}</TableCell>
                                     <TableCell className="font-medium whitespace-nowrap flex-1 min-w-0" style={{ width: 'auto' }}>{book.title}</TableCell>
+                                    <TableCell className="text-xs text-muted-foreground whitespace-normal">
+                                        {getBookGenres(book.genres).join(', ')}
+                                    </TableCell>
                                     <TableCell className="text-xs text-muted-foreground">{formatDate(book.publishingDate)}</TableCell>
 
                                     <TableCell className="text-xs whitespace-nowrap text-center">
@@ -319,42 +331,36 @@ export function BookTable({
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2 items-center">
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    onEdit(book);
-                                                }}
-                                                title="Edit book"
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    onClone(book);
-                                                }}
-                                                title="Clone book"
-                                            >
-                                                <Copy className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    confirmDelete(book);
-                                                }}
-                                                className="text-destructive hover:text-destructive hover:border-destructive"
-                                                title="Delete book"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    onClick={(event) => event.stopPropagation()}
+                                                    aria-label={`Book actions: ${book.title}`}
+                                                    title="Book actions"
+                                                >
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" side="bottom" collisionPadding={16} className="max-w-[calc(100vw-2rem)]">
+                                                <DropdownMenuItem onSelect={() => onEdit(book)}>
+                                                    <Pencil />
+                                                    Edit book
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => onClone(book)}>
+                                                    <Copy />
+                                                    Clone book
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onSelect={() => confirmDelete(book)}
+                                                    className="text-destructive focus:text-destructive"
+                                                >
+                                                    <Trash2 />
+                                                    Delete book
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             ))

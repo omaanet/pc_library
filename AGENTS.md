@@ -2,6 +2,11 @@
 
 This file provides guidance to Codex when working in this repository. Keep it aligned with the actual codebase, not older product assumptions.
 
+## Sub-agents
+
+If you deem it necessary or useful, you may engage up to 4 sub-agents.
+In this case you work as the lead agent and use sub-agents only for tasks that can be safely investigated or implemented independently.
+
 ## Development Commands
 
 This project uses `pnpm`, not `npm`.

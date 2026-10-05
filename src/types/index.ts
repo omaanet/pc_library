@@ -8,12 +8,14 @@
 import type { PromoTemplate } from '@/lib/promo-page-input';
 import type { AdminRole } from '@/config/admin-roles';
 import type { UserPreferences } from './preferences';
+import type { BookGenre } from '@/lib/book-genres';
 
 export type { UserPreferences } from './preferences';
 
 export interface Book {
     id: string;
     title: string;
+    genres?: BookGenre[];
     coverImage: string;
     publishingDate: string;
     summary?: string;

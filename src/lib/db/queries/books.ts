@@ -6,6 +6,7 @@ import { getNeonClient } from '../client';
 import { getFirstRow, extractRows } from '../utils';
 import type { BookQueryOptions, PaginatedResult } from '../types';
 import { SITE_CONFIG } from '@/config/site-config';
+import { getBookGenres } from '@/lib/book-genres';
 
 // Internal helper functions for audiobook operations
 // These are duplicated from audiobooks.ts to avoid circular dependencies
@@ -280,6 +281,7 @@ export async function getAllBooksOptimized(options: BookQueryOptions = {}): Prom
     const dataQuery = `SELECT 
             id,
             title,
+            genres,
             cover_image as "coverImage",
             publishing_date as "publishingDate",
             summary,
@@ -332,6 +334,7 @@ export async function getBookById(id: string): Promise<Book | undefined> {
         `SELECT 
             id,
             title,
+            genres,
             cover_image as "coverImage",
             publishing_date as "publishingDate",
             summary,
@@ -401,13 +404,13 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
                 has_audio, audio_length, extract, rating,
                 is_preview, is_new, display_order, is_reading_visible, is_audio_visible, pages_count,
                 media_id, media_title, media_uid, preview_placement,
-                replace_first_page_with_copyright_override
+                replace_first_page_with_copyright_override, genres
             ) VALUES (
                 $1, $2, $3, $4, $5,
                 $6, $7, $8, $9,
                 $10, $11, $12, $13, $14, $15,
                 $16, $17, $18, $19,
-                $20
+                $20, $21::text[]
             )
             RETURNING id`,
             [
@@ -430,7 +433,8 @@ export async function createBook(book: Omit<Book, 'id'>): Promise<{ id: string }
                 book.mediaTitle || null,
                 book.mediaUid || null,
                 book.previewPlacement || null,
-                book.replaceFirstPageWithCopyrightOverride ?? null
+                book.replaceFirstPageWithCopyrightOverride ?? null,
+                getBookGenres(book.genres)
             ]
         );
 
@@ -478,7 +482,11 @@ export async function updateBook(id: string, book: Partial<Omit<Book, 'id'>>): P
     const client = getNeonClient();
     // Build the SET part of the query dynamically
     const updates: string[] = [];
-    const values: (string | number | boolean | null)[] = [];
+    const values: (string | number | boolean | string[] | null)[] = [];
+    if (book.genres !== undefined) {
+        updates.push('genres = $' + (updates.length + 1) + '::text[]');
+        values.push(getBookGenres(book.genres));
+    }
     if (book.title !== undefined) {
         updates.push('title = $' + (updates.length + 1));
         values.push(book.title);

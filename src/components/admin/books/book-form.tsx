@@ -6,7 +6,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { bookFormSchema, getBookFormValues, getBookFormErrorMessages, type BookFormValues } from '@/lib/book-form-values';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, ChevronDown } from 'lucide-react';
+import { BOOK_GENRES } from '@/lib/book-genres';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -139,11 +146,12 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting: parentSubmitt
                     )}
                 />
 
+                <div className="grid grid-cols-2 items-start gap-3">
                 <FormField
                     control={form.control}
                     name="publishingDate"
                     render={({ field }) => (
-                        <FormItem className="flex flex-col">
+                        <FormItem className="flex min-w-0 flex-col">
                             <FormLabel>Publishing Date</FormLabel>
                             <Popover
                                 open={isPublishingDateOpen}
@@ -160,16 +168,16 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting: parentSubmitt
                                             type="button"
                                             variant={"outline"}
                                             className={cn(
-                                                "w-full pl-3 text-left font-normal",
+                                                "h-auto min-h-10 w-full gap-2 whitespace-normal pl-3 text-left font-normal",
                                                 !field.value && "text-muted-foreground"
                                             )}
                                         >
                                             {field.value ? (
-                                                format(field.value, "PPP")
+                                                <span className="min-w-0 break-words">{format(field.value, "PPP")}</span>
                                             ) : (
                                                 <span>Pick a date</span>
                                             )}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            <CalendarIcon className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                     </FormControl>
                                 </PopoverTrigger>
@@ -226,6 +234,59 @@ export function BookForm({ book, onSubmit, onCancel, isSubmitting: parentSubmitt
                         </FormItem>
                     )}
                 />
+
+                <FormField
+                    control={form.control}
+                    name="genres"
+                    render={({ field }) => (
+                        <FormItem className="flex min-w-0 flex-col">
+                            <FormLabel>Genere</FormLabel>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <FormControl>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            ref={field.ref}
+                                            onBlur={field.onBlur}
+                                            disabled={isSubmitting}
+                                            className="h-auto min-h-10 w-full justify-between gap-2 whitespace-normal text-left font-normal"
+                                        >
+                                            <span className="min-w-0 break-words">
+                                                {field.value.length ? field.value.join(', ') : 'Seleziona un genere'}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" collisionPadding={16} className="max-w-[calc(100vw-2rem)]">
+                                    {BOOK_GENRES.map((genre) => (
+                                        <DropdownMenuCheckboxItem
+                                            key={genre}
+                                            checked={field.value.includes(genre)}
+                                            onSelect={(event) => event.preventDefault()}
+                                            onCheckedChange={(checked) => {
+                                                const next = checked
+                                                    ? [...field.value, genre]
+                                                    : field.value.filter((value) => value !== genre);
+                                                form.setValue('genres', BOOK_GENRES.filter((value) => next.includes(value)), {
+                                                    shouldDirty: true,
+                                                    shouldTouch: true,
+                                                    shouldValidate: true,
+                                                });
+                                            }}
+                                            className="whitespace-normal"
+                                        >
+                                            {genre}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                </div>
 
                 <FormField
                     control={form.control}

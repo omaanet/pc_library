@@ -9,6 +9,7 @@ import { requireManagedPageAccess } from '@/lib/admin-auth';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
 import { normalizeBookVisibility } from '@/lib/book-visibility';
 import { isBookSortPreset, resolveBookSortPreset } from '@/lib/book-sort';
+import { bookGenresSchema, getBookGenres } from '@/lib/book-genres';
 
 type NormalizedAudiobookPayload = {
     mediaId?: string | null;
@@ -199,6 +200,12 @@ export const POST = withCSRFProtection(async function(request: Request) {
         await requireManagedPageAccess('books');
 
         const bookData = await request.json();
+        const genres = bookGenresSchema.safeParse(
+            bookData.genres === undefined ? getBookGenres(undefined) : bookData.genres
+        );
+        if (!genres.success) {
+            throw new ApiError(HttpStatus.BAD_REQUEST, 'Seleziona almeno un genere valido, senza duplicati.');
+        }
         const visibility = normalizeBookVisibility(bookData, {
             isReadingVisible: true,
             isAudioVisible: false,
@@ -305,6 +312,7 @@ export const POST = withCSRFProtection(async function(request: Request) {
 
         // Use sanitized data for database operations
         const sanitizedData = validation.sanitizedData;
+        sanitizedData.genres = genres.data;
         
         // Add the manually validated audiobook field back to sanitizedData
         if (normalizedAudiobook !== undefined) {

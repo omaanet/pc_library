@@ -9,6 +9,7 @@ import { canAccessBook } from '@/lib/book-visibility';
 import { getSessionUser } from '@/lib/auth-utils';
 import { withCSRFProtection } from '@/lib/csrf-middleware';
 import { getManagedPage } from '@/lib/db/queries/managed-pages';
+import { bookGenresSchema } from '@/lib/book-genres';
 
 type NormalizedAudiobookPayload = {
     mediaId?: string | null;
@@ -160,6 +161,13 @@ export const PUT = withCSRFProtection(async function (
 
         const id = (await params).id;
         const book = await request.json();
+        if (book.genres !== undefined) {
+            const genres = bookGenresSchema.safeParse(book.genres);
+            if (!genres.success) {
+                throw new ApiError(HttpStatus.BAD_REQUEST, 'Seleziona almeno un genere valido, senza duplicati.');
+            }
+            book.genres = genres.data;
+        }
         const normalizedAudiobook = normalizeAudiobookPayload(book.audiobook);
         if (normalizedAudiobook !== undefined) {
             book.audiobook = normalizedAudiobook;
